@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping({"/api", ""})
 @CrossOrigin(origins = "*")
 public class PaymentWebhookController {
 
@@ -43,8 +43,9 @@ public class PaymentWebhookController {
 
     /**
      * Endpoint chính nhận Webhook từ SePay, Casso hoặc PayOS khi có biến động số dư.
+     * Hỗ trợ đa đường dẫn: /api/webhook/payment, /webhook/payment, /api/payment/webhook...
      */
-    @PostMapping("/webhook/payment")
+    @PostMapping({"/webhook/payment", "/payment/webhook", "/api/webhook/payment", "/api/payment/webhook"})
     public ResponseEntity<Map<String, Object>> handlePaymentWebhook(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestHeader(value = "x-api-key", required = false) String xApiKey,
