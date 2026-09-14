@@ -126,7 +126,7 @@ public class AdminBookController {
             book.setDescription(dto.getDescription());
             book.setOriginalPrice(dto.getOriginalPrice() != null ? dto.getOriginalPrice() : dto.getSalePrice());
             book.setSalePrice(dto.getSalePrice());
-            book.setStockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : 0);
+            book.setStockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : Integer.valueOf(0));
             book.setAvgRating(BigDecimal.valueOf(5.0));
             book.setStatus(dto.getStatus() != null ? dto.getStatus() : BookStatus.AVAILABLE);
 
