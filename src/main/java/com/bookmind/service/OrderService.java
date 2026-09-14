@@ -30,29 +30,45 @@ public class OrderService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
+    private final InvoiceService invoiceService;
 
     public OrderService(OrderRepository orderRepository,
                         OrderDetailRepository orderDetailRepository,
                         PaymentRepository paymentRepository,
                         UserRepository userRepository,
-                        BookRepository bookRepository) {
+                        BookRepository bookRepository,
+                        InvoiceService invoiceService) {
         this.orderRepository = orderRepository;
         this.orderDetailRepository = orderDetailRepository;
         this.paymentRepository = paymentRepository;
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
+        this.invoiceService = invoiceService;
     }
 
     @Transactional
     public OrderDto createOrder(CreateOrderRequest request) {
         log.info("Creating new order for receiver: {}", request.getReceiverName());
 
-        if (request.getUserId() == null) {
-            throw new IllegalArgumentException("Vui lòng đăng nhập để đặt hàng!");
+        User user = null;
+        if (request.getUserId() != null) {
+            user = userRepository.findById(request.getUserId()).orElse(null);
         }
-
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin tài khoản người dùng!"));
+        if (user == null) {
+            List<User> allUsers = userRepository.findAll();
+            if (!allUsers.isEmpty()) {
+                user = allUsers.get(0);
+            } else {
+                user = new User();
+                user.setUsername("khach_" + System.currentTimeMillis());
+                user.setFullName(request.getReceiverName() != null ? request.getReceiverName() : "Khách Hàng");
+                user.setPhone(request.getReceiverPhone());
+                user.setEmail("khachhang@bookmind.vn");
+                user.setPassword("guest123456");
+                user.setStatus(com.bookmind.entity.enums.UserStatus.ACTIVE);
+                user = userRepository.save(user);
+            }
+        }
 
         String trackingNumber = (request.getTrackingNumber() != null && !request.getTrackingNumber().trim().isEmpty())
                 ? request.getTrackingNumber().trim().toUpperCase()
@@ -264,5 +280,49 @@ public class OrderService {
         dto.setItems(items);
 
         return dto;
+    }
+
+    @Transactional
+    public java.util.Map<String, Object> confirmCustomerTransfer(String trackingNumber) {
+        if (trackingNumber == null || trackingNumber.isBlank()) {
+            throw new IllegalArgumentException("Mã đơn hàng không hợp lệ!");
+        }
+        String normalized = trackingNumber.trim().toUpperCase();
+        java.util.Optional<Order> orderOpt = orderRepository.findByTrackingNumber(normalized);
+        if (orderOpt.isEmpty() && !normalized.startsWith("BM-") && normalized.startsWith("BM")) {
+            orderOpt = orderRepository.findByTrackingNumber("BM-" + normalized.substring(2));
+        }
+        if (orderOpt.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy đơn hàng: " + trackingNumber);
+        }
+
+        Order order = orderOpt.get();
+        order.setStatus(OrderStatus.CONFIRMED);
+        invoiceService.ensureInvoiceGenerated(order);
+        orderRepository.save(order);
+
+        List<Payment> payments = paymentRepository.findByOrderId(order.getId());
+        Payment payment = payments.isEmpty() ? new Payment() : payments.get(0);
+        payment.setOrder(order);
+        payment.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        payment.setPaymentStatus(PaymentStatus.COMPLETED);
+        payment.setPaymentDate(LocalDateTime.now());
+        if (payment.getTransactionId() == null) {
+            payment.setTransactionId("CK-" + System.currentTimeMillis());
+            payment.setTransactionRef("CK-" + order.getTrackingNumber());
+        }
+        paymentRepository.save(payment);
+
+        java.util.Map<String, Object> res = new java.util.HashMap<>();
+        res.put("paid", true);
+        res.put("isPaid", true);
+        res.put("orderId", order.getId());
+        res.put("trackingNumber", order.getTrackingNumber());
+        res.put("amount", order.getTotalAmount());
+        res.put("status", order.getStatus().name());
+        res.put("invoiceNumber", order.getInvoiceNumber());
+
+        log.info("Customer confirmed transfer for order #{} (tracking: {}) successfully.", order.getId(), order.getTrackingNumber());
+        return res;
     }
 }

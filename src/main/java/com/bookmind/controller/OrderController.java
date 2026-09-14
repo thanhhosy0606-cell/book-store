@@ -63,4 +63,18 @@ public class OrderController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @PostMapping("/confirm-transfer")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> confirmCustomerTransfer(
+            @RequestBody Map<String, String> body) {
+        String trackingNumber = body.get("trackingNumber");
+        log.info("Customer requested confirmation for transfer on order: {}", trackingNumber);
+        try {
+            Map<String, Object> result = orderService.confirmCustomerTransfer(trackingNumber);
+            return ResponseEntity.ok(ApiResponse.success("Xác nhận thanh toán thành công!", result));
+        } catch (Exception e) {
+            log.error("Error confirming customer transfer", e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }
