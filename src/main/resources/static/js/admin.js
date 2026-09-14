@@ -148,7 +148,12 @@ function switchTab(tabId) {
         loadCategoryOptions();
         loadBooks();
     }
-    if (tabId === 'orders') loadOrders();
+    if (tabId === 'orders') {
+        loadOrders();
+        startOrdersPolling();
+    } else {
+        stopOrdersPolling();
+    }
     if (tabId === 'categories') loadCategories();
     if (tabId === 'promotions') {
         loadCategoriesForBatchDiscount();
@@ -156,6 +161,29 @@ function switchTab(tabId) {
         loadCoupons();
     }
     if (tabId === 'users') loadUsers();
+}
+
+let ordersPollingTimer = null;
+function startOrdersPolling() {
+    stopOrdersPolling();
+    ordersPollingTimer = setInterval(() => {
+        const pane = document.getElementById('tab-orders');
+        if (pane && pane.classList.contains('active')) {
+            // Chỉ polling nếu không đang gõ tìm kiếm
+            const searchVal = document.getElementById('orderSearchInput')?.value || '';
+            if (!searchVal.trim()) {
+                loadOrders();
+            }
+        } else {
+            stopOrdersPolling();
+        }
+    }, 10000);
+}
+function stopOrdersPolling() {
+    if (ordersPollingTimer) {
+        clearInterval(ordersPollingTimer);
+        ordersPollingTimer = null;
+    }
 }
 
 // =====================================================
@@ -2125,7 +2153,15 @@ function formatCurrency(amount) {
 function formatDateTime(dateStr) {
     if (!dateStr) return 'N/A';
     try {
-        const d = new Date(dateStr);
+        let str = String(dateStr).trim();
+        // If string doesn't include timezone information, parse safely
+        let d;
+        if (!str.includes('Z') && !str.includes('+') && !str.includes('-0')) {
+            d = new Date(str.replace(' ', 'T'));
+        } else {
+            d = new Date(str);
+        }
+        if (isNaN(d.getTime())) return dateStr;
         return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     } catch (e) {
         return dateStr;

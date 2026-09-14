@@ -389,6 +389,9 @@
                         </h2>
 
                         <div class="admin-toolbar">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="loadOrders()" title="Làm mới danh sách đơn hàng">
+                                <i class="fas fa-sync-alt me-1"></i> Làm Mới
+                            </button>
                             <input type="text" id="orderSearchInput" class="admin-search-input"
                                 placeholder="Tìm mã đơn, tên khách, SĐT..." oninput="loadOrders()">
                             <select id="orderStatusFilter" class="admin-filter-select" onchange="loadOrders()">
