@@ -681,13 +681,31 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="fw-bold fs-7 text-dark">Thanh toán khi nhận hàng (COD)</div>
-                                    <small class="text-muted fs-8">Đến nơi mới thanh toán tiền mặt cho shipper khi nhận
-                                        sách</small>
+                                    <small class="text-muted fs-8">Thanh toán tiền mặt cho shipper khi nhận sách</small>
                                 </div>
                                 <span class="badge bg-secondary-subtle text-secondary fs-9">Tiện lợi</span>
                             </label>
 
-                            <!-- Option 2: VNPay Online Payment -->
+                            <!-- Option 2: VietQR Bank Transfer (Chuyển tiền thẳng tài khoản BIDV) -->
+                            <label class="payment-method-card border rounded-3 p-2.5 d-flex align-items-center gap-3"
+                                id="cardMethodQR" style="cursor: pointer;" onclick="selectPaymentMethod('QR_TRANSFER')">
+                                <input class="form-check-input mt-0" type="radio" name="checkoutPaymentMethod"
+                                    id="payMethodQR" value="QR_TRANSFER">
+                                <div class="d-flex align-items-center justify-content-center bg-danger-subtle rounded-circle text-danger"
+                                    style="width: 38px; height: 38px;">
+                                    <i class="fas fa-qrcode fs-6"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold fs-7 text-dark d-flex align-items-center gap-1">
+                                        <span>Chuyển khoản VietQR Ngân hàng</span>
+                                        <span class="badge bg-danger text-white fs-9 py-0.5 px-1.5 rounded-pill">BIDV 24/7</span>
+                                    </div>
+                                    <small class="text-muted fs-8">Quét mã QR chuyển thẳng STK <b>5150739935</b> (HO SY THANH), tự động xác nhận</small>
+                                </div>
+                                <span class="badge bg-success-subtle text-success fs-9 fw-bold">Tự động 24/7</span>
+                            </label>
+
+                            <!-- Option 3: VNPay Online Payment -->
                             <label class="payment-method-card border rounded-3 p-2.5 d-flex align-items-center gap-3"
                                 id="cardMethodVNPAY" style="cursor: pointer;" onclick="selectPaymentMethod('VNPAY')">
                                 <input class="form-check-input mt-0" type="radio" name="checkoutPaymentMethod"
@@ -700,12 +718,12 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="fw-bold fs-7 text-dark d-flex align-items-center gap-1">
-                                        <span>Thanh toán Online VNPay</span>
+                                        <span>Thanh toán Online Cổng VNPay</span>
                                         <span class="badge bg-danger text-white fs-9 py-0.5 px-1.5 rounded-pill">SANDBOX</span>
                                     </div>
                                     <small class="text-muted fs-8">VNPAY-QR, Thẻ ATM nội địa (NCB...), Visa, Master...</small>
                                 </div>
-                                <span class="badge bg-success-subtle text-success fs-9 fw-bold">Tự động 0đ phí</span>
+                                <span class="badge bg-primary-subtle text-primary fs-9 fw-bold">Cổng VNPay</span>
                             </label>
                         </div>
                     </div>

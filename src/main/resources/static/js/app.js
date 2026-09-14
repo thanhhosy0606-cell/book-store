@@ -3812,14 +3812,19 @@ function selectPaymentMethod(method) {
     currentCheckoutData.selectedMethod = method;
 
     const cardCOD = document.getElementById('cardMethodCOD');
-    const cardVNPAY = document.getElementById('cardMethodVNPAY') || document.getElementById('cardMethodQR');
+    const cardQR = document.getElementById('cardMethodQR');
+    const cardVNPAY = document.getElementById('cardMethodVNPAY');
     const radioCOD = document.getElementById('payMethodCOD');
-    const radioVNPAY = document.getElementById('payMethodVNPAY') || document.getElementById('payMethodQR');
+    const radioQR = document.getElementById('payMethodQR');
+    const radioVNPAY = document.getElementById('payMethodVNPAY');
     const submitBtn = document.getElementById('btnSubmitOrder');
+
+    if (cardCOD) cardCOD.classList.remove('selected');
+    if (cardQR) cardQR.classList.remove('selected');
+    if (cardVNPAY) cardVNPAY.classList.remove('selected');
 
     if (method === 'COD') {
         if (cardCOD) cardCOD.classList.add('selected');
-        if (cardVNPAY) cardVNPAY.classList.remove('selected');
         if (radioCOD) radioCOD.checked = true;
         if (submitBtn) {
             submitBtn.className = 'btn btn-primary rounded-pill py-2.5 fw-bold fs-7 shadow-sm';
@@ -3827,9 +3832,17 @@ function selectPaymentMethod(method) {
             submitBtn.style.borderColor = '';
             submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Xác Nhận Đặt Hàng (COD)';
         }
-    } else {
+    } else if (method === 'QR_TRANSFER') {
+        if (cardQR) cardQR.classList.add('selected');
+        if (radioQR) radioQR.checked = true;
+        if (submitBtn) {
+            submitBtn.className = 'btn rounded-pill py-2.5 fw-bold fs-7 shadow-sm text-white';
+            submitBtn.style.background = 'linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%)';
+            submitBtn.style.borderColor = '#d32f2f';
+            submitBtn.innerHTML = '<i class="fas fa-qrcode me-1"></i> Quét Mã QR Chuyển Khoản BIDV <i class="fas fa-arrow-right ms-1"></i>';
+        }
+    } else if (method === 'VNPAY') {
         if (cardVNPAY) cardVNPAY.classList.add('selected');
-        if (cardCOD) cardCOD.classList.remove('selected');
         if (radioVNPAY) radioVNPAY.checked = true;
         if (submitBtn) {
             submitBtn.className = 'btn rounded-pill py-2.5 fw-bold fs-7 shadow-sm text-white';
@@ -4336,7 +4349,28 @@ function processCheckoutSubmit() {
     currentCheckoutData.shippingAddress = address;
     currentCheckoutData.note = note;
 
-    if (currentCheckoutData.selectedMethod === 'VNPAY' || currentCheckoutData.selectedMethod === 'QR_TRANSFER') {
+    if (currentCheckoutData.selectedMethod === 'QR_TRANSFER') {
+        const orderCode = currentCheckoutData.orderCode;
+        generateVietQR(currentCheckoutData.finalTotal, orderCode);
+        createPendingQROrder(orderCode);
+
+        const itemsEl = document.getElementById('paymentOrderItems');
+        if (itemsEl) {
+            itemsEl.innerHTML = currentCheckoutData.items.map(item => `
+                <div class="d-flex justify-content-between py-1 border-bottom fs-8">
+                    <span class="text-truncate" style="max-width: 200px;">${escapeHtml(item.title)} (x${item.quantity})</span>
+                    <span class="fw-semibold">${formatCurrency(item.price * item.quantity)}</span>
+                </div>
+            `).join('');
+        }
+        const totalEl = document.getElementById('paymentTotalAmount');
+        if (totalEl) totalEl.textContent = formatCurrency(currentCheckoutData.finalTotal);
+
+        showPaymentStep(2);
+        return;
+    }
+
+    if (currentCheckoutData.selectedMethod === 'VNPAY') {
         const submitBtn = document.getElementById('btnSubmitOrder');
         if (submitBtn) {
             submitBtn.disabled = true;
