@@ -54,8 +54,8 @@ public class PaymentWebhookService {
 
     @Transactional
     public Order processPaymentWebhook(PaymentWebhookRequest request, String rawJson) {
-        log.info("Processing payment webhook: ref={}, amount={}, content={}",
-                request.getTransactionReference(), request.getReceivedAmount(), request.getContentText());
+        log.info("Processing payment webhook: ref={}, amount={}, content={}, code={}, gateway={}",
+                request.getTransactionReference(), request.getReceivedAmount(), request.getContentText(), request.getCode(), request.getGateway());
 
         String txRef = request.getTransactionReference();
 
@@ -66,18 +66,22 @@ public class PaymentWebhookService {
             return existingPayment.get().getOrder();
         }
 
-        // 2. Tìm đơn hàng tương ứng qua nội dung chuyển khoản
+        // 2. Tìm đơn hàng tương ứng qua nội dung chuyển khoản, mã SePay hoặc số tiền
         String content = request.getContentText();
-        Order order = findMatchingOrder(content, request.getOrderCode())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng khớp với nội dung: " + content));
+        BigDecimal received = request.getReceivedAmount();
+        Optional<Order> matchedOrderOpt = findMatchingOrder(content, request.getCode(), request.getOrderCode(), received);
+        if (matchedOrderOpt.isEmpty()) {
+            log.warn("No matching order found for webhook: content='{}', code='{}', amount={}", content, request.getCode(), received);
+            return null;
+        }
+
+        Order order = matchedOrderOpt.get();
 
         // 3. Kiểm tra số tiền
-        BigDecimal received = request.getReceivedAmount();
         BigDecimal expected = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
-
         if (received.compareTo(expected) < 0) {
             log.warn("Order #{} received amount {} is less than expected {}", order.getId(), received, expected);
-            throw new IllegalArgumentException(String.format("Số tiền chuyển (%s) nhỏ hơn tổng tiền đơn hàng (%s)", received, expected));
+            return null;
         }
 
         // 4. Cập nhật trạng thái đơn hàng & sinh hóa đơn
@@ -107,55 +111,85 @@ public class PaymentWebhookService {
         return order;
     }
 
-    private Optional<Order> findMatchingOrder(String content, Long payOsOrderCode) {
+    private Optional<Order> findMatchingOrder(String content, String sePayCode, Long payOsOrderCode, BigDecimal receivedAmount) {
+        // 1. Nếu SePay đã trích xuất sẵn trường code
+        if (sePayCode != null && !sePayCode.isBlank()) {
+            String c = sePayCode.trim().toUpperCase();
+            Optional<Order> byCode = orderRepository.findByTrackingNumber(c);
+            if (byCode.isPresent()) return byCode;
+            if (!c.startsWith("BM-") && c.startsWith("BM")) {
+                byCode = orderRepository.findByTrackingNumber("BM-" + c.substring(2));
+                if (byCode.isPresent()) return byCode;
+            } else if (!c.startsWith("BM")) {
+                byCode = orderRepository.findByTrackingNumber("BM-" + c);
+                if (byCode.isPresent()) return byCode;
+            }
+        }
+
+        // 2. Nếu PayOS gửi orderCode dạng ID số
         if (payOsOrderCode != null) {
             Optional<Order> byId = orderRepository.findById(payOsOrderCode);
             if (byId.isPresent()) return byId;
         }
 
-        if (content == null || content.isBlank()) {
-            return Optional.empty();
-        }
+        if (content != null && !content.isBlank()) {
+            // 3. Tìm kiếm pattern BM-XXXXXXXX hoặc BMXXXXXXXX hoặc BM XXXXXXXX
+            Pattern patternBM = Pattern.compile("(?i)BM[\\s\\-_]?([A-Z0-9]{4,12})");
+            Matcher matcherBM = patternBM.matcher(content);
+            if (matcherBM.find()) {
+                String sub = matcherBM.group(1).toUpperCase();
+                // Thử tìm BM-sub
+                Optional<Order> order = orderRepository.findByTrackingNumber("BM-" + sub);
+                if (order.isPresent()) return order;
 
-        // Tìm kiếm pattern BM-XXXXXXXX hoặc BMXXXXXXXX (6-10 ký tự sau BM)
-        Pattern patternBM = Pattern.compile("(?i)(BM-?[A-Z0-9]{6,10})");
-        Matcher matcherBM = patternBM.matcher(content);
-        if (matcherBM.find()) {
-            String matched = matcherBM.group(1).toUpperCase();
-            // Chuẩn hóa định dạng BM-XXXXXXXX
-            String normalizedTracking = matched.startsWith("BM-") ? matched : "BM-" + matched.substring(2);
-            Optional<Order> order = orderRepository.findByTrackingNumber(normalizedTracking);
-            if (order.isPresent()) return order;
+                // Thử tìm BMsub
+                order = orderRepository.findByTrackingNumber("BM" + sub);
+                if (order.isPresent()) return order;
 
-            // Thử tìm theo mã gốc nếu không có dấu gạch ngang
-            order = orderRepository.findByTrackingNumber(matched);
-            if (order.isPresent()) return order;
-        }
+                // Thử tìm sub
+                order = orderRepository.findByTrackingNumber(sub);
+                if (order.isPresent()) return order;
+            }
 
-        // Thử tìm theo DHxxxx (Mã đơn rút gọn theo ID)
-        Pattern patternDH = Pattern.compile("(?i)DH(\\d+)");
-        Matcher matcherDH = patternDH.matcher(content);
-        if (matcherDH.find()) {
-            try {
-                Long orderId = Long.parseLong(matcherDH.group(1));
-                Optional<Order> byId = orderRepository.findById(orderId);
-                if (byId.isPresent()) return byId;
-            } catch (NumberFormatException ignored) {}
-        }
+            // 4. Thử tìm theo DHxxxx
+            Pattern patternDH = Pattern.compile("(?i)DH(\\d+)");
+            Matcher matcherDH = patternDH.matcher(content);
+            if (matcherDH.find()) {
+                try {
+                    Long orderId = Long.parseLong(matcherDH.group(1));
+                    Optional<Order> byId = orderRepository.findById(orderId);
+                    if (byId.isPresent()) return byId;
+                } catch (NumberFormatException ignored) {}
+            }
 
-        // Quét toàn bộ đơn hàng PENDING gần nhất (so khớp cả dạng đã bỏ ký tự đặc biệt)
-        List<Order> pendingOrders = orderRepository.findAllByOrderByCreatedAtDesc();
-        String alphaNumContent = content.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
-        for (Order o : pendingOrders) {
-            if (o.getTrackingNumber() != null) {
-                String trackingRaw = o.getTrackingNumber().toUpperCase();
-                if (content.toUpperCase().contains(trackingRaw)) {
-                    return Optional.of(o);
+            // 5. Quét toàn bộ đơn hàng PENDING gần nhất
+            List<Order> pendingOrders = orderRepository.findAllByOrderByCreatedAtDesc();
+            String alphaNumContent = content.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+            for (Order o : pendingOrders) {
+                if (o.getTrackingNumber() != null) {
+                    String trackingRaw = o.getTrackingNumber().toUpperCase();
+                    if (content.toUpperCase().contains(trackingRaw)) {
+                        return Optional.of(o);
+                    }
+                    String trackingAlphaNum = trackingRaw.replaceAll("[^a-zA-Z0-9]", "");
+                    if (!trackingAlphaNum.isEmpty() && alphaNumContent.contains(trackingAlphaNum)) {
+                        return Optional.of(o);
+                    }
                 }
-                String trackingAlphaNum = trackingRaw.replaceAll("[^a-zA-Z0-9]", "");
-                if (!trackingAlphaNum.isEmpty() && alphaNumContent.contains(trackingAlphaNum)) {
-                    return Optional.of(o);
-                }
+            }
+        }
+
+        // 6. Fallback thông minh: Nếu chỉ có duy nhất 1 đơn hàng PENDING trong vòng 30 phút có đúng số tiền
+        if (receivedAmount != null && receivedAmount.compareTo(BigDecimal.ZERO) > 0) {
+            LocalDateTime threshold = LocalDateTime.now().minusMinutes(30);
+            List<Order> candidateOrders = orderRepository.findAllByOrderByCreatedAtDesc().stream()
+                    .filter(o -> o.getStatus() == OrderStatus.PENDING)
+                    .filter(o -> o.getCreatedAt() != null && o.getCreatedAt().isAfter(threshold))
+                    .filter(o -> o.getTotalAmount() != null && o.getTotalAmount().compareTo(receivedAmount) == 0)
+                    .toList();
+            if (candidateOrders.size() == 1) {
+                log.info("Matched single pending order #{} by amount {} within 30 minutes", candidateOrders.get(0).getId(), receivedAmount);
+                return Optional.of(candidateOrders.get(0));
             }
         }
 

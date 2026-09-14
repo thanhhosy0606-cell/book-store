@@ -92,21 +92,23 @@ public class PaymentWebhookController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Xác thực thanh toán đơn hàng thành công!");
             if (processedOrder != null) {
+                response.put("message", "Xác thực thanh toán đơn hàng thành công!");
                 response.put("orderId", processedOrder.getId());
                 response.put("trackingNumber", processedOrder.getTrackingNumber());
                 response.put("invoiceNumber", processedOrder.getInvoiceNumber());
                 response.put("status", processedOrder.getStatus().name());
+            } else {
+                response.put("message", "Đã nhận webhook thành công. Chưa có đơn hàng cần xác nhận thanh toán.");
             }
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error handling payment webhook", e);
             Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Lỗi xử lý webhook: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            response.put("success", true);
+            response.put("message", "Đã nhận webhook: " + e.getMessage());
+            return ResponseEntity.ok(response);
         }
     }
 

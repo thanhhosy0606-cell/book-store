@@ -15,43 +15,74 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentWebhookRequest {
 
-    // SePay / Casso standard fields
+    // SePay standard fields
+    @JsonProperty("id")
     private Long id;
+
+    @JsonProperty("gateway")
     private String gateway;
 
+    @JsonProperty("transactionDate")
     @JsonAlias({"transaction_date", "when", "createdAt", "transactionDateTime"})
     private String transactionDate;
 
+    @JsonProperty("accountNumber")
     @JsonAlias({"account_number", "bank_account_id", "bank_sub_acc_id"})
     private String accountNumber;
 
+    @JsonProperty("subAccount")
     private String subAccount;
 
+    @JsonProperty("transferType")
+    private String transferType;
+
     // Số tiền vào tài khoản
-    @JsonAlias({"amount_in", "transferAmount"})
+    @JsonProperty("transferAmount")
+    @JsonAlias({"amount_in", "amountIn"})
+    private BigDecimal transferAmount;
+
+    @JsonProperty("amountIn")
     private BigDecimal amountIn;
 
     // Hỗ trợ trường "amount" nếu dùng chuẩn Casso / PayOS
+    @JsonProperty("amount")
     private BigDecimal amount;
+
+    @JsonProperty("amountOut")
     private BigDecimal amountOut;
+
+    @JsonProperty("accumulated")
     private BigDecimal accumulated;
 
+    @JsonProperty("code")
     private String code;
 
-    @JsonAlias({"transaction_content", "content", "memo"})
+    @JsonProperty("content")
+    @JsonAlias({"transaction_content", "transactionContent", "memo"})
+    private String content;
+
+    @JsonProperty("transactionContent")
     private String transactionContent;
 
+    @JsonProperty("referenceCode")
     @JsonAlias({"reference_number", "referenceNumber", "tid", "reference"})
     private String referenceCode;
 
+    @JsonProperty("description")
     private String description;
 
     // PayOS standard fields
+    @JsonProperty("orderCode")
     @JsonAlias({"order_code"})
     private Long orderCode;
+
+    @JsonProperty("paymentLinkId")
     private String paymentLinkId;
 
     public BigDecimal getReceivedAmount() {
+        if (transferAmount != null && transferAmount.compareTo(BigDecimal.ZERO) > 0) {
+            return transferAmount;
+        }
         if (amountIn != null && amountIn.compareTo(BigDecimal.ZERO) > 0) {
             return amountIn;
         }
@@ -63,9 +94,10 @@ public class PaymentWebhookRequest {
 
     public String getContentText() {
         StringBuilder sb = new StringBuilder();
+        if (content != null) sb.append(content).append(" ");
         if (transactionContent != null) sb.append(transactionContent).append(" ");
-        if (description != null) sb.append(description).append(" ");
         if (code != null) sb.append(code).append(" ");
+        if (description != null) sb.append(description).append(" ");
         return sb.toString().trim();
     }
 
@@ -75,12 +107,5 @@ public class PaymentWebhookRequest {
         if (paymentLinkId != null) return paymentLinkId;
         return "REF-" + System.currentTimeMillis();
     }
-
-    // Explicit setters to satisfy IDE language server
-    public void setReferenceCode(String referenceCode) { this.referenceCode = referenceCode; }
-    public void setGateway(String gateway) { this.gateway = gateway; }
-    public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
-    public void setAmountIn(java.math.BigDecimal amountIn) { this.amountIn = amountIn; }
-    public void setTransactionContent(String transactionContent) { this.transactionContent = transactionContent; }
 }
 
