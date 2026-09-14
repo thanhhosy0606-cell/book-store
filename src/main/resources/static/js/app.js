@@ -4129,16 +4129,16 @@ async function manualCheckPayment() {
 
     if (manualBtn) {
         manualBtn.disabled = true;
-        manualBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đối soát...';
+        manualBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đối soát BIDV...';
     }
     if (confirmBtn) {
         confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đối soát...';
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đối soát BIDV...';
     }
 
     const orderCode = currentCheckoutData ? currentCheckoutData.orderCode : '';
 
-    // 1. Thử kiểm tra trước qua webhook / check-payment
+    // 1. Kiểm tra trạng thái thực tế từ Backend / Webhook SePay BIDV
     try {
         const res = await fetch(`/api/orders/check-payment/${encodeURIComponent(orderCode)}`);
         if (res.ok) {
@@ -4149,6 +4149,12 @@ async function manualCheckPayment() {
                     manualBtn.disabled = false;
                     manualBtn.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Đã thanh toán';
                 }
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.className = 'btn btn-success rounded-pill px-4 fw-bold fs-8 shadow-sm';
+                    confirmBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i>Đã nhận tiền!';
+                }
+                showToast(`🎉 BIDV xác nhận đã nhận ${formatCurrency(data.amount || currentCheckoutData.finalTotal)}!`, 'success');
                 handlePaymentWebhookReceived(data);
                 return;
             }
@@ -4157,35 +4163,33 @@ async function manualCheckPayment() {
         console.warn('Check payment error:', e);
     }
 
-    // 2. Nếu webhook ngân hàng bị chậm, khách bấm 'Tôi đã chuyển khoản' -> Xác nhận trực tiếp cho khách
-    try {
-        const confirmRes = await fetch('/api/orders/confirm-transfer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ trackingNumber: orderCode })
-        });
-        if (confirmRes.ok) {
-            const confirmResult = await confirmRes.json();
-            if (confirmResult.success && confirmResult.data) {
-                showToast('🎉 Đã xác nhận chuyển khoản! Đơn hàng của bạn đã hoàn tất.', 'success');
-                handlePaymentWebhookReceived(confirmResult.data);
-                return;
-            }
-        }
-    } catch (e) {
-        console.warn('Confirm transfer error:', e);
+    // 2. NẾU CHƯA CÓ TIỀN VÀO TÀI KHOẢN: TUYỆT ĐỐI KHÔNG CHO QUA!
+    if (manualBtn) {
+        manualBtn.disabled = false;
+        manualBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Kiểm tra ngay';
+    }
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.className = 'btn btn-outline-primary rounded-pill px-4 fw-bold fs-8 shadow-sm';
+        confirmBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Tôi Đã Chuyển Khoản';
     }
 
-    // 3. Fallback hoàn tất giao diện
-    handlePaymentWebhookReceived({
-        paid: true,
-        orderId: currentCreatedOrderId,
-        trackingNumber: orderCode,
-        amount: currentCheckoutData ? currentCheckoutData.finalTotal : 0
-    });
+    if (warnBox) {
+        warnBox.style.display = 'block';
+        warnBox.innerHTML = `
+            <div class="d-flex align-items-start gap-2 text-start">
+                <i class="fas fa-exclamation-triangle text-danger mt-1 fs-6"></i>
+                <div class="fs-8">
+                    <strong class="text-danger">Tài khoản BIDV chưa nhận được tiền!</strong><br>
+                    <span>Hệ thống chưa tìm thấy giao dịch khớp với mã đơn <strong>${orderCode}</strong>. Quý khách vui lòng quét mã QR hoặc chuyển khoản chính xác nội dung trên. Nếu vừa chuyển tiền xong, vui lòng đợi 3–5 giây rồi nhấn lại <strong>"Tôi Đã Chuyển Khoản"</strong>.</span>
+                </div>
+            </div>`;
+    }
+
+    showToast('Tài khoản BIDV chưa nhận được tiền cho mã đơn này! Quý khách vui lòng chuyển khoản và thử lại.', 'warning');
 }
 
-function verifyBankTransactionRef() {
+async function verifyBankTransactionRef() {
     const refInput = document.getElementById('bankTransactionRef');
     const refVal = refInput ? refInput.value.trim() : '';
 
@@ -4199,10 +4203,35 @@ function verifyBankTransactionRef() {
     if (warnBox) warnBox.style.display = 'none';
 
     showToast('Đang đối soát mã GD ' + refVal + ' với ngân hàng BIDV...', 'info');
-    setTimeout(() => {
-        if (currentCheckoutData) currentCheckoutData.bankTransactionRef = refVal;
-        triggerPaymentSuccess(refVal);
-    }, 800);
+
+    const orderCode = currentCheckoutData ? currentCheckoutData.orderCode : '';
+    try {
+        const res = await fetch(`/api/orders/check-payment/${encodeURIComponent(orderCode)}`);
+        if (res.ok) {
+            const result = await res.json();
+            const data = (result && result.data) ? result.data : result;
+            if (data && (data.paid === true || data.isPaid === true)) {
+                if (currentCheckoutData) currentCheckoutData.bankTransactionRef = refVal;
+                triggerPaymentSuccess(refVal);
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('Check transaction ref error:', e);
+    }
+
+    if (warnBox) {
+        warnBox.style.display = 'block';
+        warnBox.innerHTML = `
+            <div class="d-flex align-items-start gap-2 text-start">
+                <i class="fas fa-exclamation-triangle text-danger mt-1 fs-6"></i>
+                <div class="fs-8">
+                    <strong class="text-danger">Chưa tìm thấy mã giao dịch ${refVal}!</strong><br>
+                    <span>Hệ thống chưa ghi nhận biến động số dư khớp với mã giao dịch này trên tài khoản BIDV. Vui lòng kiểm tra lại biên lai chuyển khoản.</span>
+                </div>
+            </div>`;
+    }
+    showToast('Chưa ghi nhận biến động số dư cho mã giao dịch ' + refVal + '!', 'warning');
 }
 
 function showPaymentStep(step) {

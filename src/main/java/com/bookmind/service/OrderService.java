@@ -280,48 +280,4 @@ public class OrderService {
 
         return dto;
     }
-
-    @Transactional
-    public java.util.Map<String, Object> confirmCustomerTransfer(String trackingNumber) {
-        if (trackingNumber == null || trackingNumber.isBlank()) {
-            throw new IllegalArgumentException("Mã đơn hàng không hợp lệ!");
-        }
-        String normalized = trackingNumber.trim().toUpperCase();
-        java.util.Optional<Order> orderOpt = orderRepository.findByTrackingNumber(normalized);
-        if (orderOpt.isEmpty() && !normalized.startsWith("BM-") && normalized.startsWith("BM")) {
-            orderOpt = orderRepository.findByTrackingNumber("BM-" + normalized.substring(2));
-        }
-        if (orderOpt.isEmpty()) {
-            throw new IllegalArgumentException("Không tìm thấy đơn hàng: " + trackingNumber);
-        }
-
-        Order order = orderOpt.get();
-        order.setStatus(OrderStatus.CONFIRMED);
-        invoiceService.ensureInvoiceGenerated(order);
-        orderRepository.save(order);
-
-        List<Payment> payments = paymentRepository.findByOrderId(order.getId());
-        Payment payment = payments.isEmpty() ? new Payment() : payments.get(0);
-        payment.setOrder(order);
-        payment.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
-        payment.setPaymentStatus(PaymentStatus.COMPLETED);
-        payment.setPaymentDate(LocalDateTime.now());
-        if (payment.getTransactionId() == null) {
-            payment.setTransactionId("CK-" + System.currentTimeMillis());
-            payment.setTransactionRef("CK-" + order.getTrackingNumber());
-        }
-        paymentRepository.save(payment);
-
-        java.util.Map<String, Object> res = new java.util.HashMap<>();
-        res.put("paid", true);
-        res.put("isPaid", true);
-        res.put("orderId", order.getId());
-        res.put("trackingNumber", order.getTrackingNumber());
-        res.put("amount", order.getTotalAmount());
-        res.put("status", order.getStatus().name());
-        res.put("invoiceNumber", order.getInvoiceNumber());
-
-        log.info("Customer confirmed transfer for order #{} (tracking: {}) successfully.", order.getId(), order.getTrackingNumber());
-        return res;
-    }
 }
