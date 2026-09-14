@@ -114,31 +114,29 @@ public class AdminBookController {
                 slug = baseSlug + "-" + counter++;
             }
 
-            Book book = Book.builder()
-                    .title(dto.getTitle().trim())
-                    .slug(slug)
-                    .author(dto.getAuthor() != null ? dto.getAuthor().trim() : "")
-                    .publisher(dto.getPublisher() != null ? dto.getPublisher().trim() : "")
-                    .publicationYear(dto.getPublicationYear())
-                    .pages(dto.getPages())
-                    .isbn(dto.getIsbn() != null && !dto.getIsbn().isBlank() ? dto.getIsbn().trim() : null)
-                    .category(category)
-                    .description(dto.getDescription())
-                    .originalPrice(dto.getOriginalPrice() != null ? dto.getOriginalPrice() : dto.getSalePrice())
-                    .salePrice(dto.getSalePrice())
-                    .stockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : 0)
-                    .avgRating(BigDecimal.valueOf(5.0))
-                    .status(dto.getStatus() != null ? dto.getStatus() : BookStatus.AVAILABLE)
-                    .build();
+            Book book = new Book();
+            book.setTitle(dto.getTitle().trim());
+            book.setSlug(slug);
+            book.setAuthor(dto.getAuthor() != null ? dto.getAuthor().trim() : "");
+            book.setPublisher(dto.getPublisher() != null ? dto.getPublisher().trim() : "");
+            book.setPublicationYear(dto.getPublicationYear());
+            book.setPages(dto.getPages());
+            book.setIsbn(dto.getIsbn() != null && !dto.getIsbn().isBlank() ? dto.getIsbn().trim() : null);
+            book.setCategory(category);
+            book.setDescription(dto.getDescription());
+            book.setOriginalPrice(dto.getOriginalPrice() != null ? dto.getOriginalPrice() : dto.getSalePrice());
+            book.setSalePrice(dto.getSalePrice());
+            book.setStockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : 0);
+            book.setAvgRating(BigDecimal.valueOf(5.0));
+            book.setStatus(dto.getStatus() != null ? dto.getStatus() : BookStatus.AVAILABLE);
 
             Book savedBook = bookRepository.save(book);
 
             if (dto.getImageUrl() != null && !dto.getImageUrl().isBlank()) {
-                BookImage img = BookImage.builder()
-                        .book(savedBook)
-                        .imageUrl(dto.getImageUrl().trim())
-                        .isThumbnail(true)
-                        .build();
+                BookImage img = new BookImage();
+                img.setBook(savedBook);
+                img.setImageUrl(dto.getImageUrl().trim());
+                img.setIsThumbnail(true);
                 bookImageRepository.save(img);
             }
 
@@ -207,11 +205,10 @@ public class AdminBookController {
                     thumb.setImageUrl(dto.getImageUrl().trim());
                     bookImageRepository.save(thumb);
                 } else {
-                    BookImage img = BookImage.builder()
-                            .book(book)
-                            .imageUrl(dto.getImageUrl().trim())
-                            .isThumbnail(true)
-                            .build();
+                    BookImage img = new BookImage();
+                    img.setBook(book);
+                    img.setImageUrl(dto.getImageUrl().trim());
+                    img.setIsThumbnail(true);
                     bookImageRepository.save(img);
                 }
             }
