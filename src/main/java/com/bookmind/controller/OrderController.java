@@ -63,4 +63,14 @@ public class OrderController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @GetMapping("/tracking/{trackingNumber}")
+    public ResponseEntity<ApiResponse<OrderDto>> getOrderByTrackingNumber(@PathVariable("trackingNumber") String trackingNumber) {
+        try {
+            OrderDto dto = orderService.getOrderByTrackingNumber(trackingNumber);
+            return ResponseEntity.ok(ApiResponse.success("Tìm thấy đơn hàng", dto));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Không tìm thấy đơn hàng: " + e.getMessage()));
+        }
+    }
 }

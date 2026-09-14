@@ -3801,12 +3801,15 @@ function selectPaymentMethod(method) {
     currentCheckoutData.selectedMethod = method;
 
     const cardCOD = document.getElementById('cardMethodCOD');
+    const cardPAYOS = document.getElementById('cardMethodPAYOS');
     const cardVNPAY = document.getElementById('cardMethodVNPAY');
     const radioCOD = document.getElementById('payMethodCOD');
+    const radioPAYOS = document.getElementById('payMethodPAYOS');
     const radioVNPAY = document.getElementById('payMethodVNPAY');
     const submitBtn = document.getElementById('btnSubmitOrder');
 
     if (cardCOD) cardCOD.classList.remove('selected');
+    if (cardPAYOS) cardPAYOS.classList.remove('selected');
     if (cardVNPAY) cardVNPAY.classList.remove('selected');
 
     if (method === 'COD') {
@@ -3817,6 +3820,15 @@ function selectPaymentMethod(method) {
             submitBtn.style.background = '';
             submitBtn.style.borderColor = '';
             submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Xác Nhận Đặt Hàng (COD)';
+        }
+    } else if (method === 'PAYOS' || method === 'VIETQR') {
+        if (cardPAYOS) cardPAYOS.classList.add('selected');
+        if (radioPAYOS) radioPAYOS.checked = true;
+        if (submitBtn) {
+            submitBtn.className = 'btn rounded-pill py-2.5 fw-bold fs-7 shadow-sm text-white';
+            submitBtn.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
+            submitBtn.style.borderColor = '#1d4ed8';
+            submitBtn.innerHTML = '<i class="fas fa-qrcode me-1"></i> Quét Mã VietQR (PayOS) <i class="fas fa-arrow-right ms-1"></i>';
         }
     } else if (method === 'VNPAY') {
         if (cardVNPAY) cardVNPAY.classList.add('selected');
@@ -3902,6 +3914,73 @@ function processCheckoutSubmit() {
     currentCheckoutData.receiverPhone = phone;
     currentCheckoutData.shippingAddress = address;
     currentCheckoutData.note = note;
+
+    if (currentCheckoutData.selectedMethod === 'PAYOS' || currentCheckoutData.selectedMethod === 'VIETQR') {
+        const submitBtn = document.getElementById('btnSubmitOrder');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang tạo mã VietQR PayOS...';
+        }
+
+        const payload = {
+            userId: (currentUser && currentUser.id) ? currentUser.id : null,
+            receiverName: currentCheckoutData.receiverName,
+            receiverPhone: currentCheckoutData.receiverPhone,
+            shippingAddress: currentCheckoutData.shippingAddress,
+            note: currentCheckoutData.note,
+            trackingNumber: currentCheckoutData.orderCode,
+            paymentMethod: 'VIETQR',
+            subtotal: currentCheckoutData.subtotal,
+            shippingFee: 0,
+            totalAmount: currentCheckoutData.finalTotal,
+            items: currentCheckoutData.items.map(item => ({
+                bookId: item.id,
+                title: item.title,
+                author: item.author,
+                quantity: item.quantity,
+                price: item.price
+            }))
+        };
+
+        fetch('/api/payment/payos/create-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success && result.data && result.data.checkoutUrl) {
+                saveLocalOrder({
+                    id: result.data.orderId || Date.now(),
+                    trackingNumber: result.data.trackingNumber || currentCheckoutData.orderCode,
+                    createdAt: new Date().toISOString(),
+                    receiverName: currentCheckoutData.receiverName,
+                    receiverPhone: currentCheckoutData.receiverPhone,
+                    shippingAddress: currentCheckoutData.shippingAddress,
+                    totalAmount: currentCheckoutData.finalTotal,
+                    status: 'PENDING',
+                    paymentMethod: 'VIETQR',
+                    items: currentCheckoutData.items
+                });
+
+                showToast('Chuyển hướng đến cổng thanh toán PayOS VietQR...', 'info');
+                setTimeout(() => {
+                    window.location.href = result.data.checkoutUrl;
+                }, 300);
+            } else {
+                throw new Error(result.message || 'Không thể tạo mã thanh toán PayOS');
+            }
+        })
+        .catch(err => {
+            console.error('PayOS checkout error:', err);
+            showToast('Lỗi tạo mã PayOS: ' + err.message, 'error');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-qrcode me-1"></i> Thử Lại Quét Mã PayOS <i class="fas fa-arrow-right ms-1"></i>';
+            }
+        });
+        return;
+    }
 
     if (currentCheckoutData.selectedMethod === 'VNPAY') {
         const submitBtn = document.getElementById('btnSubmitOrder');
@@ -4234,7 +4313,8 @@ function renderOrdersList(orders, filter) {
 
         const isCOD = order.paymentMethod === 'COD';
         const isVNPAY = order.paymentMethod === 'VNPAY';
-        const paymentLabel = isCOD ? 'Thanh toán khi nhận hàng (COD)' : (isVNPAY ? 'Thanh toán Online VNPay' : (order.paymentMethod || 'Khác'));
+        const isVIETQR = order.paymentMethod === 'VIETQR' || order.paymentMethod === 'PAYOS';
+        const paymentLabel = isCOD ? 'Thanh toán khi nhận hàng (COD)' : (isVIETQR ? 'Chuyển khoản VietQR (PayOS)' : (isVNPAY ? 'Thanh toán Online VNPay' : (order.paymentMethod || 'Khác')));
         const paymentBadgeClass = isCOD ? 'bg-secondary-subtle text-secondary' : 'bg-primary-subtle text-primary';
 
         const dateFormatted = order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : 'Vừa xong';

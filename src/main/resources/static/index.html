@@ -683,7 +683,26 @@
                                 <span class="badge bg-secondary-subtle text-secondary fs-9">Tiện lợi</span>
                             </label>
 
-                            <!-- Option 2: VNPay Online Payment -->
+                            <!-- Option 2: PayOS VietQR Payment -->
+                            <label class="payment-method-card border rounded-3 p-2.5 d-flex align-items-center gap-3"
+                                id="cardMethodPAYOS" style="cursor: pointer;" onclick="selectPaymentMethod('PAYOS')">
+                                <input class="form-check-input mt-0" type="radio" name="checkoutPaymentMethod"
+                                    id="payMethodPAYOS" value="PAYOS">
+                                <div class="d-flex align-items-center justify-content-center rounded-3 p-1"
+                                    style="width: 44px; height: 38px; background: #eef2ff;">
+                                    <i class="fas fa-qrcode text-primary fs-5"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold fs-7 text-dark d-flex align-items-center gap-1">
+                                        <span>Chuyển khoản VietQR (PayOS)</span>
+                                        <span class="badge bg-danger-subtle text-danger fs-9 py-0.5 px-1.5 rounded-pill fw-bold">BIDV 24/7</span>
+                                    </div>
+                                    <small class="text-muted fs-8">Quét mã QR chuyển thẳng BIDV <b>5150739935</b> (HO SY THANH), tự động xác nhận đơn</small>
+                                </div>
+                                <span class="badge bg-success-subtle text-success fs-9 fw-bold">Tự động 24/7</span>
+                            </label>
+
+                            <!-- Option 3: VNPay Online Payment -->
                             <label class="payment-method-card border rounded-3 p-2.5 d-flex align-items-center gap-3"
                                 id="cardMethodVNPAY" style="cursor: pointer;" onclick="selectPaymentMethod('VNPAY')">
                                 <input class="form-check-input mt-0" type="radio" name="checkoutPaymentMethod"

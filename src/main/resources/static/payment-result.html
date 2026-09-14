@@ -198,6 +198,63 @@
                 allParams[k] = v;
             }
 
+            const isPayOS = (allParams['status'] === 'PAID' || allParams['code'] === '00') && !allParams['vnp_ResponseCode'] && (allParams['orderCode'] || allParams['id']);
+
+            if (isPayOS) {
+                const orderCode = allParams['orderCode'] || '';
+                const trackingNumber = 'BM-' + orderCode;
+                const txnRef = trackingNumber;
+                const txnNo = allParams['id'] || orderCode;
+                const bankCode = 'VietQR (PayOS - BIDV)';
+                const isSuccess = (allParams['status'] === 'PAID' || allParams['code'] === '00') && allParams['cancel'] !== 'true';
+
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('resultContent').style.display = 'block';
+
+                document.getElementById('displayTxnRef').textContent = txnRef;
+                document.getElementById('displayTransactionNo').textContent = txnNo;
+                document.getElementById('displayBankCode').textContent = bankCode;
+                document.getElementById('displayTime').textContent = new Date().toLocaleString('vi-VN');
+
+                if (isSuccess) {
+                    document.getElementById('statusIcon').className = 'status-icon-wrapper status-success';
+                    document.getElementById('statusIcon').innerHTML = '<i class="fas fa-check"></i>';
+                    document.getElementById('statusTitle').textContent = 'Thanh Toán PayOS Thành Công! 🎉';
+                    document.getElementById('statusTitle').className = 'fw-bold text-success mb-1';
+                    document.getElementById('statusDesc').textContent = 'Giao dịch chuyển khoản qua cổng VietQR PayOS đã hoàn tất. Tiền đã về tài khoản ngân hàng BIDV và đơn hàng đã được tự động xác nhận.';
+
+                    try {
+                        localStorage.removeItem('bookmind_cart');
+                        localStorage.removeItem('bookmind_selected_cart');
+                    } catch (e) {}
+
+                    try {
+                        const orderRes = await fetch('/api/orders/tracking/' + encodeURIComponent(trackingNumber));
+                        const orderResult = await orderRes.json();
+                        if (orderResult && orderResult.success && orderResult.data) {
+                            const ord = orderResult.data;
+                            currentOrderId = ord.id;
+                            document.getElementById('displayAmount').textContent = formatCurrency(ord.totalAmount || 0);
+                            const printBtn = document.getElementById('btnPrintInvoice');
+                            if (printBtn) printBtn.style.display = 'inline-block';
+                            if (ord.trackingNumber) {
+                                document.getElementById('invoiceRow').style.display = 'flex';
+                                document.getElementById('displayInvoice').textContent = 'HD-' + ord.trackingNumber;
+                            }
+                        }
+                    } catch (oe) {
+                        console.warn('Could not fetch order details for PayOS return:', oe);
+                    }
+                } else {
+                    document.getElementById('statusIcon').className = 'status-icon-wrapper status-failed';
+                    document.getElementById('statusIcon').innerHTML = '<i class="fas fa-times"></i>';
+                    document.getElementById('statusTitle').textContent = 'Thanh Toán PayOS Bị Hủy';
+                    document.getElementById('statusTitle').className = 'fw-bold text-danger mb-1';
+                    document.getElementById('statusDesc').textContent = 'Bạn đã hủy hoặc chưa hoàn tất chuyển khoản trên cổng PayOS.';
+                }
+                return;
+            }
+
             const responseCode = allParams['vnp_ResponseCode'];
             const txnRef = allParams['vnp_TxnRef'] || '---';
             const rawAmount = allParams['vnp_Amount'];
@@ -257,6 +314,8 @@
                         errorMsg = 'Tài khoản không đủ số dư để thực hiện giao dịch.';
                     } else if (responseCode === '11') {
                         errorMsg = 'Đã hết thời gian chờ thanh toán.';
+                    } else if (responseCode === '15') {
+                        errorMsg = 'Giao dịch quá thời gian chờ thanh toán.';
                     }
                     document.getElementById('statusDesc').textContent = errorMsg;
                 }

@@ -81,10 +81,11 @@ public class InvoiceService {
                 : "PENDING";
 
         boolean isVnpay = primaryPayment != null && primaryPayment.getPaymentMethod() == PaymentMethod.VNPAY;
-        String methodDisplay = isVnpay ? "Thanh toán Online VNPay" : "Thanh toán khi nhận hàng (COD)";
+        boolean isVietQR = primaryPayment != null && primaryPayment.getPaymentMethod() == PaymentMethod.VIETQR;
+        String methodDisplay = isVnpay ? "Thanh toán Online VNPay" : (isVietQR ? "Chuyển khoản VietQR (PayOS)" : "Thanh toán khi nhận hàng (COD)");
         String signatureDisplay = isVnpay
                 ? "Xác thực chữ ký điện tử VNPay Secure Hash (HMAC-SHA512)"
-                : "Xác nhận đơn hàng giao COD (BookMind Store)";
+                : (isVietQR ? "Xác thực giao dịch tự động qua cổng PayOS VietQR" : "Xác nhận đơn hàng giao COD (BookMind Store)");
 
         return InvoiceDto.builder()
                 .invoiceNumber(order.getInvoiceNumber())

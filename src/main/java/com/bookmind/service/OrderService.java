@@ -162,6 +162,9 @@ public class OrderService {
         if ("VNPAY".equalsIgnoreCase(methodStr)) {
             paymentMethod = PaymentMethod.VNPAY;
             paymentStatus = PaymentStatus.PENDING;
+        } else if ("VIETQR".equalsIgnoreCase(methodStr) || "PAYOS".equalsIgnoreCase(methodStr)) {
+            paymentMethod = PaymentMethod.VIETQR;
+            paymentStatus = PaymentStatus.PENDING;
         } else {
             paymentMethod = PaymentMethod.COD;
             paymentStatus = PaymentStatus.PENDING;
@@ -201,6 +204,12 @@ public class OrderService {
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Trạng thái đơn hàng không hợp lệ: " + newStatus);
         }
+    }
+
+    public OrderDto getOrderByTrackingNumber(String trackingNumber) {
+        Order order = orderRepository.findByTrackingNumber(trackingNumber)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + trackingNumber));
+        return convertEntityToDto(order);
     }
 
     private OrderDto convertEntityToDto(Order order) {
