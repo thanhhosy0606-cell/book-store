@@ -138,16 +138,15 @@ public class AdminUserController {
             String encodedName = URLEncoder.encode(fullName.trim(), StandardCharsets.UTF_8);
             String avatarUrl = "https://ui-avatars.com/api/?name=" + encodedName + "&background=4f46e5&color=fff";
 
-            User newUser = User.builder()
-                    .fullName(fullName.trim())
-                    .email(cleanEmail)
-                    .phone(cleanPhone)
-                    .password(passwordEncoder.encode(password.trim()))
-                    .avatarUrl(avatarUrl)
-                    .status(UserStatus.ACTIVE)
-                    .emailVerified(true)
-                    .roles(new HashSet<>(Collections.singletonList(adminRole)))
-                    .build();
+            User newUser = new User();
+            newUser.setFullName(fullName.trim());
+            newUser.setEmail(cleanEmail);
+            newUser.setPhone(cleanPhone);
+            newUser.setPassword(passwordEncoder.encode(password.trim()));
+            newUser.setAvatarUrl(avatarUrl);
+            newUser.setStatus(UserStatus.ACTIVE);
+            newUser.setEmailVerified(true);
+            newUser.setRoles(new HashSet<>(Collections.singletonList(adminRole)));
 
             User savedUser = userRepository.save(newUser);
 

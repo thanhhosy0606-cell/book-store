@@ -27,62 +27,83 @@ public class CouponService {
         this.bookRepository = bookRepository;
     }
 
+    private Coupon createCouponEntity(String code, String title, String description,
+                                     String discountType, Double discountValue,
+                                     Double minOrderAmount, Double maxDiscountAmount,
+                                     Integer usageLimit, String badgeText,
+                                     String badgeColor, Boolean isActive) {
+        Coupon c = new Coupon();
+        c.setCode(code);
+        c.setTitle(title);
+        c.setDescription(description != null ? description : "");
+        c.setDiscountType(discountType != null ? discountType : "PERCENT");
+        c.setDiscountValue(discountValue != null ? discountValue : Double.valueOf(0.0));
+        c.setMinOrderAmount(minOrderAmount != null ? minOrderAmount : Double.valueOf(0.0));
+        c.setMaxDiscountAmount(maxDiscountAmount);
+        c.setUsageLimit(usageLimit);
+        c.setUsedCount(0);
+        c.setBadgeText(badgeText != null && !badgeText.isBlank() ? badgeText : "ƯU ĐÃI ✨");
+        c.setBadgeColor(badgeColor != null && !badgeColor.isBlank() ? badgeColor : "danger");
+        c.setIsActive(isActive != null ? isActive : Boolean.TRUE);
+        return c;
+    }
+
     @PostConstruct
     @Transactional
     public void initDefaultCoupons() {
         if (couponRepository.count() == 0) {
             log.info("Khởi tạo danh sách mã khuyến mãi mặc định...");
-            couponRepository.save(Coupon.builder()
-                    .code("AI10")
-                    .title("Giảm 10% Toàn Đơn")
-                    .description("Áp dụng cho mọi giá trị đơn hàng, giảm tối đa 50.000đ")
-                    .discountType("PERCENT")
-                    .discountValue(10.0)
-                    .minOrderAmount(0.0)
-                    .maxDiscountAmount(50000.0)
-                    .badgeText("HOT 🔥")
-                    .badgeColor("danger")
-                    .isActive(true)
-                    .build());
+            couponRepository.save(createCouponEntity(
+                    "AI10",
+                    "Giảm 10% Toàn Đơn",
+                    "Áp dụng cho mọi giá trị đơn hàng, giảm tối đa 50.000đ",
+                    "PERCENT",
+                    Double.valueOf(10.0),
+                    Double.valueOf(0.0),
+                    Double.valueOf(50000.0),
+                    null,
+                    "HOT 🔥",
+                    "danger",
+                    Boolean.TRUE));
 
-            couponRepository.save(Coupon.builder()
-                    .code("BOOK20K")
-                    .title("Giảm 20.000đ")
-                    .description("Áp dụng cho đơn hàng từ 200.000đ trở lên")
-                    .discountType("FIXED")
-                    .discountValue(20000.0)
-                    .minOrderAmount(200000.0)
-                    .maxDiscountAmount(20000.0)
-                    .badgeText("PHỔ BIẾN ⭐")
-                    .badgeColor("primary")
-                    .isActive(true)
-                    .build());
+            couponRepository.save(createCouponEntity(
+                    "BOOK20K",
+                    "Giảm 20.000đ",
+                    "Áp dụng cho đơn hàng từ 200.000đ trở lên",
+                    "FIXED",
+                    Double.valueOf(20000.0),
+                    Double.valueOf(200000.0),
+                    Double.valueOf(20000.0),
+                    null,
+                    "PHỔ BIẾN ⭐",
+                    "primary",
+                    Boolean.TRUE));
 
-            couponRepository.save(Coupon.builder()
-                    .code("NEWBIE")
-                    .title("Giảm 15.000đ Bạn Mới")
-                    .description("Áp dụng đơn hàng từ 100.000đ cho độc giả mới")
-                    .discountType("FIXED")
-                    .discountValue(15000.0)
-                    .minOrderAmount(100000.0)
-                    .maxDiscountAmount(15000.0)
-                    .badgeText("QUÀ TẶNG 🎁")
-                    .badgeColor("success")
-                    .isActive(true)
-                    .build());
+            couponRepository.save(createCouponEntity(
+                    "NEWBIE",
+                    "Giảm 15.000đ Bạn Mới",
+                    "Áp dụng đơn hàng từ 100.000đ cho độc giả mới",
+                    "FIXED",
+                    Double.valueOf(15000.0),
+                    Double.valueOf(100000.0),
+                    Double.valueOf(15000.0),
+                    null,
+                    "QUÀ TẶNG 🎁",
+                    "success",
+                    Boolean.TRUE));
 
-            couponRepository.save(Coupon.builder()
-                    .code("VIP50K")
-                    .title("Giảm 50.000đ Đơn Lớn")
-                    .description("Áp dụng cho đơn hàng từ 400.000đ trở lên")
-                    .discountType("FIXED")
-                    .discountValue(50000.0)
-                    .minOrderAmount(400000.0)
-                    .maxDiscountAmount(50000.0)
-                    .badgeText("TIẾT KIỆM 💰")
-                    .badgeColor("warning")
-                    .isActive(true)
-                    .build());
+            couponRepository.save(createCouponEntity(
+                    "VIP50K",
+                    "Giảm 50.000đ Đơn Lớn",
+                    "Áp dụng cho đơn hàng từ 400.000đ trở lên",
+                    "FIXED",
+                    Double.valueOf(50000.0),
+                    Double.valueOf(400000.0),
+                    Double.valueOf(50000.0),
+                    null,
+                    "TIẾT KIỆM 💰",
+                    "warning",
+                    Boolean.TRUE));
             log.info("Khởi tạo mã khuyến mãi mặc định thành công!");
         }
     }
@@ -108,20 +129,19 @@ public class CouponService {
             throw new IllegalArgumentException("Mã khuyến mãi \"" + cleanCode + "\" đã tồn tại trên hệ thống!");
         }
 
-        Coupon coupon = Coupon.builder()
-                .code(cleanCode)
-                .title(dto.getTitle().trim())
-                .description(dto.getDescription() != null ? dto.getDescription().trim() : "")
-                .discountType(dto.getDiscountType() != null ? dto.getDiscountType() : "PERCENT")
-                .discountValue(dto.getDiscountValue() != null ? dto.getDiscountValue() : 0.0)
-                .minOrderAmount(dto.getMinOrderAmount() != null ? dto.getMinOrderAmount() : 0.0)
-                .maxDiscountAmount(dto.getMaxDiscountAmount())
-                .usageLimit(dto.getUsageLimit())
-                .usedCount(0)
-                .badgeText(dto.getBadgeText() != null && !dto.getBadgeText().isBlank() ? dto.getBadgeText().trim() : "ƯU ĐÃI ✨")
-                .badgeColor(dto.getBadgeColor() != null && !dto.getBadgeColor().isBlank() ? dto.getBadgeColor().trim() : "danger")
-                .isActive(dto.getIsActive() != null ? dto.getIsActive() : true)
-                .build();
+        Coupon coupon = createCouponEntity(
+                cleanCode,
+                dto.getTitle().trim(),
+                dto.getDescription() != null ? dto.getDescription().trim() : "",
+                dto.getDiscountType() != null ? dto.getDiscountType() : "PERCENT",
+                dto.getDiscountValue() != null ? dto.getDiscountValue() : Double.valueOf(0.0),
+                dto.getMinOrderAmount() != null ? dto.getMinOrderAmount() : Double.valueOf(0.0),
+                dto.getMaxDiscountAmount(),
+                dto.getUsageLimit(),
+                dto.getBadgeText() != null && !dto.getBadgeText().isBlank() ? dto.getBadgeText().trim() : "ƯU ĐÃI ✨",
+                dto.getBadgeColor() != null && !dto.getBadgeColor().isBlank() ? dto.getBadgeColor().trim() : "danger",
+                dto.getIsActive() != null ? dto.getIsActive() : Boolean.TRUE
+        );
 
         Coupon saved = couponRepository.save(coupon);
         return mapToDto(saved);
@@ -141,8 +161,8 @@ public class CouponService {
         coupon.setTitle(dto.getTitle().trim());
         coupon.setDescription(dto.getDescription() != null ? dto.getDescription().trim() : "");
         coupon.setDiscountType(dto.getDiscountType() != null ? dto.getDiscountType() : "PERCENT");
-        coupon.setDiscountValue(dto.getDiscountValue() != null ? dto.getDiscountValue() : 0.0);
-        coupon.setMinOrderAmount(dto.getMinOrderAmount() != null ? dto.getMinOrderAmount() : 0.0);
+        coupon.setDiscountValue(dto.getDiscountValue() != null ? dto.getDiscountValue() : Double.valueOf(0.0));
+        coupon.setMinOrderAmount(dto.getMinOrderAmount() != null ? dto.getMinOrderAmount() : Double.valueOf(0.0));
         coupon.setMaxDiscountAmount(dto.getMaxDiscountAmount());
         coupon.setUsageLimit(dto.getUsageLimit());
         if (dto.getBadgeText() != null && !dto.getBadgeText().isBlank()) {
@@ -164,7 +184,7 @@ public class CouponService {
         Coupon coupon = couponRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mã khuyến mãi #" + id));
 
-        coupon.setIsActive(!coupon.getIsActive());
+        coupon.setIsActive(!Boolean.TRUE.equals(coupon.getIsActive()));
         Coupon saved = couponRepository.save(coupon);
         return mapToDto(saved);
     }
@@ -277,21 +297,21 @@ public class CouponService {
     }
 
     private CouponDto mapToDto(Coupon c) {
-        return CouponDto.builder()
-                .id(c.getId())
-                .code(c.getCode())
-                .title(c.getTitle())
-                .description(c.getDescription())
-                .discountType(c.getDiscountType())
-                .discountValue(c.getDiscountValue())
-                .minOrderAmount(c.getMinOrderAmount())
-                .maxDiscountAmount(c.getMaxDiscountAmount())
-                .usageLimit(c.getUsageLimit())
-                .usedCount(c.getUsedCount())
-                .badgeText(c.getBadgeText())
-                .badgeColor(c.getBadgeColor())
-                .isActive(c.getIsActive())
-                .createdAt(c.getCreatedAt())
-                .build();
+        CouponDto dto = new CouponDto();
+        dto.setId(c.getId());
+        dto.setCode(c.getCode());
+        dto.setTitle(c.getTitle());
+        dto.setDescription(c.getDescription());
+        dto.setDiscountType(c.getDiscountType());
+        dto.setDiscountValue(c.getDiscountValue());
+        dto.setMinOrderAmount(c.getMinOrderAmount());
+        dto.setMaxDiscountAmount(c.getMaxDiscountAmount());
+        dto.setUsageLimit(c.getUsageLimit());
+        dto.setUsedCount(c.getUsedCount());
+        dto.setBadgeText(c.getBadgeText());
+        dto.setBadgeColor(c.getBadgeColor());
+        dto.setIsActive(c.getIsActive());
+        dto.setCreatedAt(c.getCreatedAt());
+        return dto;
     }
 }

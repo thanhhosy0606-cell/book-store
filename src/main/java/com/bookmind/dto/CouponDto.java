@@ -24,6 +24,7 @@ public class CouponDto {
     private String badgeColor;
     private Boolean isActive;
     private LocalDateTime createdAt;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -65,4 +66,59 @@ public class CouponDto {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public static CouponDtoBuilder builder() {
+        return new CouponDtoBuilder();
+    }
+
+    public static class CouponDtoBuilder {
+        private Long id;
+        private String code;
+        private String title;
+        private String description;
+        private String discountType;
+        private Double discountValue;
+        private Double minOrderAmount;
+        private Double maxDiscountAmount;
+        private Integer usageLimit;
+        private Integer usedCount;
+        private String badgeText;
+        private String badgeColor;
+        private Boolean isActive;
+        private LocalDateTime createdAt;
+
+        public CouponDtoBuilder id(Long id) { this.id = id; return this; }
+        public CouponDtoBuilder code(String code) { this.code = code; return this; }
+        public CouponDtoBuilder title(String title) { this.title = title; return this; }
+        public CouponDtoBuilder description(String description) { this.description = description; return this; }
+        public CouponDtoBuilder discountType(String discountType) { this.discountType = discountType; return this; }
+        public CouponDtoBuilder discountValue(Double discountValue) { this.discountValue = discountValue; return this; }
+        public CouponDtoBuilder minOrderAmount(Double minOrderAmount) { this.minOrderAmount = minOrderAmount; return this; }
+        public CouponDtoBuilder maxDiscountAmount(Double maxDiscountAmount) { this.maxDiscountAmount = maxDiscountAmount; return this; }
+        public CouponDtoBuilder usageLimit(Integer usageLimit) { this.usageLimit = usageLimit; return this; }
+        public CouponDtoBuilder usedCount(Integer usedCount) { this.usedCount = usedCount; return this; }
+        public CouponDtoBuilder badgeText(String badgeText) { this.badgeText = badgeText; return this; }
+        public CouponDtoBuilder badgeColor(String badgeColor) { this.badgeColor = badgeColor; return this; }
+        public CouponDtoBuilder isActive(Boolean isActive) { this.isActive = isActive; return this; }
+        public CouponDtoBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
+
+        public CouponDto build() {
+            CouponDto dto = new CouponDto();
+            dto.setId(this.id);
+            dto.setCode(this.code);
+            dto.setTitle(this.title);
+            dto.setDescription(this.description);
+            dto.setDiscountType(this.discountType);
+            dto.setDiscountValue(this.discountValue);
+            dto.setMinOrderAmount(this.minOrderAmount);
+            dto.setMaxDiscountAmount(this.maxDiscountAmount);
+            dto.setUsageLimit(this.usageLimit);
+            dto.setUsedCount(this.usedCount);
+            dto.setBadgeText(this.badgeText);
+            dto.setBadgeColor(this.badgeColor);
+            dto.setIsActive(this.isActive);
+            dto.setCreatedAt(this.createdAt);
+            return dto;
+        }
+    }
 }
