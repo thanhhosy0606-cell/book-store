@@ -49,9 +49,8 @@ public class PayOSService {
 
         try {
             // PayOS orderCode phải là số nguyên dương <= 9007199254740991
-            long orderCode = (order.getId() != null && order.getId() > 0)
-                    ? (order.getId() + 100000L)
-                    : (System.currentTimeMillis() % 1000000000L);
+            // Dùng 10 chữ số timestamp để đảm bảo tính duy nhất tuyệt đối không bị trùng lặp trên PayOS
+            long orderCode = Long.parseLong(String.valueOf(System.currentTimeMillis()).substring(3));
 
             int amount = order.getTotalAmount() != null ? order.getTotalAmount().intValue() : 0;
             if (amount <= 0) {
@@ -60,8 +59,14 @@ public class PayOSService {
                 return result;
             }
 
+            // Đồng bộ tracking number nếu cần
+            if (order.getTrackingNumber() == null || order.getTrackingNumber().isBlank()) {
+                order.setTrackingNumber("BM-" + orderCode);
+                orderRepository.save(order);
+            }
+
             // Description trong PayOS giới hạn tối đa 25 ký tự không dấu
-            String desc = "DH " + (order.getTrackingNumber() != null ? order.getTrackingNumber() : String.valueOf(orderCode));
+            String desc = "DH BM " + (order.getId() != null ? order.getId() : orderCode);
             if (desc.length() > 25) {
                 desc = desc.substring(0, 25);
             }
