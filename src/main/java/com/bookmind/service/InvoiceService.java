@@ -60,7 +60,7 @@ public class InvoiceService {
         if (order.getOrderDetails() != null) {
             for (OrderDetail d : order.getOrderDetails()) {
                 BigDecimal unitPrice = d.getUnitPrice() != null ? d.getUnitPrice() : BigDecimal.ZERO;
-                int qty = d.getQuantity() != null ? d.getQuantity() : 1;
+                int qty = (d.getQuantity() != null) ? d.getQuantity().intValue() : 1;
                 BigDecimal itemTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
                 itemDtos.add(InvoiceDto.InvoiceItemDto.builder()
                         .title(d.getBook() != null ? d.getBook().getTitle() : "Sách")
@@ -114,7 +114,7 @@ public class InvoiceService {
 
     public String renderInvoiceHtml(Long orderId) {
         InvoiceDto inv = getInvoice(orderId);
-        Locale localeVN = new Locale("vi", "VN");
+        Locale localeVN = Locale.forLanguageTag("vi-VN");
         NumberFormat currencyVN = NumberFormat.getCurrencyInstance(localeVN);
 
         StringBuilder itemsHtml = new StringBuilder();
