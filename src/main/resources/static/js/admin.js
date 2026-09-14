@@ -8,9 +8,13 @@ let allOrdersData = [];
 let allCategoriesData = [];
 let allUsersData = [];
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initAdminAuth();
+    });
+} else {
     initAdminAuth();
-});
+}
 
 // =====================================================
 // AUTHENTICATION & ROLE CHECK

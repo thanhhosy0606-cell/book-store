@@ -69,11 +69,9 @@ public class PayOSService {
                 return result;
             }
 
-            // Đồng bộ tracking number
-            if (order.getTrackingNumber() == null || order.getTrackingNumber().isBlank()) {
-                order.setTrackingNumber("BM-" + orderCode);
-                orderRepository.save(order);
-            }
+            // Luôn đồng bộ tracking number thành "BM-" + orderCode để đồng nhất 100% với PayOS orderCode, Webhook và trang kết quả
+            order.setTrackingNumber("BM-" + orderCode);
+            orderRepository.save(order);
 
             // Description trong PayOS tối đa 25 ký tự không dấu
             String desc = "DH BM " + (order.getId() != null ? order.getId() : orderCode);

@@ -103,29 +103,40 @@ public class AdminOrderController {
             paymentStatus = p.getPaymentStatus() != null ? p.getPaymentStatus().name() : "PENDING";
         }
 
-        List<AdminOrderDto.AdminOrderItemDto> itemDtos = null;
-        if (order.getOrderDetails() != null) {
-            itemDtos = order.getOrderDetails().stream().map(d -> {
-                Book b = d.getBook();
-                Long bookId = b != null ? b.getId() : null;
-                String title = b != null ? b.getTitle() : "Sách";
-                String img = "";
-                if (b != null && b.getImages() != null && !b.getImages().isEmpty()) {
-                    img = b.getImages().get(0).getImageUrl();
-                }
-                BigDecimal price = d.getUnitPrice() != null ? d.getUnitPrice() : BigDecimal.ZERO;
-                int qty = (d.getQuantity() != null) ? d.getQuantity().intValue() : 0;
-                BigDecimal sub = price.multiply(BigDecimal.valueOf(qty));
+        List<AdminOrderDto.AdminOrderItemDto> itemDtos = new ArrayList<>();
+        try {
+            if (order.getOrderDetails() != null) {
+                for (com.bookmind.entity.OrderDetail d : order.getOrderDetails()) {
+                    try {
+                        Book b = d.getBook();
+                        Long bookId = b != null ? b.getId() : null;
+                        String title = b != null ? b.getTitle() : "Sách";
+                        String img = "";
+                        try {
+                            if (b != null && b.getImages() != null && !b.getImages().isEmpty()) {
+                                img = b.getImages().get(0).getImageUrl();
+                            }
+                        } catch (Exception ignore) {}
 
-                return AdminOrderDto.AdminOrderItemDto.builder()
-                        .bookId(bookId)
-                        .bookTitle(title)
-                        .bookImage(img)
-                        .quantity(qty)
-                        .unitPrice(price)
-                        .subtotal(sub)
-                        .build();
-            }).collect(Collectors.toList());
+                        BigDecimal price = d.getUnitPrice() != null ? d.getUnitPrice() : BigDecimal.ZERO;
+                        int qty = (d.getQuantity() != null) ? d.getQuantity().intValue() : 0;
+                        BigDecimal sub = price.multiply(BigDecimal.valueOf(qty));
+
+                        itemDtos.add(AdminOrderDto.AdminOrderItemDto.builder()
+                                .bookId(bookId)
+                                .bookTitle(title)
+                                .bookImage(img)
+                                .quantity(qty)
+                                .unitPrice(price)
+                                .subtotal(sub)
+                                .build());
+                    } catch (Exception itemEx) {
+                        log.warn("Error mapping order detail item: {}", itemEx.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error accessing orderDetails for order #{}: {}", order.getId(), e.getMessage());
         }
 
         return AdminOrderDto.builder()

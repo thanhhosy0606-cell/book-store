@@ -198,7 +198,7 @@
                 allParams[k] = v;
             }
 
-            const isPayOS = (allParams['status'] === 'PAID' || allParams['code'] === '00') && !allParams['vnp_ResponseCode'] && (allParams['orderCode'] || allParams['id']);
+            const isPayOS = !!(allParams['orderCode'] || (allParams['id'] && !allParams['vnp_ResponseCode']));
 
             if (isPayOS) {
                 const orderCode = allParams['orderCode'] || '';
@@ -228,11 +228,13 @@
                         localStorage.removeItem('bookmind_selected_cart');
                     } catch (e) {}
 
+                    // Xác nhận đơn hàng trực tiếp với backend (phòng trường hợp webhook chưa tới)
                     try {
-                        const orderRes = await fetch('/api/orders/tracking/' + encodeURIComponent(trackingNumber));
-                        const orderResult = await orderRes.json();
-                        if (orderResult && orderResult.success && orderResult.data) {
-                            const ord = orderResult.data;
+                        const confirmUrl = `/api/payment/payos/confirm-return?orderCode=${encodeURIComponent(orderCode)}&id=${encodeURIComponent(allParams['id'] || '')}&status=${encodeURIComponent(allParams['status'] || 'PAID')}&code=${encodeURIComponent(allParams['code'] || '00')}`;
+                        const confirmRes = await fetch(confirmUrl);
+                        const confirmResult = await confirmRes.json();
+                        if (confirmResult && confirmResult.success && confirmResult.data) {
+                            const ord = confirmResult.data;
                             currentOrderId = ord.id;
                             document.getElementById('displayAmount').textContent = formatCurrency(ord.totalAmount || 0);
                             const printBtn = document.getElementById('btnPrintInvoice');
@@ -242,8 +244,29 @@
                                 document.getElementById('displayInvoice').textContent = 'HD-' + ord.trackingNumber;
                             }
                         }
-                    } catch (oe) {
-                        console.warn('Could not fetch order details for PayOS return:', oe);
+                    } catch (ce) {
+                        console.warn('Confirm-return call error:', ce);
+                    }
+
+                    // Fallback tải chi tiết đơn nếu confirmResult chưa hiển thị
+                    if (!currentOrderId) {
+                        try {
+                            const orderRes = await fetch('/api/orders/tracking/' + encodeURIComponent(trackingNumber));
+                            const orderResult = await orderRes.json();
+                            if (orderResult && orderResult.success && orderResult.data) {
+                                const ord = orderResult.data;
+                                currentOrderId = ord.id;
+                                document.getElementById('displayAmount').textContent = formatCurrency(ord.totalAmount || 0);
+                                const printBtn = document.getElementById('btnPrintInvoice');
+                                if (printBtn) printBtn.style.display = 'inline-block';
+                                if (ord.trackingNumber) {
+                                    document.getElementById('invoiceRow').style.display = 'flex';
+                                    document.getElementById('displayInvoice').textContent = 'HD-' + ord.trackingNumber;
+                                }
+                            }
+                        } catch (oe) {
+                            console.warn('Could not fetch order details for PayOS return:', oe);
+                        }
                     }
                 } else {
                     document.getElementById('statusIcon').className = 'status-icon-wrapper status-failed';

@@ -129,6 +129,7 @@ public class OrderService {
                     detail.setQuantity(quantity);
                     detail.setUnitPrice(itemReq.getPrice() != null ? itemReq.getPrice() : book.getSalePrice());
                     orderDetailRepository.save(detail);
+                    savedOrder.getOrderDetails().add(detail);
 
                     // Trừ tồn kho và chuyển trạng thái nếu hết hàng
                     if (book.getStockQuantity() != null) {

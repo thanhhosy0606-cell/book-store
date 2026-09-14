@@ -98,6 +98,41 @@ public class PayOSController {
     }
 
     /**
+     * Xác nhận đơn hàng khi khách hàng thanh toán thành công và được PayOS chuyển hướng về payment-result.html
+     */
+    @RequestMapping(value = "/confirm-return", method = {RequestMethod.GET, RequestMethod.POST})
+    public ResponseEntity<ApiResponse<OrderDto>> confirmPayOSReturn(
+            @RequestParam(value = "orderCode", required = false) Long orderCode,
+            @RequestParam(value = "id", required = false) String paymentLinkId,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "code", required = false) String code) {
+
+        log.info("Received PayOS return confirmation: orderCode={}, status={}, code={}", orderCode, status, code);
+
+        if (orderCode == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Thiếu mã đơn hàng PayOS (orderCode)"));
+        }
+
+        boolean isPaid = "PAID".equalsIgnoreCase(status) || "00".equals(code);
+        if (!isPaid) {
+            return ResponseEntity.ok(ApiResponse.error("Giao dịch PayOS chưa hoàn tất hoặc đã bị hủy", null));
+        }
+
+        try {
+            boolean processed = payOSService.processSuccessfulPayment(orderCode, paymentLinkId, "PAYOS-RETURN-" + orderCode);
+            if (processed) {
+                OrderDto dto = orderService.getOrderByTrackingNumber("BM-" + orderCode);
+                return ResponseEntity.ok(ApiResponse.success("Xác nhận thanh toán PayOS thành công!", dto));
+            } else {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Không tìm thấy đơn hàng với mã BM-" + orderCode));
+            }
+        } catch (Exception e) {
+            log.error("Error confirming PayOS return", e);
+            return ResponseEntity.badRequest().body(ApiResponse.error("Lỗi xác nhận: " + e.getMessage()));
+        }
+    }
+
+    /**
      * Webhook nhận thông báo thanh toán tự động từ PayOS Cloud
      */
     @PostMapping("/webhook")
