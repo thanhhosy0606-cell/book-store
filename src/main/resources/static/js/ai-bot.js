@@ -226,7 +226,7 @@ const STORE_KEYWORDS = [
     'mua', 'ban', 'gia', 'bao nhieu', 'tien', 're', 'dat', 'tiet kiem', 'gia tot', 'duoi 150k', '150k',
     'giam gia', 'khuyen mai', 'uu dai', 'voucher', 'ma giam', 'sale', 'bestseller', 'ban chay',
     'ship', 'giao hang', 'van chuyen', 'phi ship', 'freeship', 'hoa toc', 'bao lau', 'nhan hang',
-    'thanh toan', 'chuyen khoan', 'ngan hang', 'qr', 'vietqr', 'payos', 'vnpay', 'cod', 'tien mat', 'atm', 'visa',
+    'thanh toan', 'vnpay', 'cod', 'tien mat', 'atm', 'visa',
     'doi tra', 'bao hanh', 'loi sach', 'tra hang',
     'don hang', 'gio hang', 'dat hang', 'tai khoan', 'dang nhap', 'dang ky',
     'nha sach', 'cua hang', 'bookmind', 'shop', 'hotline', 'dia chi', 'lien he',
@@ -416,8 +416,7 @@ function generateBotReply(userMessage, directBook = null) {
                   `• **Miễn phí vận chuyển (Freeship)** cho mọi đơn hàng từ **250.000₫**!\n\n` +
                   `💳 **Hình thức thanh toán:**\n` +
                   `• Thanh toán khi nhận hàng (**COD**).\n` +
-                  `• Chuyển khoản ngân hàng tự động qua **Mã QR VietQR** (xác nhận đơn tức thì).\n` +
-                  `• Thẻ ATM nội địa / Thẻ quốc tế Visa, Mastercard.\n\n` +
+                  `• Thanh toán Online qua **Cổng VNPay** (hỗ trợ Thẻ ATM nội địa NCB/..., VNPay-QR, Visa/Mastercard).\n\n` +
                   `🔄 **Chính sách đổi trả:**\n` +
                   `• Hỗ trợ đổi trả miễn phí trong vòng **7 ngày** nếu sách bị lỗi in ấn, rách hoặc hư hại trong quá trình vận chuyển.`,
             books: []

@@ -20,7 +20,7 @@ public class CreateOrderRequest {
     private String shippingAddress;
     private String note;
     private String trackingNumber;
-    private String paymentMethod; // COD, QR_TRANSFER, VIETQR, BANK_TRANSFER
+    private String paymentMethod; // COD, VNPAY
     private BigDecimal subtotal;
     private BigDecimal shippingFee;
     private BigDecimal totalAmount;

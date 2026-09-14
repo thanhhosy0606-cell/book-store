@@ -4,6 +4,7 @@ import com.bookmind.dto.InvoiceDto;
 import com.bookmind.entity.Order;
 import com.bookmind.entity.OrderDetail;
 import com.bookmind.entity.Payment;
+import com.bookmind.entity.enums.PaymentMethod;
 import com.bookmind.repository.OrderRepository;
 import com.bookmind.repository.PaymentRepository;
 import org.springframework.stereotype.Service;
@@ -79,6 +80,12 @@ public class InvoiceService {
                 ? primaryPayment.getPaymentStatus().name()
                 : "PENDING";
 
+        boolean isVnpay = primaryPayment != null && primaryPayment.getPaymentMethod() == PaymentMethod.VNPAY;
+        String methodDisplay = isVnpay ? "Thanh toán Online VNPay" : "Thanh toán khi nhận hàng (COD)";
+        String signatureDisplay = isVnpay
+                ? "Xác thực chữ ký điện tử VNPay Secure Hash (HMAC-SHA512)"
+                : "Xác nhận đơn hàng giao COD (BookMind Store)";
+
         return InvoiceDto.builder()
                 .invoiceNumber(order.getInvoiceNumber())
                 .orderId(order.getId())
@@ -98,10 +105,10 @@ public class InvoiceService {
                 .shippingFee(order.getShippingFee())
                 .discountAmount(BigDecimal.ZERO)
                 .totalAmount(order.getTotalAmount())
-                .paymentMethod("Chuyển khoản VietQR / Open Banking")
+                .paymentMethod(methodDisplay)
                 .paymentStatus(pStatus.equals("COMPLETED") ? "ĐÃ THANH TOÁN" : "CHỜ THANH TOÁN")
                 .transactionRef(txRef)
-                .digitalSignature("Xác thực điện tử qua Open Banking VietQR Napas247")
+                .digitalSignature(signatureDisplay)
                 .build();
     }
 
