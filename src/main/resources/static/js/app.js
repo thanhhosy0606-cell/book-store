@@ -2235,9 +2235,7 @@ function requireLogin(actionName = 'thực hiện thao tác này') {
     return true;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initApp();
-});
+
 
 const CATEGORY_SLUG_TO_ID = {
     'cong-nghe-ai': 'tech',
@@ -5589,6 +5587,14 @@ async function handleUpdateProfile(event) {
     }
 }
 
-// Khởi chạy đồng bộ trạng thái đăng nhập
-updateNavAuthUI();
+// Khởi chạy đồng bộ trạng thái đăng nhập và toàn bộ ứng dụng
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initApp();
+    });
+} else {
+    // DOM đã sẵn sàng (script ở cuối body hoặc deferred)
+    initApp();
+}
+
 
