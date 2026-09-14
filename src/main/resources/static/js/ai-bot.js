@@ -416,7 +416,7 @@ function generateBotReply(userMessage, directBook = null) {
                   `• **Miễn phí vận chuyển (Freeship)** cho mọi đơn hàng từ **250.000₫**!\n\n` +
                   `💳 **Hình thức thanh toán:**\n` +
                   `• Thanh toán khi nhận hàng (**COD**).\n` +
-                  `• Thanh toán Online qua **Cổng VNPay** (hỗ trợ Thẻ ATM nội địa NCB/..., VNPay-QR, Visa/Mastercard).\n\n` +
+                  `• Chuyển khoản ngân hàng tự động qua **Mã VietQR (PayOS)** (xác nhận đơn tức thì).\n\n` +
                   `🔄 **Chính sách đổi trả:**\n` +
                   `• Hỗ trợ đổi trả miễn phí trong vòng **7 ngày** nếu sách bị lỗi in ấn, rách hoặc hư hại trong quá trình vận chuyển.`,
             books: []

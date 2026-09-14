@@ -159,10 +159,7 @@ public class OrderService {
         PaymentMethod paymentMethod;
         PaymentStatus paymentStatus;
 
-        if ("VNPAY".equalsIgnoreCase(methodStr)) {
-            paymentMethod = PaymentMethod.VNPAY;
-            paymentStatus = PaymentStatus.PENDING;
-        } else if ("VIETQR".equalsIgnoreCase(methodStr) || "PAYOS".equalsIgnoreCase(methodStr)) {
+        if ("VIETQR".equalsIgnoreCase(methodStr) || "PAYOS".equalsIgnoreCase(methodStr)) {
             paymentMethod = PaymentMethod.VIETQR;
             paymentStatus = PaymentStatus.PENDING;
         } else {
