@@ -3660,11 +3660,11 @@ function updateCheckoutDataWithCoupon() {
 // PAYMENT / CHECKOUT & ORDER FUNCTIONS
 // ==========================================
 
-// BIDV Account Details
+// BIDV Account Details (SePay Virtual Account)
 const PAYMENT_ACCOUNT = {
     bank: 'BIDV',
     bankCode: '970418',
-    accountNumber: '5150739935',
+    accountNumber: '96247SORE3',
     accountName: 'HỒ SỸ THÀNH'
 };
 
@@ -3868,7 +3868,7 @@ function generateVietQR(amount, content) {
 }
 
 function copyAccountNumber() {
-    const text = PAYMENT_ACCOUNT.accountNumber || '5150739935';
+    const text = PAYMENT_ACCOUNT.accountNumber || '96247SORE3';
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
             showToast('Đã sao chép số tài khoản: ' + text, 'success');
