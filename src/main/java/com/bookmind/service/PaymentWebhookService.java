@@ -66,7 +66,7 @@ public class PaymentWebhookService {
             return existingPayment.get().getOrder();
         }
 
-        // 2. Tìm đơn hàng tương ứng qua nội dung chuyển khoản, mã SePay hoặc số tiền
+        // 2. Tìm đơn hàng tương ứng qua mã đơn PayOS, tracking code hoặc nội dung chuyển khoản
         String content = request.getContentText();
         BigDecimal received = request.getReceivedAmount();
         Optional<Order> matchedOrderOpt = findMatchingOrder(content, request.getCode(), request.getOrderCode(), received);
@@ -111,10 +111,10 @@ public class PaymentWebhookService {
         return order;
     }
 
-    private Optional<Order> findMatchingOrder(String content, String sePayCode, Long payOsOrderCode, BigDecimal receivedAmount) {
-        // 1. Nếu SePay đã trích xuất sẵn trường code
-        if (sePayCode != null && !sePayCode.isBlank()) {
-            String c = sePayCode.trim().toUpperCase();
+    private Optional<Order> findMatchingOrder(String content, String trackingCode, Long payOsOrderCode, BigDecimal receivedAmount) {
+        // 1. Nếu webhook gửi mã tracking code
+        if (trackingCode != null && !trackingCode.isBlank()) {
+            String c = trackingCode.trim().toUpperCase();
             Optional<Order> byCode = orderRepository.findByTrackingNumber(c);
             if (byCode.isPresent()) return byCode;
             if (!c.startsWith("BM-") && c.startsWith("BM")) {

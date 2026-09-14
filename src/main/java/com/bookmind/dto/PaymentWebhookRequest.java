@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentWebhookRequest {
 
-    // SePay standard fields
+    // PayOS / Bank Transfer standard fields
     @JsonProperty("id")
     private Long id;
 
@@ -44,7 +44,7 @@ public class PaymentWebhookRequest {
     @JsonProperty("amountIn")
     private BigDecimal amountIn;
 
-    // Hỗ trợ trường "amount" nếu dùng chuẩn Casso / PayOS
+    // Hỗ trợ trường "amount" PayOS
     @JsonProperty("amount")
     private BigDecimal amount;
 

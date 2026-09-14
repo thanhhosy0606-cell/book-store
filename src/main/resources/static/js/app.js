@@ -4155,7 +4155,7 @@ async function manualCheckPayment() {
 
     const orderCode = currentCheckoutData ? currentCheckoutData.orderCode : '';
 
-    // 1. Kiểm tra trạng thái thực tế từ Backend / Webhook SePay BIDV
+    // 1. Kiểm tra trạng thái thực tế từ Backend / Webhook PayOS BIDV
     try {
         const res = await fetch(`/api/orders/check-payment/${encodeURIComponent(orderCode)}`);
         if (res.ok) {

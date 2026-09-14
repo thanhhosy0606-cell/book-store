@@ -42,8 +42,8 @@ public class PaymentWebhookController {
     }
 
     /**
-     * Endpoint chính nhận Webhook từ SePay, Casso hoặc PayOS khi có biến động số dư.
-     * Hỗ trợ đa đường dẫn: /api/webhook/payment, /webhook/payment, /api/payment/webhook...
+     * Endpoint chính nhận Webhook từ PayOS VietQR khi có biến động số dư.
+     * Hỗ trợ các đường dẫn: /api/webhook/payment, /webhook/payment, /api/payment/webhook...
      */
     @PostMapping({"/webhook/payment", "/payment/webhook", "/api/webhook/payment", "/api/payment/webhook"})
     public ResponseEntity<Map<String, Object>> handlePaymentWebhook(
@@ -52,7 +52,7 @@ public class PaymentWebhookController {
             @RequestParam(value = "apiKey", required = false) String paramApiKey,
             @RequestBody com.fasterxml.jackson.databind.JsonNode rawNode) {
 
-        log.info("Received Payment Webhook raw payload: {}", rawNode);
+        log.info("Received PayOS Payment Webhook payload: {}", rawNode);
 
         // Xác thực API Key nếu có cấu hình
         String tokenToValidate = authHeader != null ? authHeader : (xApiKey != null ? xApiKey : paramApiKey);
@@ -60,6 +60,7 @@ public class PaymentWebhookController {
             log.warn("Unauthorized webhook access with token: {}", tokenToValidate);
             Map<String, Object> err = new HashMap<>();
             err.put("success", false);
+            err.put("code", "01");
             err.put("message", "Mã xác thực API Key không hợp lệ!");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(err);
         }
@@ -68,25 +69,13 @@ public class PaymentWebhookController {
             String rawJson = objectMapper.writeValueAsString(rawNode);
             Order processedOrder = null;
 
-            // Xử lý linh hoạt các định dạng Gateway (SePay, Casso, PayOS)
-            if (rawNode.has("data") && rawNode.get("data").isArray()) {
-                // Định dạng Casso (data là mảng các giao dịch)
-                com.fasterxml.jackson.databind.JsonNode dataArray = rawNode.get("data");
-                for (com.fasterxml.jackson.databind.JsonNode itemNode : dataArray) {
-                    try {
-                        PaymentWebhookRequest req = objectMapper.treeToValue(itemNode, PaymentWebhookRequest.class);
-                        processedOrder = webhookService.processPaymentWebhook(req, itemNode.toString());
-                    } catch (Exception itemEx) {
-                        log.warn("Could not match single Casso item: {}", itemEx.getMessage());
-                    }
-                }
-            } else if (rawNode.has("data") && rawNode.get("data").isObject()) {
-                // Định dạng PayOS (data là object chứa chi tiết giao dịch)
+            // Xử lý chuẩn PayOS (trường 'data' chứa chi tiết giao dịch)
+            if (rawNode.has("data") && rawNode.get("data").isObject()) {
                 com.fasterxml.jackson.databind.JsonNode dataObj = rawNode.get("data");
                 PaymentWebhookRequest req = objectMapper.treeToValue(dataObj, PaymentWebhookRequest.class);
                 processedOrder = webhookService.processPaymentWebhook(req, rawJson);
             } else {
-                // Định dạng SePay tiêu chuẩn (Object phẳng)
+                // Fallback nếu payload trực tiếp
                 PaymentWebhookRequest req = objectMapper.treeToValue(rawNode, PaymentWebhookRequest.class);
                 processedOrder = webhookService.processPaymentWebhook(req, rawJson);
             }

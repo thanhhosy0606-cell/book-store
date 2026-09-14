@@ -226,7 +226,7 @@ const STORE_KEYWORDS = [
     'mua', 'ban', 'gia', 'bao nhieu', 'tien', 're', 'dat', 'tiet kiem', 'gia tot', 'duoi 150k', '150k',
     'giam gia', 'khuyen mai', 'uu dai', 'voucher', 'ma giam', 'sale', 'bestseller', 'ban chay',
     'ship', 'giao hang', 'van chuyen', 'phi ship', 'freeship', 'hoa toc', 'bao lau', 'nhan hang',
-    'thanh toan', 'chuyen khoan', 'ngan hang', 'qr', 'vietqr', 'sepay', 'cod', 'tien mat', 'atm', 'visa',
+    'thanh toan', 'chuyen khoan', 'ngan hang', 'qr', 'vietqr', 'payos', 'vnpay', 'cod', 'tien mat', 'atm', 'visa',
     'doi tra', 'bao hanh', 'loi sach', 'tra hang',
     'don hang', 'gio hang', 'dat hang', 'tai khoan', 'dang nhap', 'dang ky',
     'nha sach', 'cua hang', 'bookmind', 'shop', 'hotline', 'dia chi', 'lien he',
