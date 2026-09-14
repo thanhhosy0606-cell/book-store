@@ -60,10 +60,9 @@ public class OrderService {
                 user = allUsers.get(0);
             } else {
                 user = new User();
-                user.setUsername("khach_" + System.currentTimeMillis());
+                user.setEmail("khach_" + System.currentTimeMillis() + "@bookmind.vn");
                 user.setFullName(request.getReceiverName() != null ? request.getReceiverName() : "Khách Hàng");
-                user.setPhone(request.getReceiverPhone());
-                user.setEmail("khachhang@bookmind.vn");
+                user.setPhone(request.getReceiverPhone() != null && !request.getReceiverPhone().isBlank() ? request.getReceiverPhone() : null);
                 user.setPassword("guest123456");
                 user.setStatus(com.bookmind.entity.enums.UserStatus.ACTIVE);
                 user = userRepository.save(user);
