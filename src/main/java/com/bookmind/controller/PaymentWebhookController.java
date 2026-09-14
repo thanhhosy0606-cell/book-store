@@ -152,7 +152,7 @@ public class PaymentWebhookController {
         PaymentWebhookRequest simReq = new PaymentWebhookRequest();
         simReq.setReferenceCode("SIM-" + System.currentTimeMillis());
         simReq.setGateway(body.containsKey("gateway") ? String.valueOf(body.get("gateway")) : "BIDV-SIMULATOR");
-        simReq.setAccountNumber("0974932089");
+        simReq.setAccountNumber("5150739935");
         simReq.setAmountIn(amount);
         simReq.setTransactionContent("Thanh toan don hang " + order.getTrackingNumber());
 

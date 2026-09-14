@@ -3664,8 +3664,8 @@ function updateCheckoutDataWithCoupon() {
 const PAYMENT_ACCOUNT = {
     bank: 'BIDV',
     bankCode: '970418',
-    accountNumber: '0974932089',
-    accountName: 'NHÃ NAM BOOK STORE'
+    accountNumber: '5150739935',
+    accountName: 'HỒ SỸ THÀNH'
 };
 
 let currentCheckoutData = {
@@ -3868,7 +3868,7 @@ function generateVietQR(amount, content) {
 }
 
 function copyAccountNumber() {
-    const text = PAYMENT_ACCOUNT.accountNumber || '0974932089';
+    const text = PAYMENT_ACCOUNT.accountNumber || '5150739935';
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
             showToast('Đã sao chép số tài khoản: ' + text, 'success');
