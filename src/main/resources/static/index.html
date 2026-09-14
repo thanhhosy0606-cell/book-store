@@ -851,19 +851,18 @@
                                 <span class="text-primary fw-bold fs-5" id="paymentTotalAmount">0đ</span>
                             </div>
                         </div>
-                        <!-- Trạng thái kiểm tra thanh toán (Mặc định: Đang chờ & Khóa nút xác nhận) -->
+                        <!-- Trạng thái kiểm tra thanh toán Tự Động 24/7 -->
                         <div id="qrPaymentPendingBox" class="payment-alert-note pending">
                             <div class="d-flex align-items-start gap-2.5">
-                                <div class="spinner-border spinner-border-sm text-warning mt-1 flex-shrink-0"
-                                    role="status"></div>
+                                <span class="pulse-radar-dot mt-1"></span>
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold text-dark fs-8 mb-0.5">
-                                        Đang chờ hệ thống ghi nhận thanh toán...
+                                    <div class="fw-bold text-dark fs-8 mb-0.5 d-flex align-items-center justify-content-between flex-wrap gap-1">
+                                        <span><i class="fas fa-bolt text-warning me-1"></i>Đang tự động lắng nghe giao dịch 24/7...</span>
+                                        <span class="badge bg-success-subtle text-success fs-9 fw-semibold">Live Napas 247</span>
                                     </div>
                                     <div class="text-muted fs-9 mb-2">
-                                        Quý khách vui lòng mở App ngân hàng quét mã VietQR và chuyển đúng số tiền. Nút
-                                        <strong>Xác Nhận</strong> bị khóa cho đến khi tài khoản BIDV thực sự nhận được
-                                        tiền.
+                                        Quý khách vui lòng mở App ngân hàng quét mã VietQR và chuyển khoản. Sau khi tiền vào tài khoản BIDV, 
+                                        <strong>hệ thống sẽ tự động xác nhận và hoàn tất đơn hàng trong 1-3 giây</strong> mà không cần bạn làm gì thêm!
                                     </div>
 
                                     <!-- Thông báo lỗi khi bấm kiểm tra mà chưa có tiền -->
@@ -871,29 +870,22 @@
                                         class="alert alert-danger py-1.5 px-2.5 fs-9 mb-2 border-danger-subtle"
                                         style="display:none;">
                                         <i class="fas fa-exclamation-triangle me-1"></i>
-                                        <strong>Chưa nhận được thanh toán!</strong> Hệ thống BIDV chưa thấy giao dịch
-                                        khớp với mã <span class="fw-bold text-dark" id="warnOrderCode"></span>. Nút xác
-                                        nhận tiếp tục bị khóa.
+                                        <strong>Chưa phát hiện giao dịch!</strong> Tài khoản BIDV chưa nhận được tiền khớp với nội dung <span class="fw-bold text-dark" id="warnOrderCode"></span>. Vui lòng chuyển tiền hoặc thử lại sau vài giây.
                                     </div>
 
                                     <div class="mt-2 pt-1 border-top border-warning-subtle">
                                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                             <span class="fs-9 text-secondary">
-                                                <i class="fas fa-bolt me-1 text-warning"></i>Tự động nhận diện thanh
-                                                toán qua Webhook
+                                                <i class="fas fa-sync-alt fa-spin me-1 text-primary"></i>Tự động quét mỗi 2 giây
                                             </span>
                                             <div class="d-flex gap-1.5">
                                                 <button type="button"
-                                                    class="btn btn-sm btn-success py-1 px-3 rounded-pill fs-9 fw-bold shadow-sm"
-                                                    id="btnSimulateWebhook" onclick="simulatePaymentWebhook()"
-                                                    title="Giả lập ngân hàng chuyển tiền vào tài khoản (Test)">
-                                                    <i class="fas fa-bolt text-warning me-1"></i>⚡ Giả Lập Nhận Tiền
-                                                </button>
-                                                <button type="button"
                                                     class="btn btn-sm btn-outline-primary py-1 px-2.5 rounded-pill fs-9 fw-semibold shadow-none"
                                                     id="btnManualCheckPayment" onclick="manualCheckPayment()">
-                                                    <i class="fas fa-sync-alt me-1"></i>Kiểm tra thực tế
+                                                    <i class="fas fa-sync-alt me-1"></i>Kiểm tra ngay
                                                 </button>
+                                                <!-- Nút giả lập ẩn đi để chỉ test nội bộ khi cần qua console, khách hàng thật không nhìn thấy -->
+                                                <button type="button" id="btnSimulateWebhook" style="display:none;" onclick="simulatePaymentWebhook()"></button>
                                             </div>
                                         </div>
                                     </div>
@@ -1009,15 +1001,15 @@
             <!-- Footer for Step 2 (QR Transfer) -->
             <div class="custom-modal-footer" id="paymentFooter" style="display:none;">
                 <div class="d-flex align-items-center gap-2 text-muted fs-8 me-auto">
-                    <i class="fas fa-shield-alt text-success"></i>
-                    Giao dịch an toàn · Bảo mật SSL
+                    <span class="pulse-radar-dot"></span>
+                    <span class="text-success fw-semibold fs-9">Tự động xác nhận khi chuyển tiền thành công</span>
                 </div>
                 <button class="btn btn-outline-secondary rounded-pill px-3.5 fs-8" onclick="backToStep1()">
                     <i class="fas fa-arrow-left me-1"></i> Quay lại
                 </button>
-                <button class="btn btn-secondary rounded-pill px-4 fw-bold fs-8 opacity-75" id="btnConfirmPayment"
-                    disabled onclick="confirmPaymentDone()" style="cursor: not-allowed;">
-                    <i class="fas fa-lock me-2"></i>Chờ Khách Thanh Toán...
+                <button class="btn btn-outline-primary rounded-pill px-4 fw-bold fs-8 shadow-sm" id="btnConfirmPayment"
+                    onclick="manualCheckPayment()">
+                    <i class="fas fa-sync-alt me-1"></i> Tôi Đã Chuyển Khoản
                 </button>
             </div>
         </div>

@@ -42,14 +42,14 @@ public class PaymentWebhookService {
     }
 
     public boolean validateApiKey(String authHeader) {
-        if (configuredApiKey == null || configuredApiKey.isBlank()) {
+        if (configuredApiKey == null || configuredApiKey.isBlank() || "none".equalsIgnoreCase(configuredApiKey.trim())) {
             return true;
         }
         if (authHeader == null || authHeader.isBlank()) {
             return false;
         }
-        String cleanHeader = authHeader.replace("Apikey", "").replace("Bearer", "").trim();
-        return configuredApiKey.equals(cleanHeader);
+        String cleanHeader = authHeader.replaceAll("(?i)^(apikey|bearer)\\s+", "").trim();
+        return configuredApiKey.equals(cleanHeader) || configuredApiKey.equalsIgnoreCase(cleanHeader);
     }
 
     @Transactional
@@ -117,7 +117,7 @@ public class PaymentWebhookService {
             return Optional.empty();
         }
 
-        // Tìm kiếm pattern BM-XXXXXXXX hoặc BMXXXXXXXX (8 ký tự)
+        // Tìm kiếm pattern BM-XXXXXXXX hoặc BMXXXXXXXX (6-10 ký tự sau BM)
         Pattern patternBM = Pattern.compile("(?i)(BM-?[A-Z0-9]{6,10})");
         Matcher matcherBM = patternBM.matcher(content);
         if (matcherBM.find()) {
@@ -143,11 +143,19 @@ public class PaymentWebhookService {
             } catch (NumberFormatException ignored) {}
         }
 
-        // Quét toàn bộ đơn hàng PENDING gần nhất
+        // Quét toàn bộ đơn hàng PENDING gần nhất (so khớp cả dạng đã bỏ ký tự đặc biệt)
         List<Order> pendingOrders = orderRepository.findAllByOrderByCreatedAtDesc();
+        String alphaNumContent = content.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
         for (Order o : pendingOrders) {
-            if (o.getTrackingNumber() != null && content.toUpperCase().contains(o.getTrackingNumber().toUpperCase())) {
-                return Optional.of(o);
+            if (o.getTrackingNumber() != null) {
+                String trackingRaw = o.getTrackingNumber().toUpperCase();
+                if (content.toUpperCase().contains(trackingRaw)) {
+                    return Optional.of(o);
+                }
+                String trackingAlphaNum = trackingRaw.replaceAll("[^a-zA-Z0-9]", "");
+                if (!trackingAlphaNum.isEmpty() && alphaNumContent.contains(trackingAlphaNum)) {
+                    return Optional.of(o);
+                }
             }
         }
 

@@ -47,13 +47,16 @@ public class PaymentWebhookController {
     @PostMapping("/webhook/payment")
     public ResponseEntity<Map<String, Object>> handlePaymentWebhook(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestBody PaymentWebhookRequest request) {
+            @RequestHeader(value = "x-api-key", required = false) String xApiKey,
+            @RequestParam(value = "apiKey", required = false) String paramApiKey,
+            @RequestBody com.fasterxml.jackson.databind.JsonNode rawNode) {
 
-        log.info("Received Payment Webhook request: {}", request);
+        log.info("Received Payment Webhook raw payload: {}", rawNode);
 
-        // Xác thực API Key nếu bên trung gian có cấu hình
-        if (authHeader != null && !webhookService.validateApiKey(authHeader)) {
-            log.warn("Unauthorized webhook access with Authorization header: {}", authHeader);
+        // Xác thực API Key nếu có cấu hình
+        String tokenToValidate = authHeader != null ? authHeader : (xApiKey != null ? xApiKey : paramApiKey);
+        if (tokenToValidate != null && !webhookService.validateApiKey(tokenToValidate)) {
+            log.warn("Unauthorized webhook access with token: {}", tokenToValidate);
             Map<String, Object> err = new HashMap<>();
             err.put("success", false);
             err.put("message", "Mã xác thực API Key không hợp lệ!");
@@ -61,16 +64,41 @@ public class PaymentWebhookController {
         }
 
         try {
-            String rawJson = objectMapper.writeValueAsString(request);
-            Order order = webhookService.processPaymentWebhook(request, rawJson);
+            String rawJson = objectMapper.writeValueAsString(rawNode);
+            Order processedOrder = null;
+
+            // Xử lý linh hoạt các định dạng Gateway (SePay, Casso, PayOS)
+            if (rawNode.has("data") && rawNode.get("data").isArray()) {
+                // Định dạng Casso (data là mảng các giao dịch)
+                com.fasterxml.jackson.databind.JsonNode dataArray = rawNode.get("data");
+                for (com.fasterxml.jackson.databind.JsonNode itemNode : dataArray) {
+                    try {
+                        PaymentWebhookRequest req = objectMapper.treeToValue(itemNode, PaymentWebhookRequest.class);
+                        processedOrder = webhookService.processPaymentWebhook(req, itemNode.toString());
+                    } catch (Exception itemEx) {
+                        log.warn("Could not match single Casso item: {}", itemEx.getMessage());
+                    }
+                }
+            } else if (rawNode.has("data") && rawNode.get("data").isObject()) {
+                // Định dạng PayOS (data là object chứa chi tiết giao dịch)
+                com.fasterxml.jackson.databind.JsonNode dataObj = rawNode.get("data");
+                PaymentWebhookRequest req = objectMapper.treeToValue(dataObj, PaymentWebhookRequest.class);
+                processedOrder = webhookService.processPaymentWebhook(req, rawJson);
+            } else {
+                // Định dạng SePay tiêu chuẩn (Object phẳng)
+                PaymentWebhookRequest req = objectMapper.treeToValue(rawNode, PaymentWebhookRequest.class);
+                processedOrder = webhookService.processPaymentWebhook(req, rawJson);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Xác thực thanh toán đơn hàng thành công!");
-            response.put("orderId", order.getId());
-            response.put("trackingNumber", order.getTrackingNumber());
-            response.put("invoiceNumber", order.getInvoiceNumber());
-            response.put("status", order.getStatus().name());
+            if (processedOrder != null) {
+                response.put("orderId", processedOrder.getId());
+                response.put("trackingNumber", processedOrder.getTrackingNumber());
+                response.put("invoiceNumber", processedOrder.getInvoiceNumber());
+                response.put("status", processedOrder.getStatus().name());
+            }
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -134,6 +162,7 @@ public class PaymentWebhookController {
 
             Map<String, Object> data = new HashMap<>();
             data.put("paid", true);
+            data.put("isPaid", true);
             data.put("orderId", processed.getId());
             data.put("trackingNumber", processed.getTrackingNumber());
             data.put("amount", amount);
@@ -154,7 +183,18 @@ public class PaymentWebhookController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> checkPaymentStatus(
             @PathVariable("trackingNumber") String trackingNumber) {
 
-        Optional<Order> orderOpt = orderRepository.findByTrackingNumber(trackingNumber.trim());
+        String trimmed = trackingNumber != null ? trackingNumber.trim() : "";
+        Optional<Order> orderOpt = orderRepository.findByTrackingNumber(trimmed);
+
+        if (orderOpt.isEmpty()) {
+            String upper = trimmed.toUpperCase();
+            if (!upper.startsWith("BM-") && upper.startsWith("BM")) {
+                orderOpt = orderRepository.findByTrackingNumber("BM-" + upper.substring(2));
+            } else {
+                orderOpt = orderRepository.findByTrackingNumber(upper);
+            }
+        }
+
         if (orderOpt.isEmpty()) {
             return ResponseEntity.ok(ApiResponse.error("Không tìm thấy đơn hàng!"));
         }
@@ -163,18 +203,17 @@ public class PaymentWebhookController {
         List<Payment> payments = paymentRepository.findByOrderId(order.getId());
         Payment primaryPayment = payments.isEmpty() ? null : payments.get(0);
 
-        boolean isPaid = order.getStatus() != OrderStatus.PENDING &&
-                primaryPayment != null &&
-                primaryPayment.getPaymentStatus() == PaymentStatus.COMPLETED;
+        boolean isPaid = (order.getStatus() != OrderStatus.PENDING) ||
+                (primaryPayment != null && primaryPayment.getPaymentStatus() == PaymentStatus.COMPLETED);
 
         Map<String, Object> res = new HashMap<>();
-        res.put("paid", isPaid);       // JS uses data.paid
-        res.put("isPaid", isPaid);     // keep backward compat
+        res.put("paid", isPaid);       // For data.paid
+        res.put("isPaid", isPaid);     // For data.isPaid
         res.put("orderId", order.getId());
         res.put("trackingNumber", order.getTrackingNumber());
         res.put("amount", order.getTotalAmount());
         res.put("status", order.getStatus().name());
-        res.put("paymentStatus", primaryPayment != null ? primaryPayment.getPaymentStatus().name() : "PENDING");
+        res.put("paymentStatus", primaryPayment != null ? primaryPayment.getPaymentStatus().name() : (isPaid ? "COMPLETED" : "PENDING"));
         res.put("invoiceNumber", order.getInvoiceNumber());
         res.put("totalAmount", order.getTotalAmount());
 

@@ -3925,8 +3925,9 @@ function startPaymentPolling(trackingNumber) {
         try {
             const res = await fetch(`/api/orders/check-payment/${encodeURIComponent(trackingNumber)}`);
             if (res.ok) {
-                const data = await res.json();
-                if (data && data.paid) {
+                const result = await res.json();
+                const data = (result && result.data) ? result.data : result;
+                if (data && (data.paid === true || data.isPaid === true)) {
                     stopPaymentPolling();
                     handlePaymentWebhookReceived(data);
                 }
@@ -3936,6 +3937,7 @@ function startPaymentPolling(trackingNumber) {
         }
     }, 2000);
 }
+
 
 function handlePaymentWebhookReceived(data) {
     stopPaymentCheck();
@@ -4067,16 +4069,16 @@ function resetPaymentVerificationState() {
     if (refInput) refInput.value = '';
 
     if (confirmBtn) {
-        confirmBtn.disabled = true;
-        confirmBtn.className = 'btn btn-secondary rounded-pill px-4 fw-bold fs-8 opacity-75';
-        confirmBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Chờ Khách Thanh Toán...';
-        confirmBtn.style.cursor = 'not-allowed';
+        confirmBtn.disabled = false;
+        confirmBtn.className = 'btn btn-outline-primary rounded-pill px-4 fw-bold fs-8 shadow-sm';
+        confirmBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Tôi Đã Chuyển Khoản';
+        confirmBtn.style.cursor = 'pointer';
         confirmBtn.classList.remove('btn-pulse-glow');
     }
 
     if (manualBtn) {
         manualBtn.disabled = false;
-        manualBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Kiểm tra thanh toán';
+        manualBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Kiểm tra ngay';
     }
 }
 
@@ -4101,33 +4103,47 @@ function triggerPaymentSuccess(refCode = '') {
     if (confirmBtn) {
         confirmBtn.disabled = false;
         confirmBtn.className = 'btn btn-success rounded-pill px-4 fw-bold fs-8 shadow-sm btn-pulse-glow';
-        confirmBtn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Xác Nhận Đã Thanh Toán';
+        confirmBtn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Đã Thanh Toán Thành Công';
         confirmBtn.style.cursor = 'pointer';
     }
 
-    showToast('BIDV: Đã xác thực thành công ' + formatCurrency(currentCheckoutData ? currentCheckoutData.finalTotal : 0) + '! Mời bạn nhấn Xác Nhận.', 'success');
+    showToast('BIDV: Đã xác thực thành công ' + formatCurrency(currentCheckoutData ? currentCheckoutData.finalTotal : 0) + '! Đang chuyển đến đơn hàng...', 'success');
+    setTimeout(() => {
+        handlePaymentWebhookReceived({
+            paid: true,
+            amount: currentCheckoutData ? currentCheckoutData.finalTotal : 0,
+            trackingNumber: currentCheckoutData ? currentCheckoutData.orderCode : '',
+            orderId: currentCreatedOrderId
+        });
+    }, 600);
 }
 
 async function manualCheckPayment() {
     if (isPaymentVerified) {
-        showToast('Giao dịch đã được xác thực thành công! Mời bạn nhấn nút Xác Nhận bên dưới.', 'info');
+        showPaymentStep(3);
         return;
     }
     const manualBtn = document.getElementById('btnManualCheckPayment');
+    const confirmBtn = document.getElementById('btnConfirmPayment');
     const warnBox = document.getElementById('paymentCheckWarning');
     const warnCode = document.getElementById('warnOrderCode');
 
     if (manualBtn) {
         manualBtn.disabled = true;
-        manualBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đối soát BIDV...';
+        manualBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đối soát...';
+    }
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đối soát...';
     }
 
     const orderCode = currentCheckoutData ? currentCheckoutData.orderCode : '';
     try {
         const res = await fetch(`/api/orders/check-payment/${encodeURIComponent(orderCode)}`);
         if (res.ok) {
-            const data = await res.json();
-            if (data && data.paid) {
+            const result = await res.json();
+            const data = (result && result.data) ? result.data : result;
+            if (data && (data.paid === true || data.isPaid === true)) {
                 if (manualBtn) {
                     manualBtn.disabled = false;
                     manualBtn.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Đã thanh toán';
@@ -4142,7 +4158,11 @@ async function manualCheckPayment() {
 
     if (manualBtn) {
         manualBtn.disabled = false;
-        manualBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Kiểm tra thanh toán';
+        manualBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Kiểm tra ngay';
+    }
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Tôi Đã Chuyển Khoản';
     }
     if (warnBox) {
         warnBox.style.display = 'block';
@@ -4150,7 +4170,7 @@ async function manualCheckPayment() {
             warnCode.textContent = currentCheckoutData.orderCode;
         }
     }
-    showToast('BIDV: Chưa phát hiện tiền vào tài khoản cho mã ' + (currentCheckoutData ? currentCheckoutData.orderCode : '') + '! Vui lòng chuyển khoản trước.', 'danger');
+    showToast('BIDV: Chưa phát hiện tiền vào tài khoản cho mã ' + (currentCheckoutData ? currentCheckoutData.orderCode : '') + '! Vui lòng chuyển tiền trên app và chờ 2-5 giây.', 'warning');
 }
 
 function verifyBankTransactionRef() {
