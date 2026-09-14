@@ -3657,17 +3657,6 @@ function updateCheckoutDataWithCoupon() {
 // PAYMENT / CHECKOUT & ORDER FUNCTIONS
 // ==========================================
 
-// BIDV Account Details (Real account 5150739935 - HO SY THANH)
-const PAYMENT_ACCOUNT = {
-    bank: 'BIDV',
-    bankCode: '970418',
-    accountNumber: '5150739935',
-    accountName: 'HO SY THANH'
-};
-
-let paymentPollingInterval = null;
-let isPaymentVerified = false;
-
 let currentCheckoutData = {
     orderCode: '',
     subtotal: 0,
@@ -3845,12 +3834,8 @@ let currentCreatedOrderId = null;
 
 function showPaymentStep(step) {
     const step1 = document.getElementById('paymentStep1');
-    const step2 = document.getElementById('paymentStep2');
     const step3 = document.getElementById('paymentStep3');
-    const footer = document.getElementById('paymentFooter');
-
     const ind1 = document.getElementById('step1Indicator');
-    const ind2 = document.getElementById('step2Indicator');
     const ind3 = document.getElementById('step3Indicator');
 
     const headerTitle = document.getElementById('paymentHeaderTitle');
@@ -3858,282 +3843,26 @@ function showPaymentStep(step) {
     const headerIcon = document.getElementById('paymentHeaderIcon');
 
     if (step === 1) {
-        stopPaymentPolling();
         if (step1) step1.style.display = '';
-        if (step2) step2.style.display = 'none';
         if (step3) step3.style.display = 'none';
-        if (footer) footer.style.display = 'none';
 
         if (ind1) { ind1.className = 'payment-step active'; }
-        if (ind2) { ind2.className = 'payment-step'; }
         if (ind3) { ind3.className = 'payment-step'; }
 
         if (headerTitle) headerTitle.textContent = 'Đặt Hàng & Thanh Toán';
         if (headerSubtitle) headerSubtitle.textContent = 'Giao hàng tận nơi toàn quốc · BookMind AI Store';
         if (headerIcon) headerIcon.innerHTML = '<i class="fas fa-shipping-fast"></i>';
-    } else if (step === 2) {
-        if (step1) step1.style.display = 'none';
-        if (step2) step2.style.display = '';
-        if (step3) step3.style.display = 'none';
-        if (footer) footer.style.display = 'flex';
-
-        if (ind1) { ind1.className = 'payment-step done'; }
-        if (ind2) { ind2.className = 'payment-step active'; }
-        if (ind3) { ind3.className = 'payment-step'; }
-
-        if (headerTitle) headerTitle.textContent = 'Thanh Toán Trực Tiếp (VietQR)';
-        if (headerSubtitle) headerSubtitle.textContent = 'Quét QR qua ứng dụng ngân hàng hoặc ví điện tử · BIDV';
-        if (headerIcon) headerIcon.innerHTML = '<i class="fas fa-qrcode"></i>';
-
-        resetPaymentVerificationState();
     } else if (step === 3) {
-        stopPaymentPolling();
         if (step1) step1.style.display = 'none';
-        if (step2) step2.style.display = 'none';
         if (step3) step3.style.display = '';
-        if (footer) footer.style.display = 'none';
 
         if (ind1) { ind1.className = 'payment-step done'; }
-        if (ind2) { ind2.className = 'payment-step done'; }
         if (ind3) { ind3.className = 'payment-step active done'; }
 
         if (headerTitle) headerTitle.textContent = 'Đặt Hàng Thành Công!';
         if (headerSubtitle) headerSubtitle.textContent = 'Đơn hàng của bạn đã được ghi nhận vào hệ thống';
         if (headerIcon) headerIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
     }
-}
-
-function generateVietQR(amount, content, customQrString) {
-    const qrImg = document.getElementById('qrCodeImg');
-    const qrLoading = document.getElementById('qrLoading');
-    const displayAccount = document.getElementById('displayAccountNum');
-    const transferEl = document.getElementById('transferContent');
-
-    if (displayAccount) displayAccount.textContent = PAYMENT_ACCOUNT.accountNumber;
-    if (transferEl) transferEl.textContent = content;
-
-    const roundedAmount = Math.round(amount || 0);
-
-    if (qrLoading) qrLoading.style.display = 'flex';
-    if (qrImg) {
-        qrImg.style.display = 'none';
-
-        // Nếu PayOS trả về chuỗi VietQR chuẩn EMVCo, ưu tiên dùng API tạo QR từ chuỗi đó
-        let qrUrl = `https://img.vietqr.io/image/${PAYMENT_ACCOUNT.bankCode}-${PAYMENT_ACCOUNT.accountNumber}-compact2.png?amount=${roundedAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(PAYMENT_ACCOUNT.accountName)}`;
-        if (customQrString) {
-            qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(customQrString)}`;
-        }
-
-        qrImg.onload = () => {
-            if (qrLoading) qrLoading.style.display = 'none';
-            qrImg.style.display = 'block';
-        };
-        qrImg.onerror = () => {
-            if (qrLoading) qrLoading.style.display = 'none';
-            qrImg.style.display = 'block';
-            qrImg.src = `https://img.vietqr.io/image/${PAYMENT_ACCOUNT.bankCode}-${PAYMENT_ACCOUNT.accountNumber}-compact2.png?amount=${roundedAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(PAYMENT_ACCOUNT.accountName)}`;
-        };
-        qrImg.src = qrUrl;
-    }
-}
-
-function copyAccountNumber() {
-    const text = PAYMENT_ACCOUNT.accountNumber || '5150739935';
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('Đã sao chép số tài khoản: ' + text, 'success');
-        }).catch(() => {
-            showToast('Số tài khoản: ' + text, 'info');
-        });
-    } else {
-        showToast('Số tài khoản: ' + text, 'info');
-    }
-}
-
-function copyTransferContent() {
-    const text = (currentCheckoutData && currentCheckoutData.orderCode) ? currentCheckoutData.orderCode : 'BM-BOOKSTORE';
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('Đã sao chép nội dung: ' + text, 'success');
-        }).catch(() => {
-            showToast('Nội dung chuyển khoản: ' + text, 'info');
-        });
-    } else {
-        showToast('Nội dung chuyển khoản: ' + text, 'info');
-    }
-}
-
-function resetPaymentVerificationState() {
-    stopPaymentPolling();
-    isPaymentVerified = false;
-
-    const pendingBox = document.getElementById('qrPaymentPendingBox');
-    const successBox = document.getElementById('qrPaymentSuccessBox');
-    const warnBox = document.getElementById('paymentCheckWarning');
-    const confirmBtn = document.getElementById('btnConfirmPayment');
-    const manualBtn = document.getElementById('btnManualCheckPayment');
-
-    if (pendingBox) pendingBox.style.display = 'block';
-    if (successBox) successBox.style.display = 'none';
-    if (warnBox) warnBox.style.display = 'none';
-
-    if (confirmBtn) {
-        confirmBtn.disabled = false;
-        confirmBtn.className = 'btn btn-outline-primary rounded-pill px-4 fw-bold fs-8 shadow-sm';
-        confirmBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Tôi Đã Chuyển Khoản';
-    }
-
-    if (manualBtn) {
-        manualBtn.disabled = false;
-        manualBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Kiểm tra ngay';
-    }
-}
-
-function backToStep1() {
-    stopPaymentPolling();
-    isPaymentVerified = false;
-    showPaymentStep(1);
-}
-
-function startPaymentPolling(trackingNumber) {
-    stopPaymentPolling();
-    if (!trackingNumber) return;
-
-    paymentPollingInterval = setInterval(async () => {
-        try {
-            const res = await fetch(`/api/orders/check-payment/${encodeURIComponent(trackingNumber)}`);
-            if (res.ok) {
-                const result = await res.json();
-                const data = (result && result.data) ? result.data : result;
-                if (data && (data.paid === true || data.isPaid === true)) {
-                    stopPaymentPolling();
-                    handlePaymentWebhookReceived(data);
-                }
-            }
-        } catch (e) {
-            console.warn('Polling check-payment error:', e);
-        }
-    }, 2000);
-}
-
-function stopPaymentPolling() {
-    if (paymentPollingInterval) {
-        clearInterval(paymentPollingInterval);
-        paymentPollingInterval = null;
-    }
-}
-
-async function manualCheckPayment() {
-    if (isPaymentVerified) {
-        showPaymentStep(3);
-        return;
-    }
-    const manualBtn = document.getElementById('btnManualCheckPayment');
-    const confirmBtn = document.getElementById('btnConfirmPayment');
-    const warnBox = document.getElementById('paymentCheckWarning');
-
-    if (manualBtn) {
-        manualBtn.disabled = true;
-        manualBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đối soát BIDV...';
-    }
-    if (confirmBtn) {
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đối soát BIDV...';
-    }
-
-    const orderCode = currentCheckoutData ? currentCheckoutData.orderCode : '';
-
-    try {
-        // 1. Kiểm tra xem webhook hoặc backend đã ghi nhận thanh toán chưa
-        const res = await fetch(`/api/orders/check-payment/${encodeURIComponent(orderCode)}`);
-        if (res.ok) {
-            const result = await res.json();
-            const data = (result && result.data) ? result.data : result;
-            if (data && (data.paid === true || data.isPaid === true)) {
-                showToast(`🎉 BIDV xác nhận đã nhận ${formatCurrency(data.amount || currentCheckoutData.finalTotal)}!`, 'success');
-                handlePaymentWebhookReceived(data);
-                return;
-            }
-        }
-
-        // 2. Nếu người dùng đã chuyển tiền thực tế và bấm nút "Tôi Đã Chuyển Khoản", tự động xác nhận đơn hàng luôn
-        const confirmRes = await fetch(`/api/orders/confirm-paid/${encodeURIComponent(orderCode)}`, { method: 'POST' });
-        if (confirmRes.ok) {
-            const confirmResult = await confirmRes.json();
-            if (confirmResult.success && confirmResult.data) {
-                showToast(`🎉 Xác nhận chuyển khoản thành công cho đơn ${orderCode}!`, 'success');
-                handlePaymentWebhookReceived({
-                    orderId: confirmResult.data.id,
-                    trackingNumber: orderCode,
-                    amount: currentCheckoutData.finalTotal
-                });
-                return;
-            }
-        }
-    } catch (e) {
-        console.warn('Check payment error:', e);
-    }
-
-    if (manualBtn) {
-        manualBtn.disabled = false;
-        manualBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Kiểm tra ngay';
-    }
-    if (confirmBtn) {
-        confirmBtn.disabled = false;
-        confirmBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Tôi Đã Chuyển Khoản';
-    }
-    if (warnBox) {
-        const warnCode = document.getElementById('warnOrderCode');
-        if (warnCode) warnCode.textContent = orderCode;
-        warnBox.style.display = 'block';
-        setTimeout(() => {
-            if (warnBox) warnBox.style.display = 'none';
-        }, 5000);
-    }
-}
-
-function handlePaymentWebhookReceived(data) {
-    stopPaymentPolling();
-    isPaymentVerified = true;
-    if (data && data.orderId) {
-        currentCreatedOrderId = data.orderId;
-    }
-
-    const trackingNum = (data && data.trackingNumber) ? data.trackingNumber : (currentCheckoutData ? currentCheckoutData.orderCode : '');
-
-    // Cập nhật Step 3
-    const codeEl = document.getElementById('confirmedOrderCode');
-    if (codeEl) codeEl.textContent = trackingNum;
-
-    const methodBadge = document.getElementById('confirmedPaymentMethod');
-    if (methodBadge) {
-        methodBadge.className = 'badge bg-success-subtle text-success fw-bold fs-8';
-        methodBadge.textContent = '✓ Chuyển khoản VietQR - Tự động xác nhận';
-    }
-
-    const recNameEl = document.getElementById('confirmedReceiver');
-    if (recNameEl && currentCheckoutData) recNameEl.textContent = currentCheckoutData.receiverName;
-
-    const recPhoneEl = document.getElementById('confirmedPhone');
-    if (recPhoneEl && currentCheckoutData) recPhoneEl.textContent = currentCheckoutData.receiverPhone;
-
-    const recAddrEl = document.getElementById('confirmedAddress');
-    if (recAddrEl && currentCheckoutData) recAddrEl.textContent = currentCheckoutData.shippingAddress;
-
-    const titleEl = document.getElementById('paymentSuccessTitle');
-    if (titleEl) titleEl.textContent = 'Thanh Toán & Đặt Hàng Thành Công! 🎉';
-
-    const subtitleEl = document.getElementById('paymentSuccessSubtitle');
-    if (subtitleEl) subtitleEl.textContent = 'Hệ thống đã nhận thanh toán qua BIDV. Đơn hàng đang được đóng gói giao ngay!';
-
-    // Clear cart
-    cart = [];
-    appliedCoupon = null;
-    updateCartUI();
-
-    // Chuyển sang Step 3 trong Modal
-    showPaymentStep(3);
-    showToast('🎉 Thanh toán thành công! Cảm ơn bạn đã mua sách.', 'success');
 }
 
 function processCheckoutSubmit() {
@@ -4178,7 +3907,7 @@ function processCheckoutSubmit() {
         const submitBtn = document.getElementById('btnSubmitOrder');
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang tải mã VietQR...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang tạo mã VietQR PayOS...';
         }
 
         const payload = {
@@ -4201,7 +3930,6 @@ function processCheckoutSubmit() {
             }))
         };
 
-        // Tạo đơn hàng trên backend và lấy thông tin PayOS (ở lại ngay trong modal Step 2, KHÔNG chuyển hướng!)
         fetch('/api/payment/payos/create-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4209,82 +3937,56 @@ function processCheckoutSubmit() {
         })
         .then(res => res.json())
         .then(result => {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-qrcode me-1"></i> Quét Mã VietQR (PayOS) <i class="fas fa-arrow-right ms-1"></i>';
+            if (result.success && result.data && result.data.checkoutUrl) {
+                saveLocalOrder({
+                    id: result.data.orderId || Date.now(),
+                    trackingNumber: result.data.trackingNumber || currentCheckoutData.orderCode,
+                    createdAt: new Date().toISOString(),
+                    receiverName: currentCheckoutData.receiverName,
+                    receiverPhone: currentCheckoutData.receiverPhone,
+                    shippingAddress: currentCheckoutData.shippingAddress,
+                    totalAmount: currentCheckoutData.finalTotal,
+                    status: 'PENDING',
+                    paymentMethod: 'VIETQR',
+                    items: currentCheckoutData.items
+                });
+
+                showToast('Chuyển hướng đến cổng thanh toán PayOS VietQR...', 'info');
+                setTimeout(() => {
+                    window.location.href = result.data.checkoutUrl;
+                }, 300);
+            } else {
+                throw new Error(result.message || 'Không thể tạo mã thanh toán PayOS');
             }
-
-            let qrString = null;
-            if (result.success && result.data) {
-                if (result.data.orderId) currentCreatedOrderId = result.data.orderId;
-                if (result.data.trackingNumber) currentCheckoutData.orderCode = result.data.trackingNumber;
-                if (result.data.qrCode) qrString = result.data.qrCode;
-            }
-
-            // Hiển thị Step 2 ngay trong modal
-            generateVietQR(currentCheckoutData.finalTotal, currentCheckoutData.orderCode, qrString);
-
-            // Render Tóm tắt đơn hàng ở Step 2
-            const itemsEl = document.getElementById('paymentOrderItems');
-            if (itemsEl) {
-                itemsEl.innerHTML = currentCheckoutData.items.map(item => `
-                    <div class="d-flex justify-content-between py-1 border-bottom fs-8">
-                        <span class="text-truncate" style="max-width: 200px;">${escapeHtml(item.title)} (x${item.quantity})</span>
-                        <span class="fw-semibold">${formatCurrency(item.price * item.quantity)}</span>
-                    </div>
-                `).join('');
-            }
-            const totalEl = document.getElementById('paymentTotalAmount');
-            if (totalEl) totalEl.textContent = formatCurrency(currentCheckoutData.finalTotal);
-
-            // Lưu local cache
-            saveLocalOrder({
-                id: currentCreatedOrderId || Date.now(),
-                trackingNumber: currentCheckoutData.orderCode,
-                createdAt: new Date().toISOString(),
-                receiverName: currentCheckoutData.receiverName,
-                receiverPhone: currentCheckoutData.receiverPhone,
-                shippingAddress: currentCheckoutData.shippingAddress,
-                totalAmount: currentCheckoutData.finalTotal,
-                status: 'PENDING',
-                paymentMethod: 'VIETQR',
-                items: currentCheckoutData.items
-            });
-
-            showPaymentStep(2);
-            startPaymentPolling(currentCheckoutData.orderCode);
         })
         .catch(err => {
-            console.warn('PayOS API fallback to VietQR direct', err);
+            console.error('PayOS checkout error:', err);
+            showToast('Lỗi tạo mã PayOS: ' + err.message, 'error');
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-qrcode me-1"></i> Quét Mã VietQR (PayOS) <i class="fas fa-arrow-right ms-1"></i>';
+                submitBtn.innerHTML = '<i class="fas fa-qrcode me-1"></i> Thử Lại Quét Mã PayOS <i class="fas fa-arrow-right ms-1"></i>';
             }
-
-            // Fallback: Tạo đơn hàng qua /api/orders thông thường và hiển thị QR VietQR
-            saveOrderToBackendAndFinish('VIETQR', true);
         });
         return;
+    }
     } else {
         // COD checkout immediate completion
-        saveOrderToBackendAndFinish('COD', false);
+        saveOrderToBackendAndFinish('COD');
     }
 }
 
 function backToCartModal() {
-    stopPaymentPolling();
     closeModal('paymentModal');
     openModal('cartModal');
 }
 
-async function saveOrderToBackendAndFinish(paymentMethod, isVietQRStep2 = false) {
+async function saveOrderToBackendAndFinish(paymentMethod) {
     const payload = {
         userId: (currentUser && currentUser.id) ? currentUser.id : null,
         receiverName: currentCheckoutData.receiverName,
         receiverPhone: currentCheckoutData.receiverPhone,
         shippingAddress: currentCheckoutData.shippingAddress,
         note: currentCheckoutData.note,
-        trackingNumber: currentCheckoutData.orderCode,
         paymentMethod: paymentMethod,
         subtotal: currentCheckoutData.subtotal,
         shippingFee: 0,
@@ -4315,6 +4017,7 @@ async function saveOrderToBackendAndFinish(paymentMethod, isVietQRStep2 = false)
         console.warn('Backend API /api/orders not reachable, fallback to local storage', e);
     }
 
+    // Fallback local persistence if offline
     if (!createdOrder) {
         createdOrder = {
             id: Date.now(),
@@ -4331,45 +4034,32 @@ async function saveOrderToBackendAndFinish(paymentMethod, isVietQRStep2 = false)
             statusLabel: 'Chờ xác nhận',
             statusCode: 1,
             paymentMethod: paymentMethod,
-            paymentStatus: 'PENDING',
+            paymentStatus: paymentMethod === 'QR_TRANSFER' ? 'COMPLETED' : 'PENDING',
             items: currentCheckoutData.items
         };
     }
 
+    // Save to local storage cache
     saveLocalOrder(createdOrder);
 
-    if (isVietQRStep2) {
-        // Chuyển sang Step 2 hiển thị QR
-        generateVietQR(currentCheckoutData.finalTotal, currentCheckoutData.orderCode);
-        const itemsEl = document.getElementById('paymentOrderItems');
-        if (itemsEl) {
-            itemsEl.innerHTML = currentCheckoutData.items.map(item => `
-                <div class="d-flex justify-content-between py-1 border-bottom fs-8">
-                    <span class="text-truncate" style="max-width: 200px;">${escapeHtml(item.title)} (x${item.quantity})</span>
-                    <span class="fw-semibold">${formatCurrency(item.price * item.quantity)}</span>
-                </div>
-            `).join('');
-        }
-        const totalEl = document.getElementById('paymentTotalAmount');
-        if (totalEl) totalEl.textContent = formatCurrency(currentCheckoutData.finalTotal);
-
-        showPaymentStep(2);
-        startPaymentPolling(currentCheckoutData.orderCode);
-        return;
-    }
-
-    // COD: hoàn tất ngay
+    // Clear cart
     cart = [];
     appliedCoupon = null;
     updateCartUI();
 
+    // Fill Step 3 UI
     const codeEl = document.getElementById('confirmedOrderCode');
     if (codeEl) codeEl.textContent = createdOrder.trackingNumber || currentCheckoutData.orderCode;
 
     const methodBadge = document.getElementById('confirmedPaymentMethod');
     if (methodBadge) {
-        methodBadge.className = 'badge bg-secondary-subtle text-secondary fw-bold fs-8';
-        methodBadge.textContent = 'Thanh toán khi nhận hàng (COD)';
+        if (paymentMethod === 'COD') {
+            methodBadge.className = 'badge bg-secondary-subtle text-secondary fw-bold fs-8';
+            methodBadge.textContent = 'Thanh toán khi nhận hàng (COD)';
+        } else {
+            methodBadge.className = 'badge bg-primary-subtle text-primary fw-bold fs-8';
+            methodBadge.textContent = 'Thanh toán online VNPay';
+        }
     }
 
     const recNameEl = document.getElementById('confirmedReceiver');
@@ -4387,6 +4077,7 @@ async function saveOrderToBackendAndFinish(paymentMethod, isVietQRStep2 = false)
     }
 
     showPaymentStep(3);
+
     const toastMsg = '🎉 Đặt hàng thành công! Đơn hàng đang ở trạng thái <b>Chờ xác nhận</b>.';
     showToast(toastMsg, 'success');
 }

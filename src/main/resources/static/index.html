@@ -611,13 +611,10 @@
             <!-- Steps -->
             <div class="payment-steps d-flex">
                 <div class="payment-step active" id="step1Indicator">
-                    <span class="step-num">1</span> <span class="step-label">Thông Tin Giao Hàng</span>
-                </div>
-                <div class="payment-step" id="step2Indicator">
-                    <span class="step-num">2</span> <span class="step-label">Thanh Toán QR</span>
+                    <span class="step-num">1</span> <span class="step-label">Thông Tin & Thanh Toán</span>
                 </div>
                 <div class="payment-step" id="step3Indicator">
-                    <span class="step-num">3</span> <span class="step-label">Hoàn Tất</span>
+                    <span class="step-num">2</span> <span class="step-label">Hoàn Tất Đơn Hàng</span>
                 </div>
             </div>
 
@@ -786,142 +783,6 @@
                 </div>
             </div>
 
-            <!-- Step 2: PayOS VietQR Transfer (Exact UI as in screenshot) -->
-            <div id="paymentStep2" class="custom-modal-body" style="display:none;">
-                <div class="row g-4 align-items-start">
-                    <!-- QR Code -->
-                    <div class="col-md-5 text-center">
-                        <div class="qr-wrapper">
-                            <div class="qr-label"><i class="fas fa-mobile-alt me-1"></i>Quét mã QR để thanh toán</div>
-                            <div class="qr-code-box" id="qrCodeBox">
-                                <img id="qrCodeImg" src="" alt="QR BIDV" class="img-fluid rounded-3"
-                                    onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=STK:5150739935-BIDV'">
-                                <div class="qr-loading" id="qrLoading">
-                                    <div class="spinner-border text-primary" role="status"></div>
-                                    <p class="mt-2 text-muted fs-8">Đang tải mã QR...</p>
-                                </div>
-                            </div>
-                            <div class="qr-bank-badge">
-                                <img src="https://api.vietqr.io/img/BIDV.png" alt="BIDV" class="qr-bank-logo"
-                                    onerror="this.parentElement.innerHTML='<strong style=color:#d32f2f>BIDV</strong>'">
-                                <span class="fw-bold text-danger">BIDV</span>
-                            </div>
-                        </div>
-                        <p class="text-muted fs-8 mt-2">Hỗ trợ: MoMo, ZaloPay, BIDV App,<br>và tất cả app ngân hàng có QR</p>
-                    </div>
-                    <!-- Bank Info -->
-                    <div class="col-md-7">
-                        <div class="bank-info-card mb-3">
-                            <div class="bank-info-title"><i class="fas fa-university me-2"></i>Thông Tin Tài Khoản</div>
-                            <div class="bank-info-row">
-                                <span class="bank-info-label">Ngân hàng</span>
-                                <span class="bank-info-value text-danger fw-bold">BIDV</span>
-                            </div>
-                            <div class="bank-info-row">
-                                <span class="bank-info-label">Số tài khoản</span>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="bank-info-value fw-bold fs-5" id="displayAccountNum">5150739935</span>
-                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0 fs-8"
-                                        onclick="copyAccountNumber()">
-                                        <i class="fas fa-copy me-1"></i>Copy
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="bank-info-row">
-                                <span class="bank-info-label">Chủ tài khoản</span>
-                                <span class="bank-info-value fw-semibold">HO SY THANH</span>
-                            </div>
-                            <div class="bank-info-row">
-                                <span class="bank-info-label">Nội dung CK</span>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="bank-info-value text-primary fw-semibold fs-8"
-                                        id="transferContent">BM-</span>
-                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0 fs-8"
-                                        onclick="copyTransferContent()">
-                                        <i class="fas fa-copy me-1"></i>Copy
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="order-summary-card mb-3">
-                            <div class="order-summary-title"><i class="fas fa-receipt me-2"></i>Tóm Tắt Đơn Hàng</div>
-                            <div id="paymentOrderItems" class="order-items-mini"></div>
-                            <div class="order-total-row">
-                                <span>Tổng thanh toán:</span>
-                                <span class="text-primary fw-bold fs-5" id="paymentTotalAmount">0đ</span>
-                            </div>
-                        </div>
-                        <!-- Trạng thái kiểm tra thanh toán Tự Động 24/7 -->
-                        <div id="qrPaymentPendingBox" class="payment-alert-note pending">
-                            <div class="d-flex align-items-start gap-2.5">
-                                <span class="pulse-radar-dot mt-1"></span>
-                                <div class="flex-grow-1">
-                                    <div
-                                        class="fw-bold text-dark fs-8 mb-0.5 d-flex align-items-center justify-content-between flex-wrap gap-1">
-                                        <span><i class="fas fa-bolt text-warning me-1"></i>Đang tự động lắng nghe giao
-                                            dịch 24/7...</span>
-                                        <span class="badge bg-success-subtle text-success fs-9 fw-semibold">Live Napas
-                                            247</span>
-                                    </div>
-                                    <div class="text-muted fs-9 mb-2">
-                                        Quý khách vui lòng mở App ngân hàng quét mã VietQR và chuyển khoản. Sau khi tiền
-                                        vào tài khoản BIDV,
-                                        <strong>hệ thống sẽ tự động xác nhận và hoàn tất đơn hàng trong 1-3
-                                            giây</strong> mà không cần bạn làm gì thêm!
-                                    </div>
-
-                                    <!-- Thông báo lỗi khi bấm kiểm tra mà chưa có tiền -->
-                                    <div id="paymentCheckWarning"
-                                        class="alert alert-danger py-1.5 px-2.5 fs-9 mb-2 border-danger-subtle"
-                                        style="display:none;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>
-                                        <strong>Chưa phát hiện giao dịch!</strong> Tài khoản BIDV chưa nhận được tiền
-                                        khớp với nội dung <span class="fw-bold text-dark" id="warnOrderCode"></span>.
-                                        Vui lòng chuyển tiền hoặc thử lại sau vài giây.
-                                    </div>
-
-                                    <div class="mt-2 pt-1 border-top border-warning-subtle">
-                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                            <span class="fs-9 text-secondary">
-                                                <i class="fas fa-sync-alt fa-spin me-1 text-primary"></i>Tự động quét
-                                                mỗi 2 giây
-                                            </span>
-                                            <div class="d-flex gap-1.5">
-                                                <button type="button"
-                                                    class="btn btn-sm btn-outline-primary py-1 px-2.5 rounded-pill fs-9 fw-semibold shadow-none"
-                                                    id="btnManualCheckPayment" onclick="manualCheckPayment()">
-                                                    <i class="fas fa-sync-alt me-1"></i>Kiểm tra ngay
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Trạng thái Đã Thanh Toán Thành Công (Mở khóa xác nhận) -->
-                        <div id="qrPaymentSuccessBox" class="payment-alert-note verified" style="display:none;">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm"
-                                    style="width: 32px; height: 32px;">
-                                    <i class="fas fa-check fs-6"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="fw-bold text-success fs-8">
-                                        Đã nhận thanh toán thành công qua BIDV!
-                                    </div>
-                                    <div class="text-dark fs-9">
-                                        Đã khớp giao dịch: <strong class="text-success"
-                                            id="verifiedPaymentAmount">0đ</strong>. Đang hoàn tất đơn hàng...
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Step 3: Success & Initial Tracking Status -->
             <div id="paymentStep3" class="custom-modal-body p-4 text-center" style="display:none;">
                 <div class="success-animation mb-3">
@@ -1001,21 +862,6 @@
                         <i class="fas fa-home me-2"></i>Tiếp Tục Mua Sắm
                     </button>
                 </div>
-            </div>
-
-            <!-- Footer for Step 2 (QR Transfer) matching screenshot -->
-            <div class="custom-modal-footer" id="paymentFooter" style="display:none;">
-                <div class="d-flex align-items-center gap-2 text-muted fs-8 me-auto">
-                    <span class="pulse-radar-dot"></span>
-                    <span class="text-success fw-semibold fs-9">Tự động xác nhận khi chuyển tiền thành công</span>
-                </div>
-                <button class="btn btn-outline-secondary rounded-pill px-3.5 fs-8" onclick="backToStep1()">
-                    <i class="fas fa-arrow-left me-1"></i> Quay lại
-                </button>
-                <button class="btn btn-outline-primary rounded-pill px-4 fw-bold fs-8 shadow-sm" id="btnConfirmPayment"
-                    onclick="manualCheckPayment()">
-                    <i class="fas fa-sync-alt me-1"></i> Tôi Đã Chuyển Khoản
-                </button>
             </div>
 
 
