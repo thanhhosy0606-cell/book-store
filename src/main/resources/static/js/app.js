@@ -3812,26 +3812,30 @@ function selectPaymentMethod(method) {
     currentCheckoutData.selectedMethod = method;
 
     const cardCOD = document.getElementById('cardMethodCOD');
-    const cardQR = document.getElementById('cardMethodQR');
+    const cardVNPAY = document.getElementById('cardMethodVNPAY') || document.getElementById('cardMethodQR');
     const radioCOD = document.getElementById('payMethodCOD');
-    const radioQR = document.getElementById('payMethodQR');
+    const radioVNPAY = document.getElementById('payMethodVNPAY') || document.getElementById('payMethodQR');
     const submitBtn = document.getElementById('btnSubmitOrder');
 
     if (method === 'COD') {
         if (cardCOD) cardCOD.classList.add('selected');
-        if (cardQR) cardQR.classList.remove('selected');
+        if (cardVNPAY) cardVNPAY.classList.remove('selected');
         if (radioCOD) radioCOD.checked = true;
         if (submitBtn) {
             submitBtn.className = 'btn btn-primary rounded-pill py-2.5 fw-bold fs-7 shadow-sm';
+            submitBtn.style.background = '';
+            submitBtn.style.borderColor = '';
             submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Xác Nhận Đặt Hàng (COD)';
         }
     } else {
-        if (cardQR) cardQR.classList.add('selected');
+        if (cardVNPAY) cardVNPAY.classList.add('selected');
         if (cardCOD) cardCOD.classList.remove('selected');
-        if (radioQR) radioQR.checked = true;
+        if (radioVNPAY) radioVNPAY.checked = true;
         if (submitBtn) {
-            submitBtn.className = 'btn btn-danger rounded-pill py-2.5 fw-bold fs-7 shadow-sm';
-            submitBtn.innerHTML = '<i class="fas fa-qrcode me-1"></i> Tiếp Tục Thanh Toán QR <i class="fas fa-arrow-right ms-1"></i>';
+            submitBtn.className = 'btn rounded-pill py-2.5 fw-bold fs-7 shadow-sm text-white';
+            submitBtn.style.background = 'linear-gradient(135deg, #005baa 0%, #0088cc 100%)';
+            submitBtn.style.borderColor = '#005baa';
+            submitBtn.innerHTML = '<i class="fas fa-credit-card me-1"></i> Thanh Toán Qua Cổng VNPay <i class="fas fa-arrow-right ms-1"></i>';
         }
     }
 }
@@ -4332,36 +4336,70 @@ function processCheckoutSubmit() {
     currentCheckoutData.shippingAddress = address;
     currentCheckoutData.note = note;
 
-    if (currentCheckoutData.selectedMethod === 'QR_TRANSFER') {
-        // Setup Step 2 VietQR
-        const transferContent = currentCheckoutData.orderCode;
-        const transferEl = document.getElementById('transferContent');
-        if (transferEl) transferEl.textContent = transferContent;
-
-        const orderItemsEl = document.getElementById('paymentOrderItems');
-        if (orderItemsEl) {
-            orderItemsEl.innerHTML = currentCheckoutData.items.map(item => `
-                <div class="order-item-mini-row">
-                    <span class="text-truncate" style="max-width: 180px;">${escapeHtml(item.title)}</span>
-                    <span class="text-nowrap">${item.quantity}x ${formatCurrency(item.price)}</span>
-                </div>
-            `).join('');
-            if (currentCheckoutData.discountAmount > 0) {
-                orderItemsEl.innerHTML += `
-                    <div class="order-item-mini-row text-success">
-                        <span><i class="fas fa-tag me-1"></i>Mã giảm giá ${appliedCoupon || ''}</span>
-                        <span>-${formatCurrency(currentCheckoutData.discountAmount)}</span>
-                    </div>
-                `;
-            }
+    if (currentCheckoutData.selectedMethod === 'VNPAY' || currentCheckoutData.selectedMethod === 'QR_TRANSFER') {
+        const submitBtn = document.getElementById('btnSubmitOrder');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang kết nối VNPay Sandbox...';
         }
 
-        const totalEl = document.getElementById('paymentTotalAmount');
-        if (totalEl) totalEl.textContent = formatCurrency(currentCheckoutData.finalTotal);
+        const payload = {
+            userId: (currentUser && currentUser.id) ? currentUser.id : null,
+            receiverName: currentCheckoutData.receiverName,
+            receiverPhone: currentCheckoutData.receiverPhone,
+            shippingAddress: currentCheckoutData.shippingAddress,
+            note: currentCheckoutData.note,
+            trackingNumber: currentCheckoutData.orderCode,
+            paymentMethod: 'VNPAY',
+            subtotal: currentCheckoutData.subtotal,
+            shippingFee: 0,
+            totalAmount: currentCheckoutData.finalTotal,
+            items: currentCheckoutData.items.map(item => ({
+                bookId: item.id,
+                title: item.title,
+                author: item.author,
+                quantity: item.quantity,
+                price: item.price
+            }))
+        };
 
-        generateVietQR(currentCheckoutData.finalTotal, transferContent);
-        showPaymentStep(2);
-        createPendingQROrder(transferContent);
+        fetch('/api/payment/vnpay/create-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success && result.data && result.data.paymentUrl) {
+                saveLocalOrder({
+                    id: result.data.orderId || Date.now(),
+                    trackingNumber: result.data.trackingNumber || currentCheckoutData.orderCode,
+                    createdAt: new Date().toISOString(),
+                    receiverName: currentCheckoutData.receiverName,
+                    receiverPhone: currentCheckoutData.receiverPhone,
+                    shippingAddress: currentCheckoutData.shippingAddress,
+                    totalAmount: currentCheckoutData.finalTotal,
+                    status: 'PENDING',
+                    paymentMethod: 'VNPAY',
+                    items: currentCheckoutData.items
+                });
+
+                showToast('Đang chuyển hướng sang cổng thanh toán VNPay Sandbox...', 'info');
+                setTimeout(() => {
+                    window.location.href = result.data.paymentUrl;
+                }, 300);
+            } else {
+                throw new Error(result.message || 'Không thể tạo URL thanh toán VNPay');
+            }
+        })
+        .catch(err => {
+            console.error('VNPay checkout error:', err);
+            showToast('Lỗi kết nối VNPay: ' + err.message, 'error');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-credit-card me-1"></i> Thử Lại Thanh Toán VNPay <i class="fas fa-arrow-right ms-1"></i>';
+            }
+        });
     } else {
         // COD checkout immediate completion
         saveOrderToBackendAndFinish('COD');

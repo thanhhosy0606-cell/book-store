@@ -687,22 +687,25 @@
                                 <span class="badge bg-secondary-subtle text-secondary fs-9">Tiện lợi</span>
                             </label>
 
-                            <!-- Option 2: Direct QR Transfer -->
+                            <!-- Option 2: VNPay Online Payment -->
                             <label class="payment-method-card border rounded-3 p-2.5 d-flex align-items-center gap-3"
-                                id="cardMethodQR" style="cursor: pointer;" onclick="selectPaymentMethod('QR_TRANSFER')">
+                                id="cardMethodVNPAY" style="cursor: pointer;" onclick="selectPaymentMethod('VNPAY')">
                                 <input class="form-check-input mt-0" type="radio" name="checkoutPaymentMethod"
-                                    id="payMethodQR" value="QR_TRANSFER">
-                                <div class="d-flex align-items-center justify-content-center bg-danger-subtle rounded-circle text-danger"
-                                    style="width: 38px; height: 38px;">
-                                    <i class="fas fa-qrcode fs-6"></i>
+                                    id="payMethodVNPAY" value="VNPAY">
+                                <div class="d-flex align-items-center justify-content-center rounded-3 p-1"
+                                    style="width: 44px; height: 38px; background: #e0f2fe;">
+                                    <img src="https://sandbox.vnpayment.vn/paymentv2/Images/brands/logo.svg" 
+                                         alt="VNPay" height="22" 
+                                         onerror="this.parentElement.innerHTML='<b style=color:#005baa;font-size:11px;>VNPAY</b>'">
                                 </div>
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold fs-7 text-dark">Thanh toán trực tiếp luôn (VietQR / Ngân hàng)
+                                    <div class="fw-bold fs-7 text-dark d-flex align-items-center gap-1">
+                                        <span>Thanh toán Online VNPay</span>
+                                        <span class="badge bg-danger text-white fs-9 py-0.5 px-1.5 rounded-pill">SANDBOX</span>
                                     </div>
-                                    <small class="text-muted fs-8">Quét mã QR qua BIDV App, Vietcombank, Techcombank,
-                                        MoMo...</small>
+                                    <small class="text-muted fs-8">VNPAY-QR, Thẻ ATM nội địa (NCB...), Visa, Master...</small>
                                 </div>
-                                <span class="badge bg-danger-subtle text-danger fs-9 fw-bold">Trực tiếp 0đ phí</span>
+                                <span class="badge bg-success-subtle text-success fs-9 fw-bold">Tự động 0đ phí</span>
                             </label>
                         </div>
                     </div>
