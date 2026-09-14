@@ -46,11 +46,10 @@ public class AdminCategoryController {
             slug = baseSlug + "-" + counter++;
         }
 
-        Category category = Category.builder()
-                .name(name.trim())
-                .slug(slug)
-                .status(true)
-                .build();
+        Category category = new Category();
+        category.setName(name.trim());
+        category.setSlug(slug);
+        category.setStatus(true);
 
         Category saved = categoryRepository.save(category);
         log.info("Admin created category #{}: {}", saved.getId(), saved.getName());

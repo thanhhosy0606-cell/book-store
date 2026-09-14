@@ -145,88 +145,92 @@ public class AdminStatsController {
         List<Long> orderCounts = new ArrayList<>();
         List<RevenueAnalyticsDto.RevenueDetailItemDto> details = new ArrayList<>();
 
-        String filterTitle = "";
+        String filterTitle;
         BigDecimal totalRevenue = BigDecimal.ZERO;
         long totalOrders = 0;
 
         DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("dd/MM");
 
-        if ("MONTH".equals(periodUpper)) {
-            filterTitle = "Năm " + targetYear + " (12 Tháng)";
-            for (int m = 1; m <= 12; m++) {
-                final int currentMonth = m;
-                String label = "Tháng " + (m < 10 ? "0" + m : m);
-                labels.add(label);
+        switch (periodUpper) {
+            case "MONTH" -> {
+                filterTitle = "Năm " + targetYear + " (12 Tháng)";
+                for (int m = 1; m <= 12; m++) {
+                    final int currentMonth = m;
+                    String label = "Tháng " + (m < 10 ? "0" + m : m);
+                    labels.add(label);
 
-                List<Order> monthOrders = validOrders.stream()
-                        .filter(o -> o.getCreatedAt().getYear() == targetYear && o.getCreatedAt().getMonthValue() == currentMonth)
-                        .collect(Collectors.toList());
+                    List<Order> monthOrders = validOrders.stream()
+                            .filter(o -> o.getCreatedAt().getYear() == targetYear && o.getCreatedAt().getMonthValue() == currentMonth)
+                            .collect(Collectors.toList());
 
-                BigDecimal monthRev = monthOrders.stream()
-                        .map(Order::getTotalAmount)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal monthRev = monthOrders.stream()
+                            .map(Order::getTotalAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                revenues.add(monthRev);
-                orderCounts.add((long) monthOrders.size());
-                totalRevenue = totalRevenue.add(monthRev);
-                totalOrders += monthOrders.size();
+                    revenues.add(monthRev);
+                    orderCounts.add((long) monthOrders.size());
+                    totalRevenue = totalRevenue.add(monthRev);
+                    totalOrders += monthOrders.size();
+                }
             }
-        } else if ("YEAR".equals(periodUpper)) {
-            filterTitle = "Toàn Bộ Các Năm";
-            int minYear = validOrders.stream()
-                    .mapToInt(o -> o.getCreatedAt().getYear())
-                    .min()
-                    .orElse(today.getYear() - 3);
-            int maxYear = Math.max(today.getYear(), validOrders.stream()
-                    .mapToInt(o -> o.getCreatedAt().getYear())
-                    .max()
-                    .orElse(today.getYear()));
+            case "YEAR" -> {
+                filterTitle = "Toàn Bộ Các Năm";
+                int minYear = validOrders.stream()
+                        .mapToInt(o -> o.getCreatedAt().getYear())
+                        .min()
+                        .orElse(today.getYear() - 3);
+                int maxYear = Math.max(today.getYear(), validOrders.stream()
+                        .mapToInt(o -> o.getCreatedAt().getYear())
+                        .max()
+                        .orElse(today.getYear()));
 
-            if (maxYear - minYear < 3) {
-                minYear = maxYear - 3;
+                if (maxYear - minYear < 3) {
+                    minYear = maxYear - 3;
+                }
+
+                for (int y = minYear; y <= maxYear; y++) {
+                    final int currentYear = y;
+                    String label = "Năm " + currentYear;
+                    labels.add(label);
+
+                    List<Order> yearOrders = validOrders.stream()
+                            .filter(o -> o.getCreatedAt().getYear() == currentYear)
+                            .collect(Collectors.toList());
+
+                    BigDecimal yearRev = yearOrders.stream()
+                            .map(Order::getTotalAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    revenues.add(yearRev);
+                    orderCounts.add((long) yearOrders.size());
+                    totalRevenue = totalRevenue.add(yearRev);
+                    totalOrders += yearOrders.size();
+                }
             }
+            default -> {
+                // Default "DAY"
+                int numDays = (days != null && days > 0) ? Math.min(days, 90) : 30;
+                filterTitle = numDays + " Ngày Gần Nhất";
 
-            for (int y = minYear; y <= maxYear; y++) {
-                final int currentYear = y;
-                String label = "Năm " + currentYear;
-                labels.add(label);
+                LocalDate startDate = today.minusDays(numDays - 1);
+                for (int i = 0; i < numDays; i++) {
+                    LocalDate date = startDate.plusDays(i);
+                    String label = date.format(dayFormatter);
+                    labels.add(label);
 
-                List<Order> yearOrders = validOrders.stream()
-                        .filter(o -> o.getCreatedAt().getYear() == currentYear)
-                        .collect(Collectors.toList());
+                    List<Order> dayOrders = validOrders.stream()
+                            .filter(o -> o.getCreatedAt().toLocalDate().isEqual(date))
+                            .collect(Collectors.toList());
 
-                BigDecimal yearRev = yearOrders.stream()
-                        .map(Order::getTotalAmount)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal dayRev = dayOrders.stream()
+                            .map(Order::getTotalAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                revenues.add(yearRev);
-                orderCounts.add((long) yearOrders.size());
-                totalRevenue = totalRevenue.add(yearRev);
-                totalOrders += yearOrders.size();
-            }
-        } else {
-            // Default "DAY"
-            int numDays = (days != null && days > 0) ? Math.min(days, 90) : 30;
-            filterTitle = numDays + " Ngày Gần Nhất";
-
-            LocalDate startDate = today.minusDays(numDays - 1);
-            for (int i = 0; i < numDays; i++) {
-                LocalDate date = startDate.plusDays(i);
-                String label = date.format(dayFormatter);
-                labels.add(label);
-
-                List<Order> dayOrders = validOrders.stream()
-                        .filter(o -> o.getCreatedAt().toLocalDate().isEqual(date))
-                        .collect(Collectors.toList());
-
-                BigDecimal dayRev = dayOrders.stream()
-                        .map(Order::getTotalAmount)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                revenues.add(dayRev);
-                orderCounts.add((long) dayOrders.size());
-                totalRevenue = totalRevenue.add(dayRev);
-                totalOrders += dayOrders.size();
+                    revenues.add(dayRev);
+                    orderCounts.add((long) dayOrders.size());
+                    totalRevenue = totalRevenue.add(dayRev);
+                    totalOrders += dayOrders.size();
+                }
             }
         }
 

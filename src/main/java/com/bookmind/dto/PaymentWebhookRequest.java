@@ -107,5 +107,60 @@ public class PaymentWebhookRequest {
         if (paymentLinkId != null) return paymentLinkId;
         return "REF-" + System.currentTimeMillis();
     }
+
+    // Explicit Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getGateway() { return gateway; }
+    public void setGateway(String gateway) { this.gateway = gateway; }
+
+    public String getTransactionDate() { return transactionDate; }
+    public void setTransactionDate(String transactionDate) { this.transactionDate = transactionDate; }
+
+    public String getAccountNumber() { return accountNumber; }
+    public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
+
+    public String getSubAccount() { return subAccount; }
+    public void setSubAccount(String subAccount) { this.subAccount = subAccount; }
+
+    public String getTransferType() { return transferType; }
+    public void setTransferType(String transferType) { this.transferType = transferType; }
+
+    public BigDecimal getTransferAmount() { return transferAmount; }
+    public void setTransferAmount(BigDecimal transferAmount) { this.transferAmount = transferAmount; }
+
+    public BigDecimal getAmountIn() { return amountIn; }
+    public void setAmountIn(BigDecimal amountIn) { this.amountIn = amountIn; }
+
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public BigDecimal getAmountOut() { return amountOut; }
+    public void setAmountOut(BigDecimal amountOut) { this.amountOut = amountOut; }
+
+    public BigDecimal getAccumulated() { return accumulated; }
+    public void setAccumulated(BigDecimal accumulated) { this.accumulated = accumulated; }
+
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
+
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+
+    public String getTransactionContent() { return transactionContent; }
+    public void setTransactionContent(String transactionContent) { this.transactionContent = transactionContent; }
+
+    public String getReferenceCode() { return referenceCode; }
+    public void setReferenceCode(String referenceCode) { this.referenceCode = referenceCode; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public Long getOrderCode() { return orderCode; }
+    public void setOrderCode(Long orderCode) { this.orderCode = orderCode; }
+
+    public String getPaymentLinkId() { return paymentLinkId; }
+    public void setPaymentLinkId(String paymentLinkId) { this.paymentLinkId = paymentLinkId; }
 }
 

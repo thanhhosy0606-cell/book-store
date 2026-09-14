@@ -2,9 +2,7 @@ package com.bookmind.controller;
 
 import com.bookmind.dto.AdminOrderDto;
 import com.bookmind.entity.Book;
-import com.bookmind.entity.BookImage;
 import com.bookmind.entity.Order;
-import com.bookmind.entity.OrderDetail;
 import com.bookmind.entity.Payment;
 import com.bookmind.entity.enums.OrderStatus;
 import com.bookmind.repository.OrderRepository;
@@ -116,7 +114,7 @@ public class AdminOrderController {
                     img = b.getImages().get(0).getImageUrl();
                 }
                 BigDecimal price = d.getUnitPrice() != null ? d.getUnitPrice() : BigDecimal.ZERO;
-                int qty = d.getQuantity() != null ? d.getQuantity() : 0;
+                int qty = (d.getQuantity() != null) ? d.getQuantity().intValue() : 0;
                 BigDecimal sub = price.multiply(BigDecimal.valueOf(qty));
 
                 return AdminOrderDto.AdminOrderItemDto.builder()
