@@ -3665,7 +3665,7 @@ const PAYMENT_ACCOUNT = {
     bank: 'BIDV',
     bankCode: '970418',
     accountNumber: '5150739935',
-    accountName: 'HỒ SỸ THÀNH'
+    accountName: 'HO SY THANH'
 };
 
 let currentCheckoutData = {
