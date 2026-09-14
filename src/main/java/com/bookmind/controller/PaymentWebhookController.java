@@ -93,6 +93,8 @@ public class PaymentWebhookController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
+            response.put("code", "00");
+            response.put("desc", "success");
             if (processedOrder != null) {
                 response.put("message", "Xác thực thanh toán đơn hàng thành công!");
                 response.put("orderId", processedOrder.getId());
@@ -108,6 +110,8 @@ public class PaymentWebhookController {
             log.error("Error handling payment webhook", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
+            response.put("code", "00");
+            response.put("desc", "success");
             response.put("message", "Đã nhận webhook: " + e.getMessage());
             return ResponseEntity.ok(response);
         }

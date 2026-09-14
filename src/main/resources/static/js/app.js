@@ -4350,23 +4350,68 @@ function processCheckoutSubmit() {
     currentCheckoutData.note = note;
 
     if (currentCheckoutData.selectedMethod === 'QR_TRANSFER') {
-        const orderCode = currentCheckoutData.orderCode;
-        generateVietQR(currentCheckoutData.finalTotal, orderCode);
-        createPendingQROrder(orderCode);
-
-        const itemsEl = document.getElementById('paymentOrderItems');
-        if (itemsEl) {
-            itemsEl.innerHTML = currentCheckoutData.items.map(item => `
-                <div class="d-flex justify-content-between py-1 border-bottom fs-8">
-                    <span class="text-truncate" style="max-width: 200px;">${escapeHtml(item.title)} (x${item.quantity})</span>
-                    <span class="fw-semibold">${formatCurrency(item.price * item.quantity)}</span>
-                </div>
-            `).join('');
+        const submitBtn = document.getElementById('btnSubmitOrder');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang kết nối PayOS VietQR...';
         }
-        const totalEl = document.getElementById('paymentTotalAmount');
-        if (totalEl) totalEl.textContent = formatCurrency(currentCheckoutData.finalTotal);
 
-        showPaymentStep(2);
+        const payload = {
+            userId: (currentUser && currentUser.id) ? currentUser.id : null,
+            receiverName: currentCheckoutData.receiverName,
+            receiverPhone: currentCheckoutData.receiverPhone,
+            shippingAddress: currentCheckoutData.shippingAddress,
+            note: currentCheckoutData.note,
+            trackingNumber: currentCheckoutData.orderCode,
+            paymentMethod: 'VIETQR',
+            subtotal: currentCheckoutData.subtotal,
+            shippingFee: 0,
+            totalAmount: currentCheckoutData.finalTotal,
+            items: currentCheckoutData.items.map(item => ({
+                bookId: item.id,
+                title: item.title,
+                author: item.author,
+                quantity: item.quantity,
+                price: item.price
+            }))
+        };
+
+        fetch('/api/payment/payos/create-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (submitBtn) submitBtn.disabled = false;
+            if (result.success && result.data && result.data.checkoutUrl) {
+                saveLocalOrder({
+                    id: result.data.orderId || Date.now(),
+                    trackingNumber: result.data.trackingNumber || currentCheckoutData.orderCode,
+                    createdAt: new Date().toISOString(),
+                    receiverName: currentCheckoutData.receiverName,
+                    receiverPhone: currentCheckoutData.receiverPhone,
+                    shippingAddress: currentCheckoutData.shippingAddress,
+                    totalAmount: currentCheckoutData.finalTotal,
+                    status: 'PENDING',
+                    paymentMethod: 'VIETQR',
+                    items: currentCheckoutData.items
+                });
+
+                showToast('Chuyển hướng đến cổng thanh toán PayOS VietQR...', 'info');
+                setTimeout(() => {
+                    window.location.href = result.data.checkoutUrl;
+                }, 300);
+            } else {
+                console.info('PayOS not configured with live credentials, fallback to local QR:', result.message);
+                fallbackToLocalVietQR();
+            }
+        })
+        .catch(err => {
+            console.warn('PayOS API error, using local VietQR modal:', err);
+            if (submitBtn) submitBtn.disabled = false;
+            fallbackToLocalVietQR();
+        });
         return;
     }
 
@@ -4438,6 +4483,26 @@ function processCheckoutSubmit() {
         // COD checkout immediate completion
         saveOrderToBackendAndFinish('COD');
     }
+}
+
+function fallbackToLocalVietQR() {
+    const orderCode = currentCheckoutData.orderCode;
+    generateVietQR(currentCheckoutData.finalTotal, orderCode);
+    createPendingQROrder(orderCode);
+
+    const itemsEl = document.getElementById('paymentOrderItems');
+    if (itemsEl) {
+        itemsEl.innerHTML = currentCheckoutData.items.map(item => `
+            <div class="d-flex justify-content-between py-1 border-bottom fs-8">
+                <span class="text-truncate" style="max-width: 200px;">${escapeHtml(item.title)} (x${item.quantity})</span>
+                <span class="fw-semibold">${formatCurrency(item.price * item.quantity)}</span>
+            </div>
+        `).join('');
+    }
+    const totalEl = document.getElementById('paymentTotalAmount');
+    if (totalEl) totalEl.textContent = formatCurrency(currentCheckoutData.finalTotal);
+
+    showPaymentStep(2);
 }
 
 async function createPendingQROrder(trackingNumber) {

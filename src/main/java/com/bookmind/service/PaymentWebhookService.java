@@ -130,6 +130,18 @@ public class PaymentWebhookService {
         if (payOsOrderCode != null) {
             Optional<Order> byId = orderRepository.findById(payOsOrderCode);
             if (byId.isPresent()) return byId;
+
+            // Nếu orderCode được sinh dạng order.getId() + 100000L
+            if (payOsOrderCode > 100000L) {
+                byId = orderRepository.findById(payOsOrderCode - 100000L);
+                if (byId.isPresent()) return byId;
+            }
+
+            // Tìm theo tracking number BM-<orderCode>
+            Optional<Order> byTracking = orderRepository.findByTrackingNumber("BM-" + payOsOrderCode);
+            if (byTracking.isPresent()) return byTracking;
+            byTracking = orderRepository.findByTrackingNumber(String.valueOf(payOsOrderCode));
+            if (byTracking.isPresent()) return byTracking;
         }
 
         if (content != null && !content.isBlank()) {
