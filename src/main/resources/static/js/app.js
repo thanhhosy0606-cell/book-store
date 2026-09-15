@@ -3971,6 +3971,7 @@ function processCheckoutSubmit() {
         // COD checkout immediate completion
         saveOrderToBackendAndFinish('COD');
     }
+}
 
 
     function backToCartModal() {
@@ -5287,4 +5288,3 @@ function processCheckoutSubmit() {
     } else {
         initApp();
     }
-}
