@@ -2217,13 +2217,26 @@ let searchQuery = '';
 let currentPage = 1;
 const itemsPerPage = 16;
 let cart = [];
-let selectedCartIds = new Set(); // ID sách được tick để thanh toán
+try {
+    cart = JSON.parse(localStorage.getItem('bookmind_cart') || '[]');
+} catch (e) {
+    cart = [];
+}
+let selectedCartIds = new Set(cart.map(item => item.id)); // ID sách được tick để thanh toán
 let appliedCoupon = null;
 let currentUser = null;
 try {
     currentUser = JSON.parse(localStorage.getItem('bookmind_user') || 'null');
 } catch (e) {
     currentUser = null;
+}
+
+function saveCartToStorage() {
+    try {
+        localStorage.setItem('bookmind_cart', JSON.stringify(cart));
+    } catch (e) {
+        console.error('Error saving cart to storage:', e);
+    }
 }
 
 function requireLogin(actionName = 'thực hiện thao tác này') {
@@ -2383,6 +2396,16 @@ function initApp() {
     updateCartUI();
     updateNavAuthUI();
     syncCatalogFromApi();
+
+    if (document.getElementById('cartItemsList')) {
+        renderCartPage();
+    }
+    if (document.getElementById('checkoutOrderItemsList')) {
+        initCheckoutPage();
+    }
+    if (document.getElementById('myOrdersList')) {
+        loadMyOrders('ALL');
+    }
 }
 
 // ==========================================
@@ -2489,17 +2512,9 @@ function selectSearchKeyword(keyword) {
     if (searchInput) {
         searchInput.value = keyword;
     }
-    searchQuery = keyword.toLowerCase().trim();
-    currentPage = 1;
     saveRecentSearch(keyword);
-    renderBookGrid();
     hideSearchDropdown();
-
-    // Cuộn mượt đến phần danh sách sách
-    const catalogSection = document.getElementById('catalogSection') || document.getElementById('bookGrid');
-    if (catalogSection) {
-        catalogSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    window.location.href = '/books?keyword=' + encodeURIComponent(keyword);
 }
 
 function searchBookFromDropdown(bookId) {
@@ -2977,15 +2992,43 @@ function addToCartById(bookId, qty = 1, silent = false) {
     return addToCart(bookId, qty, silent);
 }
 
-function addToCart(bookId, qty = 1, silent = false) {
-    if (!requireLogin('thêm sản phẩm vào giỏ hàng')) {
+async function addToCart(bookId, qty = 1, silent = false) {
+    qty = parseInt(qty) || 1;
+    if (qty < 1) qty = 1;
+
+    let book = BOOK_CATALOG.find(b => b.id == bookId);
+    if (!book) {
+        try {
+            const res = await fetch('/api/books/' + bookId);
+            if (res.ok) {
+                const json = await res.json();
+                const bData = json.data || json;
+                if (bData && bData.id) {
+                    book = {
+                        id: bData.id,
+                        title: bData.title,
+                        author: bData.author || 'Nhã Nam',
+                        price: bData.salePrice || bData.price || 100000,
+                        oldPrice: bData.originalPrice || bData.oldPrice || bData.price,
+                        image: (bData.images && bData.images.length > 0) ? bData.images[0].imageUrl : (bData.slug ? '/images/' + bData.slug + '.jpg' : '/images/book_ai.png'),
+                        stockQuantity: bData.stockQuantity !== undefined ? bData.stockQuantity : 99,
+                        status: bData.status || 'AVAILABLE'
+                    };
+                    BOOK_CATALOG.push(book);
+                }
+            }
+        } catch (e) {
+            console.error('Error fetching book details for cart:', e);
+        }
+    }
+
+    if (!book) {
+        showToast('Không tìm thấy thông tin cuốn sách này!', 'danger');
         return false;
     }
-    const book = BOOK_CATALOG.find(b => b.id === bookId);
-    if (!book) return false;
 
     if (book.status === 'STOPPED') {
-        showToast(`Sách "<b>${book.title}</b>" hiện đã ngừng kinh doanh, không thể thêm vào giỏ hàng!`, 'danger');
+        showToast(`Sách "<b>${book.title}</b>" hiện đã ngừng kinh doanh!`, 'danger');
         return false;
     }
 
@@ -2995,10 +3038,7 @@ function addToCart(bookId, qty = 1, silent = false) {
         return false;
     }
 
-    qty = parseInt(qty) || 1;
-    if (qty < 1) qty = 1;
-
-    const existingIndex = cart.findIndex(item => item.id === bookId);
+    const existingIndex = cart.findIndex(item => item.id == bookId);
     const currentInCart = existingIndex > -1 ? cart[existingIndex].quantity : 0;
     if (currentInCart + qty > stock) {
         if (currentInCart > 0) {
@@ -3014,87 +3054,55 @@ function addToCart(bookId, qty = 1, silent = false) {
         cart[existingIndex].status = book.status;
         cart[existingIndex].stockQuantity = stock;
     } else {
-        cart.push({ ...book, quantity: qty, stockQuantity: stock });
+        cart.push({
+            id: book.id,
+            title: book.title,
+            author: book.author,
+            price: book.price || book.salePrice,
+            oldPrice: book.oldPrice || book.originalPrice,
+            image: book.image || '/images/book_ai.png',
+            quantity: qty,
+            stockQuantity: stock,
+            status: book.status
+        });
     }
 
+    selectedCartIds.add(Number(book.id));
+    saveCartToStorage();
     updateCartUI();
+
     if (!silent) {
         showToast(`Đã thêm <b>${qty > 1 ? qty + 'x ' : ''}${book.title}</b> vào giỏ hàng!`, 'success');
     }
     return true;
 }
 
-function buyNow(bookId, qty = 1) {
-    if (!requireLogin('tiến hành mua hàng')) {
-        return;
-    }
-    const book = BOOK_CATALOG.find(b => b.id === bookId);
-    if (!book) return;
-
-    if (book.status === 'STOPPED') {
-        showToast(`Sách "<b>${book.title}</b>" hiện đã ngừng kinh doanh, không thể đặt mua!`, 'danger');
-        return;
-    }
-
-    const stock = (book.stockQuantity !== undefined && book.stockQuantity !== null) ? book.stockQuantity : 99;
-    if (book.status === 'OUT_OF_STOCK' || stock <= 0) {
-        showToast(`Sách "<b>${book.title}</b>" hiện đang tạm hết hàng!`, 'warning');
-        return;
-    }
-
+async function buyNow(bookId, qty = 1) {
     qty = parseInt(qty) || 1;
-    if (qty > stock) {
-        showToast(`Kho không đủ sách! Bạn đặt <b>${qty}</b> cuốn nhưng kho chỉ còn <b>${stock}</b> cuốn.`, 'warning');
-        return;
+    const added = await addToCart(bookId, qty, true);
+    if (added) {
+        selectedCartIds.clear();
+        selectedCartIds.add(Number(bookId));
+        saveCartToStorage();
+        window.location.href = '/checkout';
     }
-
-    const added = addToCart(bookId, qty, true);
-    if (!added) return;
-    closeModal('bookDetailModal');
-    setTimeout(() => {
-        openPaymentModal();
-    }, 150);
 }
 
 function changeDetailQuantity(delta) {
-    const input = document.getElementById('detailBookQuantity');
+    const input = document.getElementById('bookDetailQty') || document.getElementById('detailBookQuantity');
     if (!input) return;
     let val = parseInt(input.value) || 1;
-    const book = (typeof currentModalBookId !== 'undefined' && currentModalBookId) ? BOOK_CATALOG.find(b => b.id === currentModalBookId) : null;
-    const stock = (book && book.stockQuantity !== undefined && book.stockQuantity !== null) ? book.stockQuantity : 99;
-
-    if (delta > 0 && val + delta > stock) {
-        showToast(`Kho không đủ sách! Hiện chỉ còn <b>${stock}</b> cuốn trong kho.`, 'warning');
-        input.value = Math.max(1, stock);
-        return;
-    }
-
     val += delta;
-    if (val < 1) val = 1;
-    if (val > stock) val = Math.max(1, stock);
-    input.value = val;
-}
-
-function validateDetailQuantity(input) {
-    if (!input) return;
-    let val = parseInt(input.value) || 1;
-    const book = (typeof currentModalBookId !== 'undefined' && currentModalBookId) ? BOOK_CATALOG.find(b => b.id === currentModalBookId) : null;
-    const stock = (book && book.stockQuantity !== undefined && book.stockQuantity !== null) ? book.stockQuantity : 99;
-
-    if (val > stock) {
-        showToast(`Kho không đủ sách! Bạn nhập ${val} cuốn nhưng kho chỉ còn <b>${stock}</b> cuốn.`, 'warning');
-        val = Math.max(1, stock);
-    }
     if (val < 1) val = 1;
     input.value = val;
 }
 
 function updateCartQuantity(bookId, delta) {
-    const item = cart.find(b => b.id === bookId);
+    const item = cart.find(b => b.id == bookId);
     if (!item) return;
 
     if (delta > 0) {
-        const book = BOOK_CATALOG.find(b => b.id === bookId);
+        const book = BOOK_CATALOG.find(b => b.id == bookId);
         const stock = (book && book.stockQuantity !== undefined && book.stockQuantity !== null) ? book.stockQuantity : (item.stockQuantity != null ? item.stockQuantity : 99);
         if (item.quantity + delta > stock) {
             showToast(`Kho không đủ sách! Cuốn "<b>${item.title}</b>" chỉ còn <b>${stock}</b> cuốn trong kho.`, 'warning');
@@ -3104,54 +3112,137 @@ function updateCartQuantity(bookId, delta) {
 
     item.quantity += delta;
     if (item.quantity <= 0) {
-        cart = cart.filter(b => b.id !== bookId);
-        selectedCartIds.delete(bookId);
+        cart = cart.filter(b => b.id != bookId);
+        selectedCartIds.delete(Number(bookId));
     }
+    saveCartToStorage();
     updateCartUI();
 }
 
 function removeFromCart(bookId) {
-    cart = cart.filter(b => b.id !== bookId);
-    selectedCartIds.delete(bookId);
+    cart = cart.filter(b => b.id != bookId);
+    selectedCartIds.delete(Number(bookId));
+    saveCartToStorage();
     updateCartUI();
     showToast('Đã xóa sản phẩm khỏi giỏ hàng', 'info');
 }
 
+function clearCart() {
+    if (cart.length === 0) return;
+    if (confirm('Bạn có chắc chắn muốn xóa toàn bộ sản phẩm trong giỏ hàng?')) {
+        cart = [];
+        selectedCartIds.clear();
+        saveCartToStorage();
+        updateCartUI();
+        showToast('Đã làm trống giỏ hàng!', 'info');
+    }
+}
+
 function toggleCartItemSelected(bookId, checked) {
+    bookId = Number(bookId);
     if (checked) {
         selectedCartIds.add(bookId);
     } else {
         selectedCartIds.delete(bookId);
     }
     updateCartSummary();
-    updateSelectAllCheckbox();
+    renderCartPage();
 }
 
 function toggleSelectAllCart(checked) {
     if (checked) {
-        cart.forEach(item => selectedCartIds.add(item.id));
+        cart.forEach(item => selectedCartIds.add(Number(item.id)));
     } else {
         selectedCartIds.clear();
     }
-    // Cập nhật tất cả checkbox items
-    cart.forEach(item => {
-        const cb = document.getElementById(`cart-cb-${item.id}`);
-        if (cb) cb.checked = checked;
-    });
     updateCartSummary();
-}
-
-function updateSelectAllCheckbox() {
-    const selectAllCb = document.getElementById('cartSelectAll');
-    if (!selectAllCb || cart.length === 0) return;
-    const allSelected = cart.every(item => selectedCartIds.has(item.id));
-    const noneSelected = cart.every(item => !selectedCartIds.has(item.id));
-    selectAllCb.checked = allSelected;
-    selectAllCb.indeterminate = !allSelected && !noneSelected;
+    renderCartPage();
 }
 
 function getSelectedCartItems() {
-    return cart.filter(item => selectedCartIds.has(item.id));
+    return cart.filter(item => selectedCartIds.has(Number(item.id)));
+}
+
+function renderCartPage() {
+    const listContainer = document.getElementById('cartItemsList');
+    if (!listContainer) return;
+
+    const emptyState = document.getElementById('cartEmptyState');
+    const totalCountEl = document.getElementById('cartTotalItemsCount');
+    const selectedCountEl = document.getElementById('cartSelectedCount');
+    const subtotalEl = document.getElementById('cartSubtotalText');
+    const discountEl = document.getElementById('cartDiscountText');
+    const finalTotalEl = document.getElementById('cartFinalTotalText');
+    const selectAllCb = document.getElementById('selectAllCart');
+
+    if (cart.length === 0) {
+        listContainer.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('d-none');
+        if (totalCountEl) totalCountEl.textContent = '0';
+        if (selectedCountEl) selectedCountEl.textContent = '0';
+        if (subtotalEl) subtotalEl.textContent = '0 đ';
+        if (discountEl) discountEl.textContent = '-0 đ';
+        if (finalTotalEl) finalTotalEl.textContent = '0 đ';
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add('d-none');
+    const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
+    if (totalCountEl) totalCountEl.textContent = totalQty;
+
+    const allChecked = cart.length > 0 && cart.every(i => selectedCartIds.has(Number(i.id)));
+    if (selectAllCb) selectAllCb.checked = allChecked;
+
+    listContainer.innerHTML = cart.map(item => {
+        const isChecked = selectedCartIds.has(Number(item.id));
+        const imgUrl = item.image || '/images/book_ai.png';
+        const price = item.price || 0;
+        return `
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+                <input class="form-check-input mt-0" type="checkbox" id="cart_cb_${item.id}"
+                       ${isChecked ? 'checked' : ''} onchange="toggleCartItemSelected(${item.id}, this.checked)">
+                <a href="/books/${item.id}">
+                    <img src="${imgUrl}" alt="${escapeHtml(item.title)}" class="rounded-3 border" style="width: 65px; height: 85px; object-fit: contain;" onerror="this.src='/images/book_ai.png'">
+                </a>
+                <div class="flex-grow-1 min-w-0">
+                    <h6 class="fw-bold text-dark mb-1 text-truncate">
+                        <a href="/books/${item.id}" class="text-dark text-decoration-none">${escapeHtml(item.title)}</a>
+                    </h6>
+                    <small class="text-muted d-block mb-1">${escapeHtml(item.author || 'Nhã Nam')}</small>
+                    <div class="d-flex align-items-baseline gap-2">
+                        <span class="fw-bold text-danger fs-7">${formatCurrency(price)}</span>
+                        ${item.oldPrice && item.oldPrice > price ? `<small class="text-muted text-decoration-line-through fs-9">${formatCurrency(item.oldPrice)}</small>` : ''}
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group input-group-sm" style="width: 105px;">
+                        <button class="btn btn-outline-secondary" type="button" onclick="updateCartQuantity(${item.id}, -1)">
+                            <i class="fas fa-minus fs-9"></i>
+                        </button>
+                        <input type="text" class="form-control text-center fw-bold fs-8" value="${item.quantity}" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="updateCartQuantity(${item.id}, 1)">
+                            <i class="fas fa-plus fs-9"></i>
+                        </button>
+                    </div>
+                    <button class="btn btn-link text-danger fs-7 p-2" onclick="removeFromCart(${item.id})" title="Xóa cuốn này">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const selectedItems = getSelectedCartItems();
+    const subtotal = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discount = calculateCouponDiscount(appliedCoupon, subtotal);
+    const finalTotal = Math.max(0, subtotal - discount);
+
+    if (selectedCountEl) selectedCountEl.textContent = selectedItems.length;
+    if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
+    if (discountEl) discountEl.textContent = discount > 0 ? `-${formatCurrency(discount)}` : '-0 đ';
+    if (finalTotalEl) finalTotalEl.textContent = formatCurrency(finalTotal);
+
+    renderCouponList('cart');
 }
 
 function updateCartSummary() {
@@ -3173,7 +3264,6 @@ function updateCartSummary() {
     }
     if (totalEl) totalEl.innerText = formatCurrency(finalTotal);
 
-    // Cập nhật badge số lượng sản phẩm được chọn
     if (checkoutBtn) {
         if (selectedItems.length > 0) {
             checkoutBtn.disabled = false;
@@ -3184,7 +3274,7 @@ function updateCartSummary() {
         }
     }
 
-    renderCouponList('cart');
+    renderCartPage();
 }
 
 function updateCartUI() {
@@ -3196,84 +3286,7 @@ function updateCartUI() {
         cartBadge.style.display = totalCount > 0 ? 'inline-block' : 'none';
     }
 
-    // Đảm bảo items mới thêm vào giỏ được tự động tick
-    cart.forEach(item => {
-        if (!selectedCartIds.has(item.id)) {
-            selectedCartIds.add(item.id);
-        }
-    });
-    // Xóa các id không còn trong giỏ
-    const cartIds = new Set(cart.map(i => i.id));
-    selectedCartIds.forEach(id => { if (!cartIds.has(id)) selectedCartIds.delete(id); });
-
-    const cartContainer = document.getElementById('cartItemsContainer');
-    if (cartContainer) {
-        if (cart.length === 0) {
-            cartContainer.innerHTML = `
-                <div class="text-center py-4">
-                    <i class="fas fa-shopping-basket fa-3x text-muted mb-2"></i>
-                    <p class="text-muted">Giỏ hàng của bạn đang trống</p>
-                </div>
-            `;
-        } else {
-            // Header: Chọn tất cả
-            const allChecked = cart.every(item => selectedCartIds.has(item.id));
-            const someChecked = cart.some(item => selectedCartIds.has(item.id));
-            const headerHtml = `
-                <div class="d-flex align-items-center px-1 pb-2 mb-1" style="border-bottom: 1px solid #f0f0f0;">
-                    <div class="form-check mb-0">
-                        <input class="form-check-input" type="checkbox" id="cartSelectAll"
-                            ${allChecked ? 'checked' : ''}
-                            onchange="toggleSelectAllCart(this.checked)"
-                            style="width:18px;height:18px;cursor:pointer;accent-color:#4f46e5;">
-                        <label class="form-check-label fw-semibold ms-1" for="cartSelectAll" style="cursor:pointer;font-size:0.88rem;">
-                            Chọn tất cả (${cart.length} sản phẩm)
-                        </label>
-                    </div>
-                </div>
-            `;
-
-            const itemsHtml = cart.map(item => {
-                const isStopped = item.status === 'STOPPED';
-                const isChecked = selectedCartIds.has(item.id) && !isStopped;
-                return `
-                <div class="cart-item-row align-items-center ${isStopped ? 'bg-danger-subtle rounded-3 p-1' : ''}" style="opacity: ${isStopped ? '0.7' : (isChecked ? '1' : '0.5')}; transition: opacity 0.2s;">
-                    <div class="form-check mb-0 me-2" style="min-width:22px;">
-                        <input class="form-check-input" type="checkbox" id="cart-cb-${item.id}"
-                            ${isChecked ? 'checked' : ''}
-                            ${isStopped ? 'disabled title="Sách đã ngưng kinh doanh"' : ''}
-                            onchange="toggleCartItemSelected(${item.id}, this.checked)"
-                            style="width:18px;height:18px;cursor:${isStopped ? 'not-allowed' : 'pointer'};accent-color:#4f46e5;">
-                    </div>
-                    <img src="${item.image}" class="cart-item-img" alt="${item.title}">
-                    <div class="flex-grow-1 min-w-0">
-                        <h6 class="mb-0 text-truncate font-weight-bold" style="max-width: 160px;">${item.title}</h6>
-                        <div class="d-flex align-items-center gap-1">
-                            <span class="text-primary fw-bold">${formatCurrency(item.price)}</span>
-                            ${isStopped ? '<span class="badge bg-danger ms-1" style="font-size:0.7rem;"><i class="fas fa-ban me-1"></i>Ngưng bán</span>' : ''}
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-1">
-                        <button class="btn btn-light btn-sm px-2 border" onclick="updateCartQuantity(${item.id}, -1)">-</button>
-                        <span class="px-2 fw-bold">${item.quantity}</span>
-                        <button class="btn btn-light btn-sm px-2 border" onclick="updateCartQuantity(${item.id}, 1)">+</button>
-                    </div>
-                    <button class="btn btn-link text-danger p-0 ms-2" onclick="removeFromCart(${item.id})" title="Xóa">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            `}).join('');
-
-            cartContainer.innerHTML = headerHtml + itemsHtml;
-
-            // Set indeterminate state nếu cần
-            const selectAllCb = document.getElementById('cartSelectAll');
-            if (selectAllCb && someChecked && !allChecked) {
-                selectAllCb.indeterminate = true;
-            }
-        }
-    }
-
+    renderCartPage();
     updateCartSummary();
 }
 
@@ -3867,11 +3880,71 @@ function showPaymentStep(step) {
     }
 }
 
-function processCheckoutSubmit() {
-    if (!requireLogin('hoàn tất đặt hàng')) {
-        closeModal('paymentModal');
+function initCheckoutPage() {
+    const listContainer = document.getElementById('checkoutOrderItemsList');
+    if (!listContainer) return;
+
+    let items = getSelectedCartItems();
+    if (!items || items.length === 0) {
+        items = cart;
+        cart.forEach(i => selectedCartIds.add(Number(i.id)));
+    }
+
+    if (!items || items.length === 0) {
+        showToast('Giỏ hàng của bạn đang trống! Đang chuyển về kho sách...', 'warning');
+        setTimeout(() => { window.location.href = '/books'; }, 1000);
         return;
     }
+
+    // Tự động điền thông tin nếu có
+    const nameInput = document.getElementById('checkoutReceiverName');
+    const phoneInput = document.getElementById('checkoutReceiverPhone');
+    const addressInput = document.getElementById('checkoutShippingAddress');
+
+    if (currentUser) {
+        if (nameInput && !nameInput.value) nameInput.value = currentUser.fullName || '';
+        if (phoneInput && !phoneInput.value) phoneInput.value = currentUser.phone || '';
+    }
+    const savedAddr = localStorage.getItem('bookmind_saved_address');
+    if (addressInput && !addressInput.value && savedAddr) {
+        addressInput.value = savedAddr;
+    }
+
+    listContainer.innerHTML = items.map(item => {
+        const imgUrl = item.image || '/images/book_ai.png';
+        const price = item.price || 0;
+        return `
+            <div class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 border">
+                <img src="${imgUrl}" alt="${escapeHtml(item.title)}" class="rounded border" style="width: 44px; height: 58px; object-fit: contain;" onerror="this.src='/images/book_ai.png'">
+                <div class="flex-grow-1 min-w-0">
+                    <h6 class="fs-8 fw-bold text-dark mb-0 text-truncate">${escapeHtml(item.title)}</h6>
+                    <small class="text-muted fs-9">${item.quantity} x ${formatCurrency(price)}</small>
+                </div>
+                <span class="fw-bold text-danger fs-8">${formatCurrency(price * item.quantity)}</span>
+            </div>
+        `;
+    }).join('');
+
+    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discount = calculateCouponDiscount(appliedCoupon, subtotal);
+    const finalTotal = Math.max(0, subtotal - discount);
+
+    const subtotalEl = document.getElementById('checkoutSubtotalText');
+    const discountEl = document.getElementById('checkoutDiscountText');
+    const finalTotalEl = document.getElementById('checkoutFinalTotalText');
+
+    if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
+    if (discountEl) discountEl.textContent = discount > 0 ? `-${formatCurrency(discount)}` : '-0 đ';
+    if (finalTotalEl) finalTotalEl.textContent = formatCurrency(finalTotal);
+
+    currentCheckoutData.items = items;
+    currentCheckoutData.subtotal = subtotal;
+    currentCheckoutData.discount = discount;
+    currentCheckoutData.finalTotal = finalTotal;
+    currentCheckoutData.orderCode = 'DH' + Math.floor(100000 + Math.random() * 900000);
+}
+
+function processCheckoutSubmit() {
     const name = document.getElementById('checkoutReceiverName')?.value.trim();
     const phone = document.getElementById('checkoutReceiverPhone')?.value.trim();
     const address = document.getElementById('checkoutShippingAddress')?.value.trim();
@@ -3895,7 +3968,6 @@ function processCheckoutSubmit() {
         return;
     }
 
-    // Save address for next purchases
     try {
         localStorage.setItem('bookmind_saved_address', address);
     } catch (e) { }
@@ -3904,6 +3976,13 @@ function processCheckoutSubmit() {
     currentCheckoutData.receiverPhone = phone;
     currentCheckoutData.shippingAddress = address;
     currentCheckoutData.note = note;
+
+    if (!currentCheckoutData.items || currentCheckoutData.items.length === 0) {
+        currentCheckoutData.items = getSelectedCartItems().length > 0 ? getSelectedCartItems() : cart;
+        currentCheckoutData.subtotal = currentCheckoutData.items.reduce((s, i) => s + (i.price * i.quantity), 0);
+        currentCheckoutData.finalTotal = currentCheckoutData.subtotal;
+        currentCheckoutData.orderCode = 'DH' + Math.floor(100000 + Math.random() * 900000);
+    }
 
     if (currentCheckoutData.selectedMethod === 'PAYOS' || currentCheckoutData.selectedMethod === 'VIETQR') {
         const submitBtn = document.getElementById('btnSubmitOrder');
@@ -3953,17 +4032,24 @@ function processCheckoutSubmit() {
                         items: currentCheckoutData.items
                     });
 
-                    showToast('Chuyển hướng đến cổng thanh toán PayOS VietQR...', 'info');
+                    // Xóa các sản phẩm đã mua khỏi giỏ hàng
+                    const orderedBookIds = new Set(currentCheckoutData.items.map(it => Number(it.id)));
+                    cart = cart.filter(it => !orderedBookIds.has(Number(it.id)));
+                    selectedCartIds.clear();
+                    saveCartToStorage();
+                    updateCartUI();
+
+                    showToast('Đang chuyển hướng đến cổng thanh toán PayOS VietQR...', 'info');
                     setTimeout(() => {
                         window.location.href = result.data.checkoutUrl;
-                    }, 300);
+                    }, 400);
                 } else {
                     throw new Error(result.message || 'Không thể tạo mã thanh toán PayOS');
                 }
             })
             .catch(err => {
                 console.error('PayOS checkout error:', err);
-                showToast('Lỗi tạo mã PayOS: ' + err.message, 'error');
+                showToast('Lỗi tạo mã PayOS: ' + err.message, 'danger');
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-qrcode me-1"></i> Thử Lại Quét Mã PayOS <i class="fas fa-arrow-right ms-1"></i>';
@@ -3972,15 +4058,8 @@ function processCheckoutSubmit() {
         return;
     }
     else {
-        // COD checkout immediate completion
         saveOrderToBackendAndFinish('COD');
     }
-}
-
-
-function backToCartModal() {
-    closeModal('paymentModal');
-    openModal('cartModal');
 }
 
 async function saveOrderToBackendAndFinish(paymentMethod) {
@@ -4027,7 +4106,7 @@ async function saveOrderToBackendAndFinish(paymentMethod) {
             showToast(errMsg, 'danger');
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Hoàn Tất Đặt Hàng <i class="fas fa-arrow-right ms-1"></i>';
+                submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Xác Nhận Đặt Hàng (COD)';
             }
             return;
         }
@@ -4036,7 +4115,7 @@ async function saveOrderToBackendAndFinish(paymentMethod) {
         showToast('Lỗi kết nối máy chủ khi tạo đơn hàng. Vui lòng kiểm tra lại!', 'danger');
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Hoàn Tất Đặt Hàng <i class="fas fa-arrow-right ms-1"></i>';
+            submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Xác Nhận Đặt Hàng (COD)';
         }
         return;
     }
@@ -4045,66 +4124,47 @@ async function saveOrderToBackendAndFinish(paymentMethod) {
     saveLocalOrder(createdOrder);
 
     // Clear only ordered items from cart
-    const orderedBookIds = new Set(currentCheckoutData.items.map(it => it.id));
-    cart = cart.filter(it => !orderedBookIds.has(it.id));
+    const orderedBookIds = new Set(currentCheckoutData.items.map(it => Number(it.id)));
+    cart = cart.filter(it => !orderedBookIds.has(Number(it.id)));
     selectedCartIds.clear();
     appliedCoupon = null;
+    saveCartToStorage();
     updateCartUI();
 
-    // Fill Step 3 UI
-    const codeEl = document.getElementById('confirmedOrderCode');
-    if (codeEl) codeEl.textContent = createdOrder.trackingNumber || currentCheckoutData.orderCode;
+    const trackingNo = createdOrder.trackingNumber || currentCheckoutData.orderCode;
+    showToast('🎉 Đặt hàng thành công! Đang chuyển đến đơn hàng của bạn...', 'success');
 
-    const methodBadge = document.getElementById('confirmedPaymentMethod');
-    if (methodBadge) {
-        if (paymentMethod === 'COD') {
-            methodBadge.className = 'badge bg-secondary-subtle text-secondary fw-bold fs-8';
-            methodBadge.textContent = 'Thanh toán khi nhận hàng (COD)';
-        } else {
-            methodBadge.className = 'badge bg-primary-subtle text-primary fw-bold fs-8';
-            methodBadge.textContent = 'Thanh toán online VNPay';
-        }
-    }
-
-    const recNameEl = document.getElementById('confirmedReceiver');
-    if (recNameEl) recNameEl.textContent = createdOrder.receiverName;
-
-    const recPhoneEl = document.getElementById('confirmedPhone');
-    if (recPhoneEl) recPhoneEl.textContent = createdOrder.receiverPhone;
-
-    const recAddrEl = document.getElementById('confirmedAddress');
-    if (recAddrEl) recAddrEl.textContent = createdOrder.shippingAddress;
-
-    const titleEl = document.getElementById('paymentSuccessTitle');
-    if (titleEl) {
-        titleEl.textContent = 'Đặt Hàng Thành Công! 🎉';
-    }
-
-    showPaymentStep(3);
-
-    const toastMsg = '🎉 Đặt hàng thành công! Đơn hàng đang ở trạng thái <b>Chờ xác nhận</b>.';
-    showToast(toastMsg, 'success');
+    // Chuyển hướng đến trang chi tiết đơn hàng
+    setTimeout(() => {
+        window.location.href = '/orders/' + encodeURIComponent(trackingNo);
+    }, 700);
 }
 
 function getLocalOrdersKey() {
-    return currentUser && currentUser.id ? `bookmind_user_orders_${currentUser.id}` : null;
+    return currentUser && currentUser.id ? `bookmind_user_orders_${currentUser.id}` : 'bookmind_user_orders';
 }
 
 function saveLocalOrder(order) {
     try {
         const key = getLocalOrdersKey();
-        if (!key) return; // Không lưu nếu chưa đăng nhập
         let list = JSON.parse(localStorage.getItem(key) || '[]');
         list.unshift(order);
         localStorage.setItem(key, JSON.stringify(list));
+
+        let allList = JSON.parse(localStorage.getItem('bookmind_user_orders') || '[]');
+        allList.unshift(order);
+        localStorage.setItem('bookmind_user_orders', JSON.stringify(allList));
     } catch (e) { }
 }
 
 function getLocalOrders() {
     try {
         const key = getLocalOrdersKey();
-        if (!key) return []; // Trả về rỗng nếu chưa đăng nhập
-        return JSON.parse(localStorage.getItem(key) || '[]');
+        let list = JSON.parse(localStorage.getItem(key) || '[]');
+        if (list.length === 0) {
+            list = JSON.parse(localStorage.getItem('bookmind_user_orders') || '[]');
+        }
+        return list;
     } catch (e) {
         return [];
     }
