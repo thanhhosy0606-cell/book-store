@@ -141,7 +141,7 @@ function appendBotMessage(htmlContent, recommendedBooks = []) {
                         <div class="title">${escapeHtml(book.title)}</div>
                         <div class="price">${priceText}</div>
                     </div>
-                    <button class="btn btn-primary btn-sm px-2 py-1 fs-8" onclick="openBookModal(${book.id})">Xem</button>
+                    <a class="btn btn-primary btn-sm px-2 py-1 fs-8 text-decoration-none" href="/books/${book.id}">Xem</a>
                 </div>
             `;
         }).join('');

@@ -2508,7 +2508,7 @@ function searchBookFromDropdown(bookId) {
     if (book) {
         saveRecentSearch(book.title);
     }
-    openBookModal(bookId);
+    window.location.href = '/books/' + bookId;
 }
 
 function renderSearchDropdown(query = '') {
@@ -2872,14 +2872,14 @@ function renderBookGrid() {
                         ? `<span class="badge bg-danger text-white position-absolute top-0 start-0 m-2 shadow-sm fs-8 fw-bold" style="z-index: 3;"><i class="fas fa-exclamation-circle me-1"></i>Chỉ còn ${stock} cuốn!</span>`
                         : (discountPct > 0 ? `<span class="book-discount-badge">-${discountPct}%</span>` : '')
             }
-                <div class="book-cover-wrapper position-relative" onclick="openBookModal(${book.id})" style="cursor: pointer;">
+                <a href="/books/${book.id}" class="book-cover-wrapper position-relative d-block text-decoration-none">
                     <img src="${book.image}" class="book-cover-img ${isStopped ? 'opacity-75' : ''}" alt="${book.title}" loading="lazy"
                          onerror="this.onerror=null;this.src='images/book_ai.png'">
-                </div>
+                </a>
                 <div class="p-3 d-flex flex-column flex-grow-1">
                     <span class="book-category-tag mb-1">${book.categoryName}</span>
-                    <h6 class="book-title mb-1" onclick="openBookModal(${book.id})" style="cursor: pointer;" title="${book.title}">
-                        ${book.title}
+                    <h6 class="book-title mb-1">
+                        <a href="/books/${book.id}" class="text-dark text-decoration-none" title="${book.title}">${book.title}</a>
                     </h6>
                     <p class="book-author mb-2 text-muted fs-8">${book.author}</p>
                     
@@ -4456,10 +4456,11 @@ try {
 } catch (e) { }
 
 function openBookModal(bookId) {
-    const book = BOOK_CATALOG.find(b => b.id === bookId);
-    if (!book) return;
-
-    currentModalBookId = bookId;
+    if (bookId) {
+        window.location.href = '/books/' + bookId;
+        return;
+    }
+}
 
     document.getElementById('modalBookTitle').innerText = book.title;
     document.getElementById('modalBookAuthor').innerText = `Tác giả: ${book.author}`;
@@ -4809,14 +4810,14 @@ function updateNavAuthUI() {
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item rounded-2 fs-7 py-2 text-dark" href="javascript:void(0)" onclick="openMyOrdersModal(event)">
+                        <a class="dropdown-item rounded-2 fs-7 py-2 text-dark" href="/my-orders">
                             <i class="fas fa-box-open me-2 text-warning"></i>Đơn hàng của tôi
                         </a>
                     </li>
                     ${(currentUser.roles && (currentUser.roles.includes('ROLE_ADMIN') || currentUser.roles.includes('ROLE_STAFF'))) ? `
                     <li><hr class="dropdown-divider my-1"></li>
                     <li>
-                        <a class="dropdown-item rounded-2 fs-7 py-2 text-primary fw-bold" href="admin.html">
+                        <a class="dropdown-item rounded-2 fs-7 py-2 text-primary fw-bold" href="/admin/dashboard">
                             <i class="fas fa-chart-line me-2"></i>Trang Quản Trị Cửa Hàng
                         </a>
                     </li>` : ''}
