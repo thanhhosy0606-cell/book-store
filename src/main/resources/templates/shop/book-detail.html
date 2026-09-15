@@ -96,12 +96,12 @@
                         <div class="d-flex align-items-center gap-3">
                             <div class="input-group" style="width: 130px;">
                                 <button class="btn btn-outline-secondary btn-sm" type="button"
-                                        onclick="const q = document.getElementById('bookDetailQty'); if(parseInt(q.value) > 1) q.value = parseInt(q.value) - 1;">
+                                        onclick="let qDec = document.getElementById('bookDetailQty'); if(qDec && parseInt(qDec.value) > 1) qDec.value = parseInt(qDec.value) - 1;">
                                     <i class="fas fa-minus"></i>
                                 </button>
                                 <input type="number" id="bookDetailQty" class="form-control form-control-sm text-center fw-bold" value="1" min="1" th:max="${book.stockQuantity > 0 ? book.stockQuantity : 1}">
                                 <button class="btn btn-outline-secondary btn-sm" type="button"
-                                        onclick="const q = document.getElementById('bookDetailQty'); q.value = parseInt(q.value) + 1;">
+                                        onclick="let qInc = document.getElementById('bookDetailQty'); if(qInc) qInc.value = (parseInt(qInc.value) || 1) + 1;">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
