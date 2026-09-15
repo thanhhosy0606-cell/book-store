@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title != null ? title : 'Nhã Nam Book Store - Hiệu Sách & Trợ Lý Tư Vấn AI'}">Nhã Nam Book Store</title>
+    <meta name="description" content="Nhà sách Nhã Nam trực tuyến kết hợp Trợ lý AI tư vấn chọn sách chuẩn gu của bạn trong 30s!">
+    <link rel="icon" type="image/png" th:href="@{/images/nhanam-logo-green.png}">
+
+    <!-- Bootstrap 5 CSS (local) -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link th:href="@{/css/styles.css?v=9.0}" rel="stylesheet">
+    <!-- Custom Modal CSS -->
+    <link th:href="@{/css/modal.css?v=9.0}" rel="stylesheet">
+</head>
+<body>
+</body>
+</html>

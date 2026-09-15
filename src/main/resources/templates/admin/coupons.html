@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Quản Lý Khuyến Mãi - Nhã Nam Book Store</title>
+    <link rel="icon" type="image/png" th:href="@{/images/nhanam-logo-green.png}">
+
+    <!-- Bootstrap 5 CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Admin CSS -->
+    <link th:href="@{/css/admin.css?v=3.0}" rel="stylesheet">
+</head>
+
+<body class="admin-body">
+
+    <!-- SIDEBAR -->
+    <aside th:replace="~{admin/sidebar :: sidebar(${activeTab})}"></aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        <!-- TOPBAR -->
+        <header class="admin-topbar">
+            <div class="topbar-left">
+                <h1 class="topbar-page-title">Quản Lý Mã Giảm Giá & Voucher</h1>
+            </div>
+
+            <div class="topbar-right">
+                <div class="admin-user-profile">
+                    <img th:src="@{/images/book_ai.png}" alt="Admin Avatar">
+                    <div class="admin-user-info">
+                        <div id="adminNameDisplay" class="admin-user-name">Admin Nhã Nam</div>
+                        <div id="adminRoleDisplay" class="admin-user-role">Quản Trị Viên</div>
+                    </div>
+                </div>
+
+                <button class="btn-admin-logout" onclick="handleAdminLogout()" title="Đăng xuất">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENT BODY -->
+        <div class="admin-content">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h2 class="admin-card-title">
+                        <i class="fas fa-ticket-alt text-primary"></i> Danh Sách Mã Khuyến Mãi / Voucher
+                        <span class="badge bg-primary ms-2" style="font-size: 0.8rem; border-radius: 20px; vertical-align: middle;"
+                              th:text="${#lists.size(coupons)} + ' mã'">0 mã</span>
+                    </h2>
+
+                    <div class="admin-toolbar">
+                        <input type="text" id="couponSearchInput" class="admin-search-input" placeholder="Tìm mã, tên voucher..." oninput="filterCoupons()">
+                        <select id="couponStatusFilter" class="admin-filter-select" onchange="filterCoupons()">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="ACTIVE">Đang hoạt động</option>
+                            <option value="INACTIVE">Tạm dừng</option>
+                        </select>
+                        <button class="btn-admin-primary" onclick="openCouponModal()">
+                            <i class="fas fa-plus"></i> Thêm Voucher Mới
+                        </button>
+                    </div>
+                </div>
+
+                <div class="admin-table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">STT</th>
+                                <th>Mã Voucher</th>
+                                <th>Tên Chương Trình</th>
+                                <th>Mức Giảm</th>
+                                <th>Điều Kiện Áp Dụng</th>
+                                <th>Trạng Thái</th>
+                                <th style="width: 140px;">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="couponsTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">Đang tải danh sách voucher...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- COUPON MODAL -->
+    <div id="couponModal" class="admin-modal-overlay">
+        <div class="admin-modal-box" style="max-width: 550px;">
+            <div class="admin-modal-header">
+                <h3 id="couponModalTitle" class="admin-modal-title">Thêm Voucher Mới</h3>
+                <button class="admin-modal-close" onclick="closeAdminModal('couponModal')">&times;</button>
+            </div>
+            <form id="couponForm" onsubmit="handleSaveCoupon(event)">
+                <div class="admin-modal-body">
+                    <input type="hidden" id="couponIdInput">
+                    <div class="form-row-2">
+                        <div class="form-group-admin">
+                            <label class="form-label-admin">Mã Code Voucher *</label>
+                            <input type="text" id="couponCodeInput" class="form-control-admin text-uppercase" required placeholder="Ví dụ: NHANAM20">
+                        </div>
+                        <div class="form-group-admin">
+                            <label class="form-label-admin">Loại Giảm Giá *</label>
+                            <select id="couponTypeSelect" class="form-control-admin" required>
+                                <option value="PERCENT">Theo phần trăm (%)</option>
+                                <option value="FIXED">Số tiền cố định (VNĐ)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group-admin">
+                        <label class="form-label-admin">Tiêu Đề Voucher *</label>
+                        <input type="text" id="couponTitleInput" class="form-control-admin" required placeholder="Ví dụ: Giảm 20% đơn từ 200k">
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group-admin">
+                            <label class="form-label-admin">Giá Trị Giảm *</label>
+                            <input type="number" id="couponValueInput" class="form-control-admin" required placeholder="Ví dụ: 20 hoặc 50000">
+                        </div>
+                        <div class="form-group-admin">
+                            <label class="form-label-admin">Đơn Hàng Tối Thiểu (VNĐ)</label>
+                            <input type="number" id="couponMinOrderInput" class="form-control-admin" placeholder="Ví dụ: 150000">
+                        </div>
+                    </div>
+
+                    <div class="form-group-admin">
+                        <label class="form-label-admin">Giảm Tối Đa (VNĐ - dành cho %)</label>
+                        <input type="number" id="couponMaxDiscountInput" class="form-control-admin" placeholder="Ví dụ: 50000">
+                    </div>
+
+                    <div class="form-group-admin">
+                        <label class="form-label-admin">Mô Tả Điều Kiện</label>
+                        <textarea id="couponDescInput" class="form-control-admin" rows="2" placeholder="Mô tả ngắn gọn điều kiện áp dụng..."></textarea>
+                    </div>
+                </div>
+
+                <div class="admin-modal-footer">
+                    <button type="button" class="btn-admin-secondary" onclick="closeAdminModal('couponModal')">Hủy</button>
+                    <button type="submit" class="btn-admin-primary"><i class="fas fa-save me-1"></i> Lưu Voucher</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/admin.js?v=5.0}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof loadCoupons === 'function') {
+                loadCoupons();
+            }
+        });
+    </script>
+
+</body>
+</html>

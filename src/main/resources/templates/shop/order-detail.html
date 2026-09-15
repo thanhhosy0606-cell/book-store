@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/head :: head(${pageTitle})}"></head>
+
+<body>
+
+    <!-- 1. Header / Navbar -->
+    <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+
+    <!-- Breadcrumb -->
+    <div class="bg-light py-3 border-bottom mb-4">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 fs-8">
+                    <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none"><i class="fas fa-home me-1"></i>Trang Chủ</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/my-orders}" class="text-decoration-none">Đơn Hàng Của Tôi</a></li>
+                    <li class="breadcrumb-item active" th:text="${order != null ? 'Chi tiết #' + order.trackingNumber : 'Chi tiết đơn hàng'}">Chi tiết đơn hàng</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Order Detail Container -->
+    <div class="container mb-5">
+        <!-- Order Not Found -->
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white" th:if="${order == null}">
+            <div class="fs-1 text-muted mb-3"><i class="fas fa-search"></i></div>
+            <h4 class="fw-bold text-dark mb-2">Không tìm thấy mã đơn hàng này</h4>
+            <p class="text-muted fs-7 mb-4">Vui lòng kiểm tra lại mã vận đơn hoặc tra cứu trong danh sách đơn hàng đã mua.</p>
+            <div>
+                <a th:href="@{/my-orders}" class="btn btn-primary rounded-pill px-4 fw-bold fs-7">
+                    <i class="fas fa-list-check me-1"></i> Xem Đơn Hàng Của Tôi
+                </a>
+            </div>
+        </div>
+
+        <!-- Order Found -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" th:if="${order != null}">
+            <div class="d-flex flex-wrap justify-content-between align-items-center pb-3 border-bottom mb-4 gap-2">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">
+                        Đơn Hàng #<span th:text="${order.trackingNumber != null ? order.trackingNumber : order.id}">123456</span>
+                    </h4>
+                    <span class="text-muted fs-8">
+                        <i class="far fa-clock me-1"></i>Ngày đặt:
+                        <span th:text="${order.createdAt != null ? #temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm') : 'Hôm nay'}">15/09/2026</span>
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1.5 fs-7 fw-bold" th:text="${order.status}">PENDING</span>
+                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 fs-8" onclick="window.print()">
+                        <i class="fas fa-print me-1"></i> In hóa đơn
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2-Column Info Grid -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="p-3.5 bg-light rounded-4 h-100">
+                        <h6 class="fw-bold text-dark mb-2 fs-7"><i class="fas fa-user-circle text-primary me-2"></i>Thông Tin Người Nhận</h6>
+                        <p class="fs-8 text-secondary mb-1"><strong>Họ và tên:</strong> <span th:text="${order.receiverName}">Nguyễn Văn A</span></p>
+                        <p class="fs-8 text-secondary mb-1"><strong>Số điện thoại:</strong> <span th:text="${order.receiverPhone}">0912345678</span></p>
+                        <p class="fs-8 text-secondary mb-1"><strong>Địa chỉ giao:</strong> <span th:text="${order.shippingAddress}">Hà Nội</span></p>
+                        <p class="fs-8 text-secondary mb-0" th:if="${order.note != null and !order.note.isEmpty()}">
+                            <strong>Ghi chú:</strong> <span th:text="${order.note}">Ghi chú</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="p-3.5 bg-light rounded-4 h-100">
+                        <h6 class="fw-bold text-dark mb-2 fs-7"><i class="fas fa-credit-card text-primary me-2"></i>Thanh Toán & Vận Chuyển</h6>
+                        <p class="fs-8 text-secondary mb-1">
+                            <strong>Phương thức:</strong>
+                            <span class="badge bg-success-subtle text-success fs-8" th:text="${order.paymentMethod != null ? order.paymentMethod : 'COD'}">COD</span>
+                        </p>
+                        <p class="fs-8 text-secondary mb-1"><strong>Vận chuyển:</strong> Giao hàng tiêu chuẩn (Miễn phí)</p>
+                        <p class="fs-8 text-secondary mb-0"><strong>Trạng thái:</strong> <span class="fw-bold text-dark" th:text="${order.status}">Chờ xác nhận</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items Table -->
+            <h6 class="fw-bold text-dark mb-3 fs-7"><i class="fas fa-book-bookmark text-primary me-2"></i>Danh Sách Sách Trong Đơn</h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle fs-8 mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center" style="width: 60px;">#</th>
+                            <th>Sách</th>
+                            <th class="text-center" style="width: 120px;">Đơn giá</th>
+                            <th class="text-center" style="width: 90px;">Số lượng</th>
+                            <th class="text-end" style="width: 140px;">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item, iter : ${order.orderDetails}">
+                            <td class="text-center" th:text="${iter.count}">1</td>
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${item.book != null ? item.book.title : 'Sách Nhã Nam'}">Tên sách</div>
+                                <small class="text-muted" th:if="${item.book != null and item.book.author != null}" th:text="'Tác giả: ' + ${item.book.author}">Tác giả</small>
+                            </td>
+                            <td class="text-center" th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</td>
+                            <td class="text-center fw-bold" th:text="${item.quantity}">1</td>
+                            <td class="text-end fw-bold text-danger" th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Total Amount Breakdown -->
+            <div class="row justify-content-end">
+                <div class="col-md-5">
+                    <div class="p-3 bg-light rounded-4">
+                        <div class="d-flex justify-content-between fs-8 text-secondary mb-2">
+                            <span>Tạm tính:</span>
+                            <span class="fw-bold text-dark" th:text="${#numbers.formatDecimal(order.subtotal != null ? order.subtotal : order.totalAmount, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between fs-8 text-secondary mb-2">
+                            <span>Phí vận chuyển:</span>
+                            <span class="text-success fw-semibold">Miễn phí</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <span class="fw-bold text-dark fs-7">Tổng thanh toán:</span>
+                            <span class="fs-4 fw-extrabold text-danger" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <!-- Floating AI Chat -->
+    <div th:replace="~{fragments/ai-assistant :: ai-assistant}"></div>
+
+    <!-- Auth Modal -->
+    <div th:replace="~{fragments/auth-modal :: auth-modal}"></div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+    <!-- Scripts -->
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/app.js?v=19.0}"></script>
+    <script th:src="@{/js/ai-bot.js?v=19.0}"></script>
+
+</body>
+</html>

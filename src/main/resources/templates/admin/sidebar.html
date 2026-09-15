@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside th:fragment="sidebar(activeTab)" class="admin-sidebar">
+    <div class="sidebar-brand">
+        <a th:href="@{/admin/dashboard}" class="d-flex align-items-center gap-2 text-decoration-none">
+            <img th:src="@{/images/nhanam-logo-green.png}" alt="Nhã Nam Logo" style="height: 40px; width: auto;">
+            <div>
+                <div class="sidebar-brand-title text-success fw-bold fs-6">NHÃ NAM</div>
+                <div class="d-flex align-items-center gap-2 mt-0.5">
+                    <span class="badge bg-success-subtle text-success fs-9 px-2 py-0.5 rounded-pill">Admin Portal</span>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <ul class="sidebar-menu">
+        <li class="menu-header">Bảng Điều Khiển</li>
+        <li>
+            <a th:href="@{/admin/dashboard}" class="menu-item" th:classappend="${activeTab == 'dashboard'} ? 'active' : ''">
+                <i class="fas fa-chart-line"></i>
+                <span>Tổng Quan</span>
+            </a>
+        </li>
+
+        <li class="menu-header">Quản Lý Kinh Doanh</li>
+        <li>
+            <a th:href="@{/admin/books}" class="menu-item" th:classappend="${activeTab == 'books'} ? 'active' : ''">
+                <i class="fas fa-book"></i>
+                <span>Kho Sách</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/orders}" class="menu-item" th:classappend="${activeTab == 'orders'} ? 'active' : ''">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Đơn Hàng</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/categories}" class="menu-item" th:classappend="${activeTab == 'categories'} ? 'active' : ''">
+                <i class="fas fa-tags"></i>
+                <span>Danh Mục Sách</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/coupons}" class="menu-item" th:classappend="${activeTab == 'coupons'} ? 'active' : ''">
+                <i class="fas fa-percentage"></i>
+                <span>Khuyến Mãi & Voucher</span>
+            </a>
+        </li>
+
+        <li class="menu-header">Người Dùng & Hệ Thống</li>
+        <li>
+            <a th:href="@{/admin/users}" class="menu-item d-flex align-items-center justify-content-between" th:classappend="${activeTab == 'users'} ? 'active' : ''">
+                <div>
+                    <i class="fas fa-users me-2"></i>
+                    <span>Khách Hàng</span>
+                </div>
+                <span id="sidebarUserDeleteBadge" class="badge bg-danger rounded-pill d-none" style="font-size: 0.65rem; padding: 3px 6px;">0</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-footer">
+        <a th:href="@{/}" class="btn-store-front">
+            <i class="fas fa-store"></i>
+            <span>Xem Cửa Hàng</span>
+        </a>
+    </div>
+</aside>
+</body>
+</html>

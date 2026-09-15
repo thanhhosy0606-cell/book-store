@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/head :: head(${pageTitle})}"></head>
+
+<body style="background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 50%, #eff6ff 100%); min-height: 100vh;">
+
+    <!-- 1. Header / Navbar -->
+    <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+
+    <!-- Payment Result Box -->
+    <div class="container py-5 d-flex justify-content-center align-items-center" style="min-height: 75vh;">
+        <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 text-center bg-white" style="max-width: 580px; width: 100%;">
+            <!-- Dynamic Status Icon -->
+            <div id="statusIconWrapper" class="rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3"
+                 style="width: 80px; height: 80px; font-size: 38px; background: #dcfce7; color: #16a34a;">
+                <i id="statusIcon" class="fas fa-check"></i>
+            </div>
+
+            <h3 id="resultTitle" class="fw-bold text-dark mb-1">Đang Xử Lý Kết Quả...</h3>
+            <p id="resultMessage" class="text-muted fs-8 mb-4">Hệ thống đang đối soát dữ liệu giao dịch từ cổng thanh toán PayOS.</p>
+
+            <!-- Details Box -->
+            <div class="bg-light rounded-4 p-3.5 border mb-4 text-start">
+                <div class="d-flex justify-content-between py-1.5 border-bottom fs-8">
+                    <span class="text-muted">Mã đơn hàng:</span>
+                    <strong class="text-dark" id="resOrderCode">--</strong>
+                </div>
+                <div class="d-flex justify-content-between py-1.5 border-bottom fs-8">
+                    <span class="text-muted">Số tiền thanh toán:</span>
+                    <strong class="text-danger" id="resAmount">--</strong>
+                </div>
+                <div class="d-flex justify-content-between py-1.5 border-bottom fs-8">
+                    <span class="text-muted">Phương thức:</span>
+                    <span class="badge bg-success-subtle text-success fs-9">VietQR Tự Động (PayOS)</span>
+                </div>
+                <div class="d-flex justify-content-between py-1.5 fs-8">
+                    <span class="text-muted">Thời gian giao dịch:</span>
+                    <span class="text-dark" id="resTime">--</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                <a th:href="@{/my-orders}" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold fs-7">
+                    <i class="fas fa-box-open me-1"></i> Xem Đơn Hàng
+                </a>
+                <a th:href="@{/}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold fs-7 shadow-sm">
+                    <i class="fas fa-home me-1"></i> Về Trang Chủ
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <!-- Floating AI Chat -->
+    <div th:replace="~{fragments/ai-assistant :: ai-assistant}"></div>
+
+    <!-- Auth Modal -->
+    <div th:replace="~{fragments/auth-modal :: auth-modal}"></div>
+
+    <!-- Scripts -->
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/app.js?v=19.0}"></script>
+    <script th:src="@{/js/ai-bot.js?v=19.0}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const status = urlParams.get('status');
+            const code = urlParams.get('code');
+            const cancel = urlParams.get('cancel');
+            const orderCode = urlParams.get('orderCode');
+
+            const titleEl = document.getElementById('resultTitle');
+            const msgEl = document.getElementById('resultMessage');
+            const iconWrapper = document.getElementById('statusIconWrapper');
+            const iconEl = document.getElementById('statusIcon');
+            const orderCodeEl = document.getElementById('resOrderCode');
+            const timeEl = document.getElementById('resTime');
+
+            if (orderCodeEl) orderCodeEl.textContent = orderCode || 'BM-' + Date.now().toString().slice(-6);
+            if (timeEl) timeEl.textContent = new Date().toLocaleString('vi-VN');
+
+            if (status === 'PAID' || code === '00') {
+                if (titleEl) titleEl.textContent = 'Thanh Toán Thành Công! 🎉';
+                if (msgEl) msgEl.textContent = 'Giao dịch qua PayOS đã được ghi nhận. Đơn hàng của bạn sẽ được xử lý sớm nhất.';
+                if (iconWrapper) {
+                    iconWrapper.style.background = '#dcfce7';
+                    iconWrapper.style.color = '#16a34a';
+                }
+                if (iconEl) iconEl.className = 'fas fa-check-circle';
+            } else if (cancel === 'true' || status === 'CANCELLED') {
+                if (titleEl) titleEl.textContent = 'Giao Dịch Đã Bị Hủy';
+                if (msgEl) msgEl.textContent = 'Bạn đã hủy thanh toán. Đơn hàng vẫn được lưu lại để bạn thanh toán lại sau.';
+                if (iconWrapper) {
+                    iconWrapper.style.background = '#fee2e2';
+                    iconWrapper.style.color = '#dc2626';
+                }
+                if (iconEl) iconEl.className = 'fas fa-times-circle';
+            } else {
+                if (titleEl) titleEl.textContent = 'Giao Dịch Đang Xử Lý';
+                if (msgEl) msgEl.textContent = 'Trạng thái giao dịch đang được cập nhật.';
+            }
+        });
+    </script>
+
+</body>
+</html>

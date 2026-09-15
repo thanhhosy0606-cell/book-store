@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<footer th:fragment="footer" class="bg-dark text-white pt-5 pb-4 mt-5">
+    <div class="container">
+        <div class="row g-4 mb-4">
+            <div class="col-lg-4">
+                <a class="navbar-brand brand-logo text-white mb-3 d-inline-flex" th:href="@{/}">
+                    <img th:src="@{/images/nhanam-logo-white.png}" alt="Nhã Nam Book Store" class="brand-logo-img brand-logo-img-footer">
+                    <div class="brand-text-container text-start">
+                        <span class="text-white fw-bold fs-5">NHÃ NAM</span>
+                        <span class="text-white-50 fs-8 fw-semibold letter-spacing-1">BOOK STORE AI</span>
+                    </div>
+                </a>
+                <p class="text-secondary fs-7">Nhà sách Nhã Nam trực tuyến kết hợp trí tuệ nhân tạo tư vấn cá nhân hóa độc quyền.</p>
+                <div class="d-flex gap-3 fs-5 text-secondary">
+                    <a href="#" class="text-secondary"><i class="fab fa-facebook"></i></a>
+                    <a href="#" class="text-secondary"><i class="fab fa-youtube"></i></a>
+                    <a href="#" class="text-secondary"><i class="fab fa-tiktok"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <h6 class="fw-bold mb-3">Danh Mục Sách</h6>
+                <ul class="list-unstyled fs-7 text-secondary">
+                    <li class="mb-2"><a th:href="@{/books}" class="text-secondary text-decoration-none">Tất Cả Sách</a></li>
+                    <li class="mb-2" th:each="cat, iter : ${categories}" th:if="${iter.index < 5}">
+                        <a th:href="@{/books(categoryId=${cat.id})}" th:text="${cat.name}" class="text-secondary text-decoration-none">Danh mục</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-lg-3 col-md-4 col-6">
+                <h6 class="fw-bold mb-3">Hỗ Trợ Khách Hàng</h6>
+                <ul class="list-unstyled fs-7 text-secondary">
+                    <li class="mb-2"><a th:href="@{/my-orders}" class="text-secondary text-decoration-none">Tra Cứu Đơn Hàng</a></li>
+                    <li class="mb-2"><a href="#" class="text-secondary text-decoration-none">Chính Sách Đổi Trả</a></li>
+                    <li class="mb-2"><a href="#" class="text-secondary text-decoration-none">Phương Thức Thanh Toán VietQR</a></li>
+                    <li class="mb-2"><a href="#" class="text-secondary text-decoration-none">Hướng Dẫn Mua Hàng</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3 col-md-4">
+                <h6 class="fw-bold mb-3">Liên Hệ Trợ Giúp</h6>
+                <p class="fs-7 text-secondary mb-2"><i class="fas fa-envelope me-2 text-warning"></i> support@nhanam.vn</p>
+                <p class="fs-7 text-secondary mb-2"><i class="fas fa-phone-alt me-2 text-warning"></i> 1900 6868</p>
+                <p class="fs-7 text-secondary"><i class="fas fa-map-marker-alt me-2 text-warning"></i> Hà Nội & TP. Hồ Chí Minh</p>
+            </div>
+        </div>
+        <hr class="border-secondary opacity-25">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center fs-8 text-secondary">
+            <p class="mb-0">© 2026 Nhã Nam Book Store. All rights reserved.</p>
+            <p class="mb-0">Designed with modern Thymeleaf SSR & AI Smart Assistant.</p>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

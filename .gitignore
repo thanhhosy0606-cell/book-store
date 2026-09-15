@@ -27,8 +27,12 @@ target/
 /.externalToolBuilders/
 /m2-install/
 
-### VS Code ###
-.vscode/
-
 ### Log files ###
 *.log
+
+### Node & Temporary files ###
+node_modules/
+package-lock.json
+package.json
+braces.txt
+*.ps1

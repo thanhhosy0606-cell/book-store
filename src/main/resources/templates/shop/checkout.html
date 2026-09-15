@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/head :: head(${pageTitle})}"></head>
+
+<body>
+
+    <!-- 1. Header / Navbar -->
+    <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+
+    <!-- Breadcrumb -->
+    <div class="bg-light py-3 border-bottom mb-4">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 fs-8">
+                    <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none"><i class="fas fa-home me-1"></i>Trang Chủ</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/cart}" class="text-decoration-none">Giỏ Hàng</a></li>
+                    <li class="breadcrumb-item active">Thanh Toán Đơn Hàng</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Checkout Main Content -->
+    <div class="container mb-5">
+        <div class="mb-4">
+            <h3 class="fw-bold mb-1 text-dark"><i class="fas fa-credit-card text-primary me-2"></i>Thanh Toán Đơn Hàng</h3>
+            <p class="text-muted fs-8 mb-0">Vui lòng kiểm tra thông tin nhận hàng và chọn phương thức thanh toán</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Column: Shipping Form & Payment Method -->
+            <div class="col-lg-7">
+                <!-- Shipping Info Card -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                    <h5 class="fw-bold text-dark mb-3"><i class="fas fa-truck-fast text-primary me-2"></i>1. Thông Tin Nhận Hàng</h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 fw-bold text-secondary mb-1">Họ và tên người nhận <span class="text-danger">*</span></label>
+                            <input type="text" id="checkoutReceiverName" class="form-control rounded-3 fs-8 py-2" placeholder="Ví dụ: Nguyễn Văn A" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 fw-bold text-secondary mb-1">Số điện thoại nhận hàng <span class="text-danger">*</span></label>
+                            <input type="tel" id="checkoutReceiverPhone" class="form-control rounded-3 fs-8 py-2" placeholder="Ví dụ: 0912345678" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fs-8 fw-bold text-secondary mb-1">Địa chỉ nhận hàng chi tiết <span class="text-danger">*</span></label>
+                            <input type="text" id="checkoutShippingAddress" class="form-control rounded-3 fs-8 py-2" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fs-8 fw-bold text-secondary mb-1">Ghi chú đơn hàng (tùy chọn)</label>
+                            <textarea id="checkoutOrderNote" class="form-control rounded-3 fs-8" rows="2" placeholder="Ví dụ: Giao vào giờ hành chính, gọi trước khi giao..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method Card -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h5 class="fw-bold text-dark mb-3"><i class="fas fa-wallet text-primary me-2"></i>2. Phương Thức Thanh Toán</h5>
+
+                    <div class="d-flex flex-column gap-3">
+                        <!-- VietQR PayOS -->
+                        <div class="payment-method-card selected border rounded-4 p-3 cursor-pointer" id="cardMethodPAYOS" onclick="selectPaymentMethod('PAYOS')">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input class="form-check-input mt-0" type="radio" name="payMethod" id="payMethodPAYOS" value="PAYOS" checked>
+                                    <div>
+                                        <div class="fw-bold text-dark fs-7">
+                                            <i class="fas fa-qrcode text-primary me-1"></i> Quét Mã VietQR Tự Động (PayOS)
+                                            <span class="badge bg-success-subtle text-success fs-9 ms-1">Khuyên dùng</span>
+                                        </div>
+                                        <small class="text-muted fs-8">Hỗ trợ tất cả ngân hàng MB, VCB, Techcombank, VPBank, Momo...</small>
+                                    </div>
+                                </div>
+                                <img th:src="@{/images/nhanam-logo-green.png}" alt="PayOS VietQR" class="rounded border p-1" style="height: 32px; object-fit: contain;">
+                            </div>
+                        </div>
+
+                        <!-- COD -->
+                        <div class="payment-method-card border rounded-4 p-3 cursor-pointer" id="cardMethodCOD" onclick="selectPaymentMethod('COD')">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input class="form-check-input mt-0" type="radio" name="payMethod" id="payMethodCOD" value="COD">
+                                    <div>
+                                        <div class="fw-bold text-dark fs-7">
+                                            <i class="fas fa-hand-holding-dollar text-warning me-1"></i> Thanh Toán Khi Nhận Hàng (COD)
+                                        </div>
+                                        <small class="text-muted fs-8">Kiểm tra sách rồi mới thanh toán tiền mặt cho shipper</small>
+                                    </div>
+                                </div>
+                                <i class="fas fa-truck text-secondary fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Order Summary & Confirm -->
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white sticky-top" style="top: 85px; z-index: 1;">
+                    <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">Đơn Hàng Của Bạn</h5>
+
+                    <!-- Order Items Summary List -->
+                    <div id="checkoutOrderItemsList" class="d-flex flex-column gap-2 mb-3" style="max-height: 250px; overflow-y: auto;">
+                        <!-- Items rendered by JS -->
+                    </div>
+
+                    <!-- Coupon Area -->
+                    <div class="border rounded-3 p-2.5 bg-light mb-3">
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="text" id="checkoutCouponInput" class="form-control rounded-start-pill fs-8 ps-3" placeholder="Nhập mã giảm giá...">
+                            <button class="btn btn-primary rounded-end-pill px-3 fs-8 fw-bold" onclick="handleApplyCheckoutCoupon()">Áp Dụng</button>
+                        </div>
+                        <div id="checkoutAppliedCouponBadge"></div>
+                    </div>
+
+                    <!-- Calculations -->
+                    <div class="d-flex justify-content-between fs-8 text-secondary mb-2">
+                        <span>Tạm tính:</span>
+                        <span class="fw-bold text-dark" id="checkoutSubtotalText">0 đ</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between fs-8 text-secondary mb-2">
+                        <span>Giảm giá Voucher:</span>
+                        <span class="fw-bold text-success" id="checkoutDiscountText">-0 đ</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between fs-8 text-secondary mb-2">
+                        <span>Phí vận chuyển:</span>
+                        <span class="badge bg-success-subtle text-success fs-9">Miễn phí giao hàng</span>
+                    </div>
+
+                    <hr class="my-2">
+
+                    <div class="d-flex justify-content-between align-items-baseline mb-4">
+                        <span class="fw-bold text-dark fs-7">Tổng thanh toán:</span>
+                        <span class="fs-4 fw-extrabold text-danger" id="checkoutFinalTotalText">0 đ</span>
+                    </div>
+
+                    <button type="button" class="btn btn-primary w-100 rounded-pill py-2.5 fw-bold fs-7 shadow-sm mb-3" id="btnSubmitOrder" onclick="processCheckoutSubmit()">
+                        <i class="fas fa-qrcode me-1"></i> Quét Mã VietQR (PayOS) <i class="fas fa-arrow-right ms-1"></i>
+                    </button>
+
+                    <a th:href="@{/cart}" class="btn btn-light w-100 rounded-pill py-2 fs-8 text-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Quay lại giỏ hàng
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <!-- Floating AI Chat -->
+    <div th:replace="~{fragments/ai-assistant :: ai-assistant}"></div>
+
+    <!-- Auth Modal -->
+    <div th:replace="~{fragments/auth-modal :: auth-modal}"></div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+    <!-- Scripts -->
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/app.js?v=19.0}"></script>
+    <script th:src="@{/js/ai-bot.js?v=19.0}"></script>
+
+</body>
+</html>

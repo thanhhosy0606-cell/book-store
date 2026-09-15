@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Quản Lý Đơn Hàng - Nhã Nam Book Store</title>
+    <link rel="icon" type="image/png" th:href="@{/images/nhanam-logo-green.png}">
+
+    <!-- Bootstrap 5 CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Admin CSS -->
+    <link th:href="@{/css/admin.css?v=3.0}" rel="stylesheet">
+</head>
+
+<body class="admin-body">
+
+    <!-- SIDEBAR -->
+    <aside th:replace="~{admin/sidebar :: sidebar(${activeTab})}"></aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        <!-- TOPBAR -->
+        <header class="admin-topbar">
+            <div class="topbar-left">
+                <h1 class="topbar-page-title">Quản Lý Đơn Đặt Hàng</h1>
+            </div>
+
+            <div class="topbar-right">
+                <div class="admin-user-profile">
+                    <img th:src="@{/images/book_ai.png}" alt="Admin Avatar">
+                    <div class="admin-user-info">
+                        <div id="adminNameDisplay" class="admin-user-name">Admin Nhã Nam</div>
+                        <div id="adminRoleDisplay" class="admin-user-role">Quản Trị Viên</div>
+                    </div>
+                </div>
+
+                <button class="btn-admin-logout" onclick="handleAdminLogout()" title="Đăng xuất">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENT BODY -->
+        <div class="admin-content">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h2 class="admin-card-title">
+                        <i class="fas fa-shopping-bag text-primary"></i> Quản Lý Đơn Đặt Hàng
+                        <span class="badge bg-primary ms-2" style="font-size: 0.8rem; border-radius: 20px; vertical-align: middle;"
+                              th:text="${#lists.size(orders)} + ' đơn hàng'">0 đơn</span>
+                    </h2>
+
+                    <div class="admin-toolbar">
+                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="loadOrders()" title="Làm mới">
+                            <i class="fas fa-sync-alt me-1"></i> Làm Mới
+                        </button>
+                        <input type="text" id="orderSearchInput" class="admin-search-input" placeholder="Tìm mã đơn, tên khách, SĐT..." oninput="loadOrders()">
+                        <select id="orderStatusFilter" class="admin-filter-select" onchange="loadOrders()">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="PENDING">Chờ duyệt</option>
+                            <option value="CONFIRMED">Đã duyệt</option>
+                            <option value="SHIPPING">Đang giao</option>
+                            <option value="DELIVERED">Đã giao</option>
+                            <option value="CANCELLED">Đã hủy</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="admin-table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Mã Đơn</th>
+                                <th>Người Nhận</th>
+                                <th>Ngày Đặt</th>
+                                <th>Thanh Toán</th>
+                                <th>Tổng Tiền</th>
+                                <th>Trạng Thái</th>
+                                <th>Cập Nhật Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">Đang tải danh sách đơn hàng...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ORDER DETAIL MODAL -->
+    <div id="orderDetailModal" class="admin-modal-overlay">
+        <div class="admin-modal-box" style="max-width: 700px;">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title">
+                    <i class="fas fa-receipt text-primary me-2"></i>Chi Tiết Đơn Hàng <span id="detailOrderTracking">#</span>
+                </h3>
+                <button class="admin-modal-close" onclick="closeAdminModal('orderDetailModal')">&times;</button>
+            </div>
+            <div class="admin-modal-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3">
+                            <div class="fw-bold text-dark mb-1">Thông Tin Người Nhận</div>
+                            <div class="fs-8 text-muted">Người nhận: <strong id="detailReceiverName" class="text-dark"></strong></div>
+                            <div class="fs-8 text-muted">Số điện thoại: <strong id="detailReceiverPhone" class="text-dark"></strong></div>
+                            <div class="fs-8 text-muted">Địa chỉ: <span id="detailShippingAddress"></span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3">
+                            <div class="fw-bold text-dark mb-1">Thanh Toán & Trạng Thái</div>
+                            <div class="fs-8 text-muted">Phương thức: <strong id="detailPaymentMethod" class="text-dark"></strong></div>
+                            <div class="fs-8 text-muted">Thanh toán: <span id="detailPaymentStatus" class="badge bg-secondary"></span></div>
+                            <div class="fs-8 text-muted">Ngày đặt: <span id="detailOrderDate"></span></div>
+                            <div class="fs-8 text-muted">Trạng thái: <span id="detailOrderStatus"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-dark mb-2">Danh Sách Sách Trong Đơn</h6>
+                <div class="admin-table-responsive mb-3">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Sản Phẩm</th>
+                                <th>Đơn Giá</th>
+                                <th>Số Lượng</th>
+                                <th>Thành Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailOrderItemsBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3">
+                    <span class="fw-bold text-dark">Tổng tiền thanh toán:</span>
+                    <span class="fs-5 fw-extrabold text-danger" id="detailOrderTotal">0₫</span>
+                </div>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" class="btn-admin-secondary" onclick="closeAdminModal('orderDetailModal')">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/admin.js?v=5.0}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof loadOrders === 'function') {
+                loadOrders();
+            }
+        });
+    </script>
+
+</body>
+</html>

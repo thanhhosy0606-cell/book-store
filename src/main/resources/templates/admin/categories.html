@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Quản Lý Thể Loại - Nhã Nam Book Store</title>
+    <link rel="icon" type="image/png" th:href="@{/images/nhanam-logo-green.png}">
+
+    <!-- Bootstrap 5 CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Admin CSS -->
+    <link th:href="@{/css/admin.css?v=3.0}" rel="stylesheet">
+</head>
+
+<body class="admin-body">
+
+    <!-- SIDEBAR -->
+    <aside th:replace="~{admin/sidebar :: sidebar(${activeTab})}"></aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        <!-- TOPBAR -->
+        <header class="admin-topbar">
+            <div class="topbar-left">
+                <h1 class="topbar-page-title">Quản Lý Thể Loại Sách</h1>
+            </div>
+
+            <div class="topbar-right">
+                <div class="admin-user-profile">
+                    <img th:src="@{/images/book_ai.png}" alt="Admin Avatar">
+                    <div class="admin-user-info">
+                        <div id="adminNameDisplay" class="admin-user-name">Admin Nhã Nam</div>
+                        <div id="adminRoleDisplay" class="admin-user-role">Quản Trị Viên</div>
+                    </div>
+                </div>
+
+                <button class="btn-admin-logout" onclick="handleAdminLogout()" title="Đăng xuất">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENT BODY -->
+        <div class="admin-content">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h2 class="admin-card-title">
+                        <i class="fas fa-tags text-primary"></i> Danh Mục Thể Loại Sách
+                        <span id="adminCategoriesCountBadge" class="badge bg-primary ms-2"
+                            style="font-size: 0.8rem; border-radius: 20px; vertical-align: middle;"
+                            th:text="${#lists.size(categories)} + ' thể loại'">0 thể loại</span>
+                    </h2>
+
+                    <div class="admin-toolbar">
+                        <button class="btn-admin-primary" onclick="openCategoryAddModal()">
+                            <i class="fas fa-plus"></i> Thêm Thể Loại Mới
+                        </button>
+                    </div>
+                </div>
+
+                <div class="admin-table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Mã</th>
+                                <th>Tên Thể Loại</th>
+                                <th>Đường Dẫn Slug</th>
+                                <th>Mô Tả Thể Loại</th>
+                                <th style="width: 140px;">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTableBody">
+                            <tr th:each="cat : ${categories}">
+                                <td th:text="'#' + ${cat.id}">#1</td>
+                                <td>
+                                    <strong class="text-dark" th:text="${cat.name}">Tên thể loại</strong>
+                                </td>
+                                <td>
+                                    <code class="text-primary" th:text="${cat.slug}">van-hoc</code>
+                                </td>
+                                <td class="text-secondary fs-8" th:text="${cat.description != null ? cat.description : 'Chưa có mô tả'}">Mô tả</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fs-9"
+                                                th:onclick="'openCategoryEditModal(' + ${cat.id} + ', \'' + ${cat.name} + '\', \'' + ${cat.slug} + '\', \'' + ${cat.description != null ? cat.description : ''} + '\')'">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-9"
+                                                th:onclick="'handleDeleteCategory(' + ${cat.id} + ')'">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- CATEGORY MODAL -->
+    <div id="categoryModal" class="admin-modal-overlay">
+        <div class="admin-modal-box" style="max-width: 500px;">
+            <div class="admin-modal-header">
+                <h3 id="categoryModalTitle" class="admin-modal-title">Thêm Thể Loại Mới</h3>
+                <button class="admin-modal-close" onclick="closeAdminModal('categoryModal')">&times;</button>
+            </div>
+            <form id="categoryForm" onsubmit="handleSaveCategory(event)">
+                <div class="admin-modal-body">
+                    <input type="hidden" id="categoryIdInput">
+                    <div class="form-group-admin">
+                        <label class="form-label-admin">Tên Thể Loại *</label>
+                        <input type="text" id="categoryNameInput" class="form-control-admin" required placeholder="Ví dụ: Văn Học Hiện Đại">
+                    </div>
+                    <div class="form-group-admin">
+                        <label class="form-label-admin">Đường Dẫn Slug (Tùy chọn)</label>
+                        <input type="text" id="categorySlugInput" class="form-control-admin" placeholder="Ví dụ: van-hoc-hien-dai">
+                    </div>
+                    <div class="form-group-admin">
+                        <label class="form-label-admin">Mô Tả Thể Loại</label>
+                        <textarea id="categoryDescInput" class="form-control-admin" rows="3" placeholder="Mô tả tóm tắt..."></textarea>
+                    </div>
+                </div>
+                <div class="admin-modal-footer">
+                    <button type="button" class="btn-admin-secondary" onclick="closeAdminModal('categoryModal')">Hủy</button>
+                    <button type="submit" class="btn-admin-primary"><i class="fas fa-save me-1"></i> Lưu Thể Loại</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/admin.js?v=5.0}"></script>
+
+</body>
+</html>

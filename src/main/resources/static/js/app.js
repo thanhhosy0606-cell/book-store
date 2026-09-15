@@ -2973,6 +2973,10 @@ function formatCurrency(amount) {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 }
 
+function addToCartById(bookId, qty = 1, silent = false) {
+    return addToCart(bookId, qty, silent);
+}
+
 function addToCart(bookId, qty = 1, silent = false) {
     if (!requireLogin('thêm sản phẩm vào giỏ hàng')) {
         return false;
@@ -3974,229 +3978,229 @@ function processCheckoutSubmit() {
 }
 
 
-    function backToCartModal() {
-        closeModal('paymentModal');
-        openModal('cartModal');
+function backToCartModal() {
+    closeModal('paymentModal');
+    openModal('cartModal');
+}
+
+async function saveOrderToBackendAndFinish(paymentMethod) {
+    const submitBtn = document.getElementById('btnSubmitOrder');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang xử lý tạo đơn hàng...';
     }
 
-    async function saveOrderToBackendAndFinish(paymentMethod) {
-        const submitBtn = document.getElementById('btnSubmitOrder');
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang xử lý tạo đơn hàng...';
-        }
+    const payload = {
+        userId: (currentUser && currentUser.id) ? currentUser.id : null,
+        receiverName: currentCheckoutData.receiverName,
+        receiverPhone: currentCheckoutData.receiverPhone,
+        shippingAddress: currentCheckoutData.shippingAddress,
+        note: currentCheckoutData.note,
+        trackingNumber: currentCheckoutData.orderCode,
+        paymentMethod: paymentMethod,
+        subtotal: currentCheckoutData.subtotal,
+        shippingFee: 0,
+        totalAmount: currentCheckoutData.finalTotal,
+        items: currentCheckoutData.items.map(item => ({
+            bookId: item.id,
+            title: item.title,
+            author: item.author,
+            quantity: item.quantity,
+            price: item.price
+        }))
+    };
 
-        const payload = {
-            userId: (currentUser && currentUser.id) ? currentUser.id : null,
-            receiverName: currentCheckoutData.receiverName,
-            receiverPhone: currentCheckoutData.receiverPhone,
-            shippingAddress: currentCheckoutData.shippingAddress,
-            note: currentCheckoutData.note,
-            trackingNumber: currentCheckoutData.orderCode,
-            paymentMethod: paymentMethod,
-            subtotal: currentCheckoutData.subtotal,
-            shippingFee: 0,
-            totalAmount: currentCheckoutData.finalTotal,
-            items: currentCheckoutData.items.map(item => ({
-                bookId: item.id,
-                title: item.title,
-                author: item.author,
-                quantity: item.quantity,
-                price: item.price
-            }))
-        };
+    let createdOrder = null;
 
-        let createdOrder = null;
-
-        try {
-            const res = await fetch('/api/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await res.json();
-            if (res.ok && result.success && result.data) {
-                createdOrder = result.data;
-                currentCreatedOrderId = createdOrder.id;
-            } else {
-                const errMsg = (result && result.message) ? result.message : 'Không thể lưu đơn hàng vào hệ thống!';
-                showToast(errMsg, 'danger');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Hoàn Tất Đặt Hàng <i class="fas fa-arrow-right ms-1"></i>';
-                }
-                return;
-            }
-        } catch (e) {
-            console.error('Lỗi kết nối /api/orders:', e);
-            showToast('Lỗi kết nối máy chủ khi tạo đơn hàng. Vui lòng kiểm tra lại!', 'danger');
+    try {
+        const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (res.ok && result.success && result.data) {
+            createdOrder = result.data;
+            currentCreatedOrderId = createdOrder.id;
+        } else {
+            const errMsg = (result && result.message) ? result.message : 'Không thể lưu đơn hàng vào hệ thống!';
+            showToast(errMsg, 'danger');
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Hoàn Tất Đặt Hàng <i class="fas fa-arrow-right ms-1"></i>';
             }
             return;
         }
-
-        // Save to local storage cache
-        saveLocalOrder(createdOrder);
-
-        // Clear only ordered items from cart
-        const orderedBookIds = new Set(currentCheckoutData.items.map(it => it.id));
-        cart = cart.filter(it => !orderedBookIds.has(it.id));
-        selectedCartIds.clear();
-        appliedCoupon = null;
-        updateCartUI();
-
-        // Fill Step 3 UI
-        const codeEl = document.getElementById('confirmedOrderCode');
-        if (codeEl) codeEl.textContent = createdOrder.trackingNumber || currentCheckoutData.orderCode;
-
-        const methodBadge = document.getElementById('confirmedPaymentMethod');
-        if (methodBadge) {
-            if (paymentMethod === 'COD') {
-                methodBadge.className = 'badge bg-secondary-subtle text-secondary fw-bold fs-8';
-                methodBadge.textContent = 'Thanh toán khi nhận hàng (COD)';
-            } else {
-                methodBadge.className = 'badge bg-primary-subtle text-primary fw-bold fs-8';
-                methodBadge.textContent = 'Thanh toán online VNPay';
-            }
+    } catch (e) {
+        console.error('Lỗi kết nối /api/orders:', e);
+        showToast('Lỗi kết nối máy chủ khi tạo đơn hàng. Vui lòng kiểm tra lại!', 'danger');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Hoàn Tất Đặt Hàng <i class="fas fa-arrow-right ms-1"></i>';
         }
-
-        const recNameEl = document.getElementById('confirmedReceiver');
-        if (recNameEl) recNameEl.textContent = createdOrder.receiverName;
-
-        const recPhoneEl = document.getElementById('confirmedPhone');
-        if (recPhoneEl) recPhoneEl.textContent = createdOrder.receiverPhone;
-
-        const recAddrEl = document.getElementById('confirmedAddress');
-        if (recAddrEl) recAddrEl.textContent = createdOrder.shippingAddress;
-
-        const titleEl = document.getElementById('paymentSuccessTitle');
-        if (titleEl) {
-            titleEl.textContent = 'Đặt Hàng Thành Công! 🎉';
-        }
-
-        showPaymentStep(3);
-
-        const toastMsg = '🎉 Đặt hàng thành công! Đơn hàng đang ở trạng thái <b>Chờ xác nhận</b>.';
-        showToast(toastMsg, 'success');
+        return;
     }
 
-    function getLocalOrdersKey() {
-        return currentUser && currentUser.id ? `bookmind_user_orders_${currentUser.id}` : null;
-    }
+    // Save to local storage cache
+    saveLocalOrder(createdOrder);
 
-    function saveLocalOrder(order) {
-        try {
-            const key = getLocalOrdersKey();
-            if (!key) return; // Không lưu nếu chưa đăng nhập
-            let list = JSON.parse(localStorage.getItem(key) || '[]');
-            list.unshift(order);
-            localStorage.setItem(key, JSON.stringify(list));
-        } catch (e) { }
-    }
+    // Clear only ordered items from cart
+    const orderedBookIds = new Set(currentCheckoutData.items.map(it => it.id));
+    cart = cart.filter(it => !orderedBookIds.has(it.id));
+    selectedCartIds.clear();
+    appliedCoupon = null;
+    updateCartUI();
 
-    function getLocalOrders() {
-        try {
-            const key = getLocalOrdersKey();
-            if (!key) return []; // Trả về rỗng nếu chưa đăng nhập
-            return JSON.parse(localStorage.getItem(key) || '[]');
-        } catch (e) {
-            return [];
+    // Fill Step 3 UI
+    const codeEl = document.getElementById('confirmedOrderCode');
+    if (codeEl) codeEl.textContent = createdOrder.trackingNumber || currentCheckoutData.orderCode;
+
+    const methodBadge = document.getElementById('confirmedPaymentMethod');
+    if (methodBadge) {
+        if (paymentMethod === 'COD') {
+            methodBadge.className = 'badge bg-secondary-subtle text-secondary fw-bold fs-8';
+            methodBadge.textContent = 'Thanh toán khi nhận hàng (COD)';
+        } else {
+            methodBadge.className = 'badge bg-primary-subtle text-primary fw-bold fs-8';
+            methodBadge.textContent = 'Thanh toán online VNPay';
         }
     }
 
-    // ==========================================
-    // MY ORDERS MODAL & TRACKING
-    // ==========================================
+    const recNameEl = document.getElementById('confirmedReceiver');
+    if (recNameEl) recNameEl.textContent = createdOrder.receiverName;
 
-    async function openMyOrdersModal(event) {
-        if (event) event.preventDefault();
-        if (!requireLogin('xem đơn hàng của bạn')) {
-            return;
-        }
+    const recPhoneEl = document.getElementById('confirmedPhone');
+    if (recPhoneEl) recPhoneEl.textContent = createdOrder.receiverPhone;
 
-        openModal('myOrdersModal');
-        currentOrderFilter = 'ALL';
+    const recAddrEl = document.getElementById('confirmedAddress');
+    if (recAddrEl) recAddrEl.textContent = createdOrder.shippingAddress;
 
-        // Reset tabs UI
-        const tabs = document.querySelectorAll('#orderFilterTabs .nav-link');
-        tabs.forEach((tab, index) => {
-            if (index === 0) {
-                tab.className = 'nav-link active rounded-pill py-1.5';
-            } else {
-                tab.className = 'nav-link rounded-pill py-1.5 text-secondary';
-            }
-        });
-
-        await loadMyOrders();
+    const titleEl = document.getElementById('paymentSuccessTitle');
+    if (titleEl) {
+        titleEl.textContent = 'Đặt Hàng Thành Công! 🎉';
     }
 
-    async function loadMyOrders() {
-        const listEl = document.getElementById('myOrdersList');
-        if (!listEl) return;
+    showPaymentStep(3);
 
-        listEl.innerHTML = `
+    const toastMsg = '🎉 Đặt hàng thành công! Đơn hàng đang ở trạng thái <b>Chờ xác nhận</b>.';
+    showToast(toastMsg, 'success');
+}
+
+function getLocalOrdersKey() {
+    return currentUser && currentUser.id ? `bookmind_user_orders_${currentUser.id}` : null;
+}
+
+function saveLocalOrder(order) {
+    try {
+        const key = getLocalOrdersKey();
+        if (!key) return; // Không lưu nếu chưa đăng nhập
+        let list = JSON.parse(localStorage.getItem(key) || '[]');
+        list.unshift(order);
+        localStorage.setItem(key, JSON.stringify(list));
+    } catch (e) { }
+}
+
+function getLocalOrders() {
+    try {
+        const key = getLocalOrdersKey();
+        if (!key) return []; // Trả về rỗng nếu chưa đăng nhập
+        return JSON.parse(localStorage.getItem(key) || '[]');
+    } catch (e) {
+        return [];
+    }
+}
+
+// ==========================================
+// MY ORDERS MODAL & TRACKING
+// ==========================================
+
+async function openMyOrdersModal(event) {
+    if (event) event.preventDefault();
+    if (!requireLogin('xem đơn hàng của bạn')) {
+        return;
+    }
+
+    openModal('myOrdersModal');
+    currentOrderFilter = 'ALL';
+
+    // Reset tabs UI
+    const tabs = document.querySelectorAll('#orderFilterTabs .nav-link');
+    tabs.forEach((tab, index) => {
+        if (index === 0) {
+            tab.className = 'nav-link active rounded-pill py-1.5';
+        } else {
+            tab.className = 'nav-link rounded-pill py-1.5 text-secondary';
+        }
+    });
+
+    await loadMyOrders();
+}
+
+async function loadMyOrders() {
+    const listEl = document.getElementById('myOrdersList');
+    if (!listEl) return;
+
+    listEl.innerHTML = `
         <div class="text-center py-5 text-muted">
             <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
             <p class="fs-8 mb-0">Đang tải danh sách đơn hàng...</p>
         </div>
     `;
 
-        let orders = [];
+    let orders = [];
 
-        try {
-            const userId = currentUser ? currentUser.id : '';
-            const res = await fetch(`/api/orders/my-orders?userId=${userId}`);
-            const result = await res.json();
-            if (res.ok && result.success && Array.isArray(result.data)) {
-                orders = result.data;
-            }
-        } catch (e) {
-            console.warn('Could not fetch orders from API, loading from localStorage', e);
+    try {
+        const userId = currentUser ? currentUser.id : '';
+        const res = await fetch(`/api/orders/my-orders?userId=${userId}`);
+        const result = await res.json();
+        if (res.ok && result.success && Array.isArray(result.data)) {
+            orders = result.data;
         }
-
-        // Merge with local orders
-        const localOrders = getLocalOrders();
-        const existingTrackingSet = new Set(orders.map(o => o.trackingNumber));
-        localOrders.forEach(lo => {
-            if (!existingTrackingSet.has(lo.trackingNumber)) {
-                orders.unshift(lo);
-            }
-        });
-
-        myOrdersListCache = orders;
-        renderOrdersList(myOrdersListCache, currentOrderFilter);
+    } catch (e) {
+        console.warn('Could not fetch orders from API, loading from localStorage', e);
     }
 
-    function filterMyOrders(status, btnEl) {
-        currentOrderFilter = status;
+    // Merge with local orders
+    const localOrders = getLocalOrders();
+    const existingTrackingSet = new Set(orders.map(o => o.trackingNumber));
+    localOrders.forEach(lo => {
+        if (!existingTrackingSet.has(lo.trackingNumber)) {
+            orders.unshift(lo);
+        }
+    });
 
-        const tabs = document.querySelectorAll('#orderFilterTabs .nav-link');
-        tabs.forEach(tab => {
-            tab.className = 'nav-link rounded-pill py-1.5 text-secondary';
-        });
-        if (btnEl) btnEl.className = 'nav-link active rounded-pill py-1.5';
+    myOrdersListCache = orders;
+    renderOrdersList(myOrdersListCache, currentOrderFilter);
+}
 
-        renderOrdersList(myOrdersListCache, status);
+function filterMyOrders(status, btnEl) {
+    currentOrderFilter = status;
+
+    const tabs = document.querySelectorAll('#orderFilterTabs .nav-link');
+    tabs.forEach(tab => {
+        tab.className = 'nav-link rounded-pill py-1.5 text-secondary';
+    });
+    if (btnEl) btnEl.className = 'nav-link active rounded-pill py-1.5';
+
+    renderOrdersList(myOrdersListCache, status);
+}
+
+function renderOrdersList(orders, filter) {
+    const listEl = document.getElementById('myOrdersList');
+    const subtitleEl = document.getElementById('myOrdersSubtitle');
+    if (!listEl) return;
+
+    let filtered = orders;
+    if (filter && filter !== 'ALL') {
+        filtered = orders.filter(o => o.status === filter);
     }
 
-    function renderOrdersList(orders, filter) {
-        const listEl = document.getElementById('myOrdersList');
-        const subtitleEl = document.getElementById('myOrdersSubtitle');
-        if (!listEl) return;
+    if (subtitleEl) {
+        subtitleEl.textContent = `Bạn có ${orders.length} đơn hàng trong hệ thống (${filtered.length} đơn hiển thị)`;
+    }
 
-        let filtered = orders;
-        if (filter && filter !== 'ALL') {
-            filtered = orders.filter(o => o.status === filter);
-        }
-
-        if (subtitleEl) {
-            subtitleEl.textContent = `Bạn có ${orders.length} đơn hàng trong hệ thống (${filtered.length} đơn hiển thị)`;
-        }
-
-        if (filtered.length === 0) {
-            listEl.innerHTML = `
+    if (filtered.length === 0) {
+        listEl.innerHTML = `
             <div class="text-center py-5">
                 <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
                     <i class="fas fa-box-open text-muted fs-2"></i>
@@ -4208,16 +4212,16 @@ function processCheckoutSubmit() {
                 </button>
             </div>
         `;
-            return;
-        }
+        return;
+    }
 
-        listEl.innerHTML = filtered.map(order => {
-            const statusCode = getOrderStatusCode(order.status);
-            const statusMeta = getOrderStatusMeta(order.status);
+    listEl.innerHTML = filtered.map(order => {
+        const statusCode = getOrderStatusCode(order.status);
+        const statusMeta = getOrderStatusMeta(order.status);
 
-            const itemsHtml = (order.items || []).map(item => {
-                const bookImg = item.image || 'images/book_ai.png';
-                return `
+        const itemsHtml = (order.items || []).map(item => {
+            const bookImg = item.image || 'images/book_ai.png';
+            return `
                 <div class="d-flex align-items-center justify-content-between py-1.5 border-bottom border-light">
                     <div class="d-flex align-items-center gap-2 text-truncate" style="max-width: 380px;">
                         <img src="${bookImg}" alt="Book" class="rounded border" style="width: 32px; height: 42px; object-fit: cover;">
@@ -4232,16 +4236,16 @@ function processCheckoutSubmit() {
                     </div>
                 </div>
             `;
-            }).join('');
+        }).join('');
 
-            const isCOD = order.paymentMethod === 'COD';
-            const isVIETQR = order.paymentMethod === 'VIETQR' || order.paymentMethod === 'PAYOS';
-            const paymentLabel = isCOD ? 'Thanh toán khi nhận hàng (COD)' : (isVIETQR ? 'Chuyển khoản VietQR (PayOS)' : (order.paymentMethod || 'Khác'));
-            const paymentBadgeClass = isCOD ? 'bg-secondary-subtle text-secondary' : 'bg-success-subtle text-success';
+        const isCOD = order.paymentMethod === 'COD';
+        const isVIETQR = order.paymentMethod === 'VIETQR' || order.paymentMethod === 'PAYOS';
+        const paymentLabel = isCOD ? 'Thanh toán khi nhận hàng (COD)' : (isVIETQR ? 'Chuyển khoản VietQR (PayOS)' : (order.paymentMethod || 'Khác'));
+        const paymentBadgeClass = isCOD ? 'bg-secondary-subtle text-secondary' : 'bg-success-subtle text-success';
 
-            const dateFormatted = order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : 'Vừa xong';
+        const dateFormatted = order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : 'Vừa xong';
 
-            return `
+        return `
             <div class="card border rounded-4 shadow-xs p-3.5 bg-white mb-2">
                 <!-- Card Header -->
                 <div class="d-flex flex-wrap justify-content-between align-items-center pb-2 border-bottom mb-2 gap-2">
@@ -4320,300 +4324,300 @@ function processCheckoutSubmit() {
                 </div>
             </div>
         `;
-        }).join('');
+    }).join('');
+}
+
+function getOrderStatusCode(status) {
+    switch (status) {
+        case 'PENDING': return 1;
+        case 'CONFIRMED': return 2;
+        case 'SHIPPING': return 3;
+        case 'DELIVERED': return 4;
+        default: return 1;
     }
+}
 
-    function getOrderStatusCode(status) {
-        switch (status) {
-            case 'PENDING': return 1;
-            case 'CONFIRMED': return 2;
-            case 'SHIPPING': return 3;
-            case 'DELIVERED': return 4;
-            default: return 1;
-        }
+function getOrderStatusMeta(status) {
+    switch (status) {
+        case 'PENDING':
+            return { label: 'Chờ xác nhận', badgeClass: 'bg-warning-subtle text-warning-emphasis', icon: 'fas fa-clock' };
+        case 'CONFIRMED':
+            return { label: 'Chờ lấy hàng', badgeClass: 'bg-info-subtle text-info-emphasis', icon: 'fas fa-box' };
+        case 'SHIPPING':
+            return { label: 'Chờ giao hàng', badgeClass: 'bg-primary-subtle text-primary', icon: 'fas fa-shipping-fast' };
+        case 'DELIVERED':
+            return { label: 'Đã giao', badgeClass: 'bg-success-subtle text-success', icon: 'fas fa-check-circle' };
+        case 'CANCELLED':
+            return { label: 'Đã hủy', badgeClass: 'bg-danger-subtle text-danger', icon: 'fas fa-times-circle' };
+        default:
+            return { label: 'Chờ xác nhận', badgeClass: 'bg-warning-subtle text-warning-emphasis', icon: 'fas fa-clock' };
     }
+}
 
-    function getOrderStatusMeta(status) {
-        switch (status) {
-            case 'PENDING':
-                return { label: 'Chờ xác nhận', badgeClass: 'bg-warning-subtle text-warning-emphasis', icon: 'fas fa-clock' };
-            case 'CONFIRMED':
-                return { label: 'Chờ lấy hàng', badgeClass: 'bg-info-subtle text-info-emphasis', icon: 'fas fa-box' };
-            case 'SHIPPING':
-                return { label: 'Chờ giao hàng', badgeClass: 'bg-primary-subtle text-primary', icon: 'fas fa-shipping-fast' };
-            case 'DELIVERED':
-                return { label: 'Đã giao', badgeClass: 'bg-success-subtle text-success', icon: 'fas fa-check-circle' };
-            case 'CANCELLED':
-                return { label: 'Đã hủy', badgeClass: 'bg-danger-subtle text-danger', icon: 'fas fa-times-circle' };
-            default:
-                return { label: 'Chờ xác nhận', badgeClass: 'bg-warning-subtle text-warning-emphasis', icon: 'fas fa-clock' };
-        }
-    }
-
-    async function advanceOrderStatus(orderId, currentStatus) {
-        const nextSteps = {
-            'PENDING': 'CONFIRMED',
-            'CONFIRMED': 'SHIPPING',
-            'SHIPPING': 'DELIVERED'
-        };
-
-        const nextStatus = nextSteps[currentStatus];
-        if (!nextStatus) return;
-
-        try {
-            const res = await fetch(`/api/orders/${orderId}/status`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: nextStatus })
-            });
-            const result = await res.json();
-            if (res.ok && result.success) {
-                showToast(`Cập nhật đơn hàng sang: <b>${result.data.statusLabel}</b>!`, 'success');
-            }
-        } catch (e) {
-            console.warn('API error when updating order status, updating in cache', e);
-        }
-
-        // Update in local cache
-        const item = myOrdersListCache.find(o => o.id === orderId);
-        if (item) {
-            item.status = nextStatus;
-            const meta = getOrderStatusMeta(nextStatus);
-            item.statusLabel = meta.label;
-            item.statusCode = getOrderStatusCode(nextStatus);
-        }
-
-        // Update local storage
-        try {
-            let localOrders = getLocalOrders();
-            const loc = localOrders.find(o => o.id === orderId);
-            if (loc) {
-                loc.status = nextStatus;
-                loc.statusLabel = getOrderStatusMeta(nextStatus).label;
-                loc.statusCode = getOrderStatusCode(nextStatus);
-                localStorage.setItem('bookmind_user_orders', JSON.stringify(localOrders));
-            }
-        } catch (e) { }
-
-        renderOrdersList(myOrdersListCache, currentOrderFilter);
-    }
-
-    async function cancelOrder(orderId) {
-        if (!confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?')) return;
-
-        try {
-            await fetch(`/api/orders/${orderId}/status`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'CANCELLED' })
-            });
-        } catch (e) { }
-
-        const item = myOrdersListCache.find(o => o.id === orderId);
-        if (item) item.status = 'CANCELLED';
-
-        try {
-            let localOrders = getLocalOrders();
-            const loc = localOrders.find(o => o.id === orderId);
-            if (loc) {
-                loc.status = 'CANCELLED';
-                localStorage.setItem('bookmind_user_orders', JSON.stringify(localOrders));
-            }
-        } catch (e) { }
-
-        renderOrdersList(myOrdersListCache, currentOrderFilter);
-        showToast('Đã hủy đơn hàng thành công', 'info');
-    }
-
-
-    let currentModalBookId = null;
-    let currentNewRating = 5;
-
-    const DEFAULT_BOOK_REVIEWS = {
-        1: [
-            { author: 'Nguyễn Văn Hải', rating: 5, date: '08/03/2026', comment: 'Sách rất thực tế, giúp mình thay đổi tư duy quản lý tài chính cá nhân và đầu tư dài hạn!' },
-            { author: 'Trần Thị Mai', rating: 5, date: '05/03/2026', comment: 'Lời văn dễ hiểu, các câu chuyện minh họa cuốn hút. Đọc xong áp dụng được ngay.' },
-            { author: 'Lê Minh Quân', rating: 4, date: '28/02/2026', comment: 'Chất lượng giấy in đẹp, giao hàng nhanh. Cuốn sách đáng đọc cho người mới bắt đầu.' }
-        ],
-        2: [
-            { author: 'Phạm Đức Anh', rating: 5, date: '07/03/2026', comment: 'Tác giả James Clear phân tích cực kỳ sâu sắc về sức mạnh của thói quen nhỏ mỗi ngày.' },
-            { author: 'Đặng Thu Hà', rating: 5, date: '01/03/2026', comment: 'Quyển sách self-help hay nhất mình từng đọc. Thay đổi 1% mỗi ngày là có thật!' }
-        ],
-        3: [
-            { author: 'Vũ Quốc Bảo', rating: 5, date: '04/03/2026', comment: 'Hiểu về AI và LLM chưa bao giờ trực quan và dễ tiếp cận đến vậy. Rất đáng tiền!' },
-            { author: 'Hoàng Kim Chi', rating: 5, date: '25/02/2026', comment: 'Tác giả giải thích các khái niệm Machine Learning một cách tường minh, dễ áp dụng.' }
-        ]
+async function advanceOrderStatus(orderId, currentStatus) {
+    const nextSteps = {
+        'PENDING': 'CONFIRMED',
+        'CONFIRMED': 'SHIPPING',
+        'SHIPPING': 'DELIVERED'
     };
 
-    let userBookReviews = {};
+    const nextStatus = nextSteps[currentStatus];
+    if (!nextStatus) return;
+
     try {
-        const saved = localStorage.getItem('bookmind_user_reviews');
-        if (saved) userBookReviews = JSON.parse(saved);
-    } catch (e) { }
-
-    function openBookModal(bookId) {
-        const book = BOOK_CATALOG.find(b => b.id === bookId);
-        if (!book) return;
-
-        currentModalBookId = bookId;
-
-        document.getElementById('modalBookTitle').innerText = book.title;
-        document.getElementById('modalBookAuthor').innerText = `Tác giả: ${book.author}`;
-        document.getElementById('modalBookCategory').innerText = book.categoryName;
-        document.getElementById('modalBookPrice').innerText = formatCurrency(book.price);
-        document.getElementById('modalBookOldPrice').innerText = book.oldPrice ? formatCurrency(book.oldPrice) : '';
-        document.getElementById('modalBookDescription').innerText = book.description;
-        document.getElementById('modalBookImg').src = book.image;
-        document.getElementById('modalBookRating').innerText = `${book.rating} / 5 (${book.reviewsCount} đánh giá)`;
-
-        const isStopped = book.status === 'STOPPED';
-        const stock = (book.stockQuantity !== undefined && book.stockQuantity !== null) ? book.stockQuantity : 99;
-        const isOutOfStock = book.status === 'OUT_OF_STOCK' || stock <= 0;
-        const isLowStock = !isStopped && !isOutOfStock && stock <= 3;
-
-        // Cập nhật nhãn trạng thái kho bên cạnh bộ đếm số lượng
-        const stockBadge = document.getElementById('modalBookStockBadge');
-        if (stockBadge) {
-            if (isStopped) {
-                stockBadge.className = 'fs-8 text-danger fw-semibold';
-                stockBadge.innerHTML = '<i class="fas fa-ban me-1"></i>Ngưng kinh doanh';
-            } else if (isOutOfStock) {
-                stockBadge.className = 'fs-8 text-danger fw-semibold';
-                stockBadge.innerHTML = '<i class="fas fa-times-circle me-1"></i>Hết hàng';
-            } else if (isLowStock) {
-                stockBadge.className = 'fs-8 text-danger fw-bold bg-danger-subtle px-2 py-1 rounded-pill border border-danger-subtle';
-                stockBadge.innerHTML = `<i class="fas fa-exclamation-circle me-1 text-danger"></i>Chỉ còn ${stock} cuốn trong kho!`;
-            } else {
-                stockBadge.className = 'fs-8 text-success fw-semibold';
-                stockBadge.innerHTML = `<i class="fas fa-check-circle me-1"></i>Còn hàng (${stock} cuốn)`;
-            }
+        const res = await fetch(`/api/orders/${orderId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: nextStatus })
+        });
+        const result = await res.json();
+        if (res.ok && result.success) {
+            showToast(`Cập nhật đơn hàng sang: <b>${result.data.statusLabel}</b>!`, 'success');
         }
-
-        // Cảnh báo trạng thái kinh doanh / tồn kho thấp
-        let noticeEl = document.getElementById('modalBookStatusNotice');
-        if (!noticeEl) {
-            noticeEl = document.createElement('div');
-            noticeEl.id = 'modalBookStatusNotice';
-            const modalDesc = document.getElementById('modalBookDescription');
-            if (modalDesc && modalDesc.parentNode) {
-                modalDesc.parentNode.insertBefore(noticeEl, modalDesc);
-            }
-        }
-
-        if (isStopped) {
-            noticeEl.className = 'alert alert-danger d-flex align-items-center gap-2 py-2 mb-3 fs-8';
-            noticeEl.innerHTML = '<i class="fas fa-ban fs-6"></i> <span>Sản phẩm này hiện <b>đã ngưng kinh doanh</b>. Quý khách vui lòng chọn sách khác!</span>';
-            noticeEl.style.display = 'flex';
-        } else if (isOutOfStock) {
-            noticeEl.className = 'alert alert-danger d-flex align-items-center gap-2 py-2 mb-3 fs-8';
-            noticeEl.innerHTML = '<i class="fas fa-box-open fs-6"></i> <span>Sản phẩm này hiện đang <b>tạm hết hàng</b> trong kho.</span>';
-            noticeEl.style.display = 'flex';
-        } else if (isLowStock) {
-            noticeEl.className = 'alert alert-warning border-warning d-flex align-items-center gap-2 py-2 mb-3 fs-8';
-            noticeEl.innerHTML = `<i class="fas fa-exclamation-triangle text-danger fs-6"></i> <span>⚠️ <b>Số lượng có hạn:</b> Trong kho <b>chỉ còn ${stock} cuốn</b>, hãy đặt mua ngay kẻo hết!</span>`;
-            noticeEl.style.display = 'flex';
-        } else {
-            noticeEl.style.display = 'none';
-        }
-
-        // Reset số lượng muốn mua về 1 (nếu còn hàng)
-        const qtyInput = document.getElementById('detailBookQuantity');
-        if (qtyInput) {
-            qtyInput.value = (isStopped || isOutOfStock) ? 0 : 1;
-            qtyInput.min = (isStopped || isOutOfStock) ? 0 : 1;
-            qtyInput.max = stock > 0 ? stock : 1;
-            qtyInput.disabled = isStopped || isOutOfStock;
-        }
-
-        // Nút Thêm Vào Giỏ
-        const addBtn = document.getElementById('modalAddToCartBtn');
-        if (addBtn) {
-            if (isStopped) {
-                addBtn.disabled = true;
-                addBtn.className = 'btn btn-secondary disabled opacity-50 px-4 py-2 rounded-pill fw-bold';
-                addBtn.innerHTML = '<i class="fas fa-ban me-1"></i> Ngưng kinh doanh';
-                addBtn.onclick = null;
-            } else if (isOutOfStock) {
-                addBtn.disabled = true;
-                addBtn.className = 'btn btn-secondary disabled opacity-50 px-4 py-2 rounded-pill fw-bold';
-                addBtn.innerHTML = '<i class="fas fa-box-open me-1"></i> Tạm hết hàng';
-                addBtn.onclick = null;
-            } else {
-                addBtn.disabled = false;
-                addBtn.className = 'btn btn-outline-primary px-4 py-2 rounded-pill fw-bold';
-                addBtn.innerHTML = '<i class="fas fa-cart-plus me-1"></i> Thêm Giỏ Hàng';
-                addBtn.onclick = () => {
-                    const qty = parseInt(document.getElementById('detailBookQuantity')?.value) || 1;
-                    addToCart(book.id, qty);
-                };
-            }
-        }
-
-        // Nút Mua Ngay
-        const buyBtn = document.getElementById('modalBuyNowBtn');
-        if (buyBtn) {
-            if (isStopped) {
-                buyBtn.disabled = true;
-                buyBtn.className = 'btn btn-secondary disabled opacity-50 px-4 py-2 rounded-pill fw-bold';
-                buyBtn.innerHTML = '<i class="fas fa-ban me-1"></i> Không thể mua';
-                buyBtn.onclick = null;
-            } else if (isOutOfStock) {
-                buyBtn.disabled = true;
-                buyBtn.className = 'btn btn-secondary disabled opacity-50 px-4 py-2 rounded-pill fw-bold';
-                buyBtn.innerHTML = '<i class="fas fa-box-open me-1"></i> Hết hàng';
-                buyBtn.onclick = null;
-            } else {
-                buyBtn.disabled = false;
-                buyBtn.className = 'btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm';
-                buyBtn.innerHTML = '<i class="fas fa-bolt me-1"></i> Mua Ngay';
-                buyBtn.onclick = () => {
-                    const qty = parseInt(document.getElementById('detailBookQuantity')?.value) || 1;
-                    buyNow(book.id, qty);
-                };
-            }
-        }
-
-        // Nút Hỏi Trợ Lý AI
-        const askAIBtn = document.getElementById('modalAskAIBtn');
-        if (askAIBtn) {
-            askAIBtn.onclick = () => {
-                closeModal('bookDetailModal');
-                askAIAboutBook(book.id);
-            };
-        }
-
-        // Đóng form review nếu đang mở và render đánh giá
-        const formContainer = document.getElementById('reviewFormContainer');
-        if (formContainer) formContainer.classList.add('d-none');
-        renderBookReviews(book.id);
-
-        openModal('bookDetailModal');
+    } catch (e) {
+        console.warn('API error when updating order status, updating in cache', e);
     }
 
-    function renderBookReviews(bookId) {
-        const listEl = document.getElementById('reviewsList');
-        const summaryEl = document.getElementById('reviewsSummaryText');
-        if (!listEl) return;
+    // Update in local cache
+    const item = myOrdersListCache.find(o => o.id === orderId);
+    if (item) {
+        item.status = nextStatus;
+        const meta = getOrderStatusMeta(nextStatus);
+        item.statusLabel = meta.label;
+        item.statusCode = getOrderStatusCode(nextStatus);
+    }
 
-        const book = BOOK_CATALOG.find(b => b.id === bookId);
-        const defaults = DEFAULT_BOOK_REVIEWS[bookId] || [
-            { author: 'Độc giả BookMind', rating: 5, date: 'Vừa xong', comment: 'Sách rất hay, đóng gói cẩn thận, nội dung truyền cảm hứng và hữu ích.' }
-        ];
-        const userReviews = userBookReviews[bookId] || [];
-        const allReviews = [...userReviews, ...defaults];
-
-        if (summaryEl) {
-            summaryEl.textContent = `${allReviews.length} nhận xét thực tế từ độc giả đã mua và đọc sách`;
+    // Update local storage
+    try {
+        let localOrders = getLocalOrders();
+        const loc = localOrders.find(o => o.id === orderId);
+        if (loc) {
+            loc.status = nextStatus;
+            loc.statusLabel = getOrderStatusMeta(nextStatus).label;
+            loc.statusCode = getOrderStatusCode(nextStatus);
+            localStorage.setItem('bookmind_user_orders', JSON.stringify(localOrders));
         }
+    } catch (e) { }
 
-        listEl.innerHTML = allReviews.map(r => {
-            const starsHtml = Array.from({ length: 5 }, (_, i) =>
-                `<i class="${i < r.rating ? 'fas fa-star text-warning' : 'far fa-star text-muted'} fs-8"></i>`
-            ).join('');
+    renderOrdersList(myOrdersListCache, currentOrderFilter);
+}
 
-            const firstLetter = (r.author || 'U').charAt(0).toUpperCase();
+async function cancelOrder(orderId) {
+    if (!confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?')) return;
 
-            return `
+    try {
+        await fetch(`/api/orders/${orderId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'CANCELLED' })
+        });
+    } catch (e) { }
+
+    const item = myOrdersListCache.find(o => o.id === orderId);
+    if (item) item.status = 'CANCELLED';
+
+    try {
+        let localOrders = getLocalOrders();
+        const loc = localOrders.find(o => o.id === orderId);
+        if (loc) {
+            loc.status = 'CANCELLED';
+            localStorage.setItem('bookmind_user_orders', JSON.stringify(localOrders));
+        }
+    } catch (e) { }
+
+    renderOrdersList(myOrdersListCache, currentOrderFilter);
+    showToast('Đã hủy đơn hàng thành công', 'info');
+}
+
+
+let currentModalBookId = null;
+let currentNewRating = 5;
+
+const DEFAULT_BOOK_REVIEWS = {
+    1: [
+        { author: 'Nguyễn Văn Hải', rating: 5, date: '08/03/2026', comment: 'Sách rất thực tế, giúp mình thay đổi tư duy quản lý tài chính cá nhân và đầu tư dài hạn!' },
+        { author: 'Trần Thị Mai', rating: 5, date: '05/03/2026', comment: 'Lời văn dễ hiểu, các câu chuyện minh họa cuốn hút. Đọc xong áp dụng được ngay.' },
+        { author: 'Lê Minh Quân', rating: 4, date: '28/02/2026', comment: 'Chất lượng giấy in đẹp, giao hàng nhanh. Cuốn sách đáng đọc cho người mới bắt đầu.' }
+    ],
+    2: [
+        { author: 'Phạm Đức Anh', rating: 5, date: '07/03/2026', comment: 'Tác giả James Clear phân tích cực kỳ sâu sắc về sức mạnh của thói quen nhỏ mỗi ngày.' },
+        { author: 'Đặng Thu Hà', rating: 5, date: '01/03/2026', comment: 'Quyển sách self-help hay nhất mình từng đọc. Thay đổi 1% mỗi ngày là có thật!' }
+    ],
+    3: [
+        { author: 'Vũ Quốc Bảo', rating: 5, date: '04/03/2026', comment: 'Hiểu về AI và LLM chưa bao giờ trực quan và dễ tiếp cận đến vậy. Rất đáng tiền!' },
+        { author: 'Hoàng Kim Chi', rating: 5, date: '25/02/2026', comment: 'Tác giả giải thích các khái niệm Machine Learning một cách tường minh, dễ áp dụng.' }
+    ]
+};
+
+let userBookReviews = {};
+try {
+    const saved = localStorage.getItem('bookmind_user_reviews');
+    if (saved) userBookReviews = JSON.parse(saved);
+} catch (e) { }
+
+function openBookModal(bookId) {
+    const book = BOOK_CATALOG.find(b => b.id === bookId);
+    if (!book) return;
+
+    currentModalBookId = bookId;
+
+    document.getElementById('modalBookTitle').innerText = book.title;
+    document.getElementById('modalBookAuthor').innerText = `Tác giả: ${book.author}`;
+    document.getElementById('modalBookCategory').innerText = book.categoryName;
+    document.getElementById('modalBookPrice').innerText = formatCurrency(book.price);
+    document.getElementById('modalBookOldPrice').innerText = book.oldPrice ? formatCurrency(book.oldPrice) : '';
+    document.getElementById('modalBookDescription').innerText = book.description;
+    document.getElementById('modalBookImg').src = book.image;
+    document.getElementById('modalBookRating').innerText = `${book.rating} / 5 (${book.reviewsCount} đánh giá)`;
+
+    const isStopped = book.status === 'STOPPED';
+    const stock = (book.stockQuantity !== undefined && book.stockQuantity !== null) ? book.stockQuantity : 99;
+    const isOutOfStock = book.status === 'OUT_OF_STOCK' || stock <= 0;
+    const isLowStock = !isStopped && !isOutOfStock && stock <= 3;
+
+    // Cập nhật nhãn trạng thái kho bên cạnh bộ đếm số lượng
+    const stockBadge = document.getElementById('modalBookStockBadge');
+    if (stockBadge) {
+        if (isStopped) {
+            stockBadge.className = 'fs-8 text-danger fw-semibold';
+            stockBadge.innerHTML = '<i class="fas fa-ban me-1"></i>Ngưng kinh doanh';
+        } else if (isOutOfStock) {
+            stockBadge.className = 'fs-8 text-danger fw-semibold';
+            stockBadge.innerHTML = '<i class="fas fa-times-circle me-1"></i>Hết hàng';
+        } else if (isLowStock) {
+            stockBadge.className = 'fs-8 text-danger fw-bold bg-danger-subtle px-2 py-1 rounded-pill border border-danger-subtle';
+            stockBadge.innerHTML = `<i class="fas fa-exclamation-circle me-1 text-danger"></i>Chỉ còn ${stock} cuốn trong kho!`;
+        } else {
+            stockBadge.className = 'fs-8 text-success fw-semibold';
+            stockBadge.innerHTML = `<i class="fas fa-check-circle me-1"></i>Còn hàng (${stock} cuốn)`;
+        }
+    }
+
+    // Cảnh báo trạng thái kinh doanh / tồn kho thấp
+    let noticeEl = document.getElementById('modalBookStatusNotice');
+    if (!noticeEl) {
+        noticeEl = document.createElement('div');
+        noticeEl.id = 'modalBookStatusNotice';
+        const modalDesc = document.getElementById('modalBookDescription');
+        if (modalDesc && modalDesc.parentNode) {
+            modalDesc.parentNode.insertBefore(noticeEl, modalDesc);
+        }
+    }
+
+    if (isStopped) {
+        noticeEl.className = 'alert alert-danger d-flex align-items-center gap-2 py-2 mb-3 fs-8';
+        noticeEl.innerHTML = '<i class="fas fa-ban fs-6"></i> <span>Sản phẩm này hiện <b>đã ngưng kinh doanh</b>. Quý khách vui lòng chọn sách khác!</span>';
+        noticeEl.style.display = 'flex';
+    } else if (isOutOfStock) {
+        noticeEl.className = 'alert alert-danger d-flex align-items-center gap-2 py-2 mb-3 fs-8';
+        noticeEl.innerHTML = '<i class="fas fa-box-open fs-6"></i> <span>Sản phẩm này hiện đang <b>tạm hết hàng</b> trong kho.</span>';
+        noticeEl.style.display = 'flex';
+    } else if (isLowStock) {
+        noticeEl.className = 'alert alert-warning border-warning d-flex align-items-center gap-2 py-2 mb-3 fs-8';
+        noticeEl.innerHTML = `<i class="fas fa-exclamation-triangle text-danger fs-6"></i> <span>⚠️ <b>Số lượng có hạn:</b> Trong kho <b>chỉ còn ${stock} cuốn</b>, hãy đặt mua ngay kẻo hết!</span>`;
+        noticeEl.style.display = 'flex';
+    } else {
+        noticeEl.style.display = 'none';
+    }
+
+    // Reset số lượng muốn mua về 1 (nếu còn hàng)
+    const qtyInput = document.getElementById('detailBookQuantity');
+    if (qtyInput) {
+        qtyInput.value = (isStopped || isOutOfStock) ? 0 : 1;
+        qtyInput.min = (isStopped || isOutOfStock) ? 0 : 1;
+        qtyInput.max = stock > 0 ? stock : 1;
+        qtyInput.disabled = isStopped || isOutOfStock;
+    }
+
+    // Nút Thêm Vào Giỏ
+    const addBtn = document.getElementById('modalAddToCartBtn');
+    if (addBtn) {
+        if (isStopped) {
+            addBtn.disabled = true;
+            addBtn.className = 'btn btn-secondary disabled opacity-50 px-4 py-2 rounded-pill fw-bold';
+            addBtn.innerHTML = '<i class="fas fa-ban me-1"></i> Ngưng kinh doanh';
+            addBtn.onclick = null;
+        } else if (isOutOfStock) {
+            addBtn.disabled = true;
+            addBtn.className = 'btn btn-secondary disabled opacity-50 px-4 py-2 rounded-pill fw-bold';
+            addBtn.innerHTML = '<i class="fas fa-box-open me-1"></i> Tạm hết hàng';
+            addBtn.onclick = null;
+        } else {
+            addBtn.disabled = false;
+            addBtn.className = 'btn btn-outline-primary px-4 py-2 rounded-pill fw-bold';
+            addBtn.innerHTML = '<i class="fas fa-cart-plus me-1"></i> Thêm Giỏ Hàng';
+            addBtn.onclick = () => {
+                const qty = parseInt(document.getElementById('detailBookQuantity')?.value) || 1;
+                addToCart(book.id, qty);
+            };
+        }
+    }
+
+    // Nút Mua Ngay
+    const buyBtn = document.getElementById('modalBuyNowBtn');
+    if (buyBtn) {
+        if (isStopped) {
+            buyBtn.disabled = true;
+            buyBtn.className = 'btn btn-secondary disabled opacity-50 px-4 py-2 rounded-pill fw-bold';
+            buyBtn.innerHTML = '<i class="fas fa-ban me-1"></i> Không thể mua';
+            buyBtn.onclick = null;
+        } else if (isOutOfStock) {
+            buyBtn.disabled = true;
+            buyBtn.className = 'btn btn-secondary disabled opacity-50 px-4 py-2 rounded-pill fw-bold';
+            buyBtn.innerHTML = '<i class="fas fa-box-open me-1"></i> Hết hàng';
+            buyBtn.onclick = null;
+        } else {
+            buyBtn.disabled = false;
+            buyBtn.className = 'btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm';
+            buyBtn.innerHTML = '<i class="fas fa-bolt me-1"></i> Mua Ngay';
+            buyBtn.onclick = () => {
+                const qty = parseInt(document.getElementById('detailBookQuantity')?.value) || 1;
+                buyNow(book.id, qty);
+            };
+        }
+    }
+
+    // Nút Hỏi Trợ Lý AI
+    const askAIBtn = document.getElementById('modalAskAIBtn');
+    if (askAIBtn) {
+        askAIBtn.onclick = () => {
+            closeModal('bookDetailModal');
+            askAIAboutBook(book.id);
+        };
+    }
+
+    // Đóng form review nếu đang mở và render đánh giá
+    const formContainer = document.getElementById('reviewFormContainer');
+    if (formContainer) formContainer.classList.add('d-none');
+    renderBookReviews(book.id);
+
+    openModal('bookDetailModal');
+}
+
+function renderBookReviews(bookId) {
+    const listEl = document.getElementById('reviewsList');
+    const summaryEl = document.getElementById('reviewsSummaryText');
+    if (!listEl) return;
+
+    const book = BOOK_CATALOG.find(b => b.id === bookId);
+    const defaults = DEFAULT_BOOK_REVIEWS[bookId] || [
+        { author: 'Độc giả BookMind', rating: 5, date: 'Vừa xong', comment: 'Sách rất hay, đóng gói cẩn thận, nội dung truyền cảm hứng và hữu ích.' }
+    ];
+    const userReviews = userBookReviews[bookId] || [];
+    const allReviews = [...userReviews, ...defaults];
+
+    if (summaryEl) {
+        summaryEl.textContent = `${allReviews.length} nhận xét thực tế từ độc giả đã mua và đọc sách`;
+    }
+
+    listEl.innerHTML = allReviews.map(r => {
+        const starsHtml = Array.from({ length: 5 }, (_, i) =>
+            `<i class="${i < r.rating ? 'fas fa-star text-warning' : 'far fa-star text-muted'} fs-8"></i>`
+        ).join('');
+
+        const firstLetter = (r.author || 'U').charAt(0).toUpperCase();
+
+        return `
             <div class="p-2.5 rounded-3 border bg-white shadow-xs">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <div class="d-flex align-items-center gap-2">
@@ -4631,115 +4635,115 @@ function processCheckoutSubmit() {
                 <p class="fs-8 text-secondary mb-0" style="line-height: 1.5;">${r.comment}</p>
             </div>
         `;
-        }).join('');
+    }).join('');
+}
+
+function toggleReviewForm() {
+    if (!requireLogin('viết nhận xét và đánh giá sách')) {
+        return;
     }
+    const container = document.getElementById('reviewFormContainer');
+    if (!container) return;
 
-    function toggleReviewForm() {
-        if (!requireLogin('viết nhận xét và đánh giá sách')) {
-            return;
-        }
-        const container = document.getElementById('reviewFormContainer');
-        if (!container) return;
-
-        const isHidden = container.classList.contains('d-none');
-        if (isHidden) {
-            container.classList.remove('d-none');
-            const authorInput = document.getElementById('reviewAuthorName');
-            if (authorInput && currentUser && currentUser.fullName) {
-                authorInput.value = currentUser.fullName;
-            }
-            setNewRating(5);
-        } else {
-            container.classList.add('d-none');
-        }
-    }
-
-    function setNewRating(rating) {
-        currentNewRating = Math.max(1, Math.min(5, rating));
-        const labels = {
-            1: '1/5 - Rất thất vọng',
-            2: '2/5 - Tạm được',
-            3: '3/5 - Bình thường',
-            4: '4/5 - Hài lòng',
-            5: '5/5 - Tuyệt vời & khuyên đọc'
-        };
-
-        const labelEl = document.getElementById('newRatingLabel');
-        if (labelEl) labelEl.textContent = labels[currentNewRating] || `${currentNewRating}/5`;
-
-        const starsEl = document.getElementById('newReviewStars');
-        if (starsEl) {
-            const starIcons = starsEl.querySelectorAll('i[data-star]');
-            starIcons.forEach(icon => {
-                const starVal = parseInt(icon.getAttribute('data-star')) || 1;
-                if (starVal <= currentNewRating) {
-                    icon.className = 'fas fa-star text-warning';
-                } else {
-                    icon.className = 'far fa-star text-muted';
-                }
-            });
-        }
-    }
-
-    function submitBookReview() {
-        if (!currentModalBookId) return;
-
+    const isHidden = container.classList.contains('d-none');
+    if (isHidden) {
+        container.classList.remove('d-none');
         const authorInput = document.getElementById('reviewAuthorName');
-        const commentInput = document.getElementById('reviewComment');
-
-        const comment = commentInput ? commentInput.value.trim() : '';
-        if (!comment) {
-            showToast('Vui lòng nhập nội dung nhận xét của bạn!', 'warning');
-            if (commentInput) commentInput.focus();
-            return;
+        if (authorInput && currentUser && currentUser.fullName) {
+            authorInput.value = currentUser.fullName;
         }
+        setNewRating(5);
+    } else {
+        container.classList.add('d-none');
+    }
+}
 
-        let author = authorInput ? authorInput.value.trim() : '';
-        if (!author) {
-            author = (currentUser && currentUser.fullName) ? currentUser.fullName : 'Độc giả giấu tên';
-        }
+function setNewRating(rating) {
+    currentNewRating = Math.max(1, Math.min(5, rating));
+    const labels = {
+        1: '1/5 - Rất thất vọng',
+        2: '2/5 - Tạm được',
+        3: '3/5 - Bình thường',
+        4: '4/5 - Hài lòng',
+        5: '5/5 - Tuyệt vời & khuyên đọc'
+    };
 
-        const today = new Date();
-        const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    const labelEl = document.getElementById('newRatingLabel');
+    if (labelEl) labelEl.textContent = labels[currentNewRating] || `${currentNewRating}/5`;
 
-        const newReview = {
-            author: author,
-            rating: currentNewRating,
-            date: dateStr,
-            comment: comment
-        };
+    const starsEl = document.getElementById('newReviewStars');
+    if (starsEl) {
+        const starIcons = starsEl.querySelectorAll('i[data-star]');
+        starIcons.forEach(icon => {
+            const starVal = parseInt(icon.getAttribute('data-star')) || 1;
+            if (starVal <= currentNewRating) {
+                icon.className = 'fas fa-star text-warning';
+            } else {
+                icon.className = 'far fa-star text-muted';
+            }
+        });
+    }
+}
 
-        if (!userBookReviews[currentModalBookId]) {
-            userBookReviews[currentModalBookId] = [];
-        }
-        userBookReviews[currentModalBookId].unshift(newReview);
+function submitBookReview() {
+    if (!currentModalBookId) return;
 
-        try {
-            localStorage.setItem('bookmind_user_reviews', JSON.stringify(userBookReviews));
-        } catch (e) { }
+    const authorInput = document.getElementById('reviewAuthorName');
+    const commentInput = document.getElementById('reviewComment');
 
-        if (commentInput) commentInput.value = '';
-        toggleReviewForm();
-        renderBookReviews(currentModalBookId);
-        showToast('🎉 Cảm ơn bạn đã gửi đánh giá cho cuốn sách này!', 'success');
+    const comment = commentInput ? commentInput.value.trim() : '';
+    if (!comment) {
+        showToast('Vui lòng nhập nội dung nhận xét của bạn!', 'warning');
+        if (commentInput) commentInput.focus();
+        return;
     }
 
+    let author = authorInput ? authorInput.value.trim() : '';
+    if (!author) {
+        author = (currentUser && currentUser.fullName) ? currentUser.fullName : 'Độc giả giấu tên';
+    }
 
-    function showToast(message, type = 'info') {
-        const container = document.getElementById('toastContainer');
-        if (!container) return;
+    const today = new Date();
+    const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
-        const colors = {
-            success: { bg: '#10b981', text: '#fff' },
-            warning: { bg: '#f59e0b', text: '#1e293b' },
-            info: { bg: '#1e293b', text: '#fff' }
-        };
-        const c = colors[type] || colors.info;
-        const toastId = 'toast-' + Date.now();
+    const newReview = {
+        author: author,
+        rating: currentNewRating,
+        date: dateStr,
+        comment: comment
+    };
 
-        const div = document.createElement('div');
-        div.id = toastId;
-        div.style.cssText = `
+    if (!userBookReviews[currentModalBookId]) {
+        userBookReviews[currentModalBookId] = [];
+    }
+    userBookReviews[currentModalBookId].unshift(newReview);
+
+    try {
+        localStorage.setItem('bookmind_user_reviews', JSON.stringify(userBookReviews));
+    } catch (e) { }
+
+    if (commentInput) commentInput.value = '';
+    toggleReviewForm();
+    renderBookReviews(currentModalBookId);
+    showToast('🎉 Cảm ơn bạn đã gửi đánh giá cho cuốn sách này!', 'success');
+}
+
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const colors = {
+        success: { bg: '#10b981', text: '#fff' },
+        warning: { bg: '#f59e0b', text: '#1e293b' },
+        info: { bg: '#1e293b', text: '#fff' }
+    };
+    const c = colors[type] || colors.info;
+    const toastId = 'toast-' + Date.now();
+
+    const div = document.createElement('div');
+    div.id = toastId;
+    div.style.cssText = `
         background:${c.bg}; color:${c.text};
         padding: 0.7rem 1rem;
         border-radius: 0.6rem;
@@ -4756,36 +4760,36 @@ function processCheckoutSubmit() {
         animation: toastIn 0.3s ease;
         font-family: var(--font-main, sans-serif);
     `;
-        div.innerHTML = `
+    div.innerHTML = `
         <span>${message}</span>
         <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;font-size:1.1rem;cursor:pointer;line-height:1;padding:0;">&times;</button>
     `;
-        container.appendChild(div);
-        setTimeout(() => { if (div.parentElement) div.remove(); }, 3500);
-    }
+    container.appendChild(div);
+    setTimeout(() => { if (div.parentElement) div.remove(); }, 3500);
+}
 
-    // Toast animation
-    if (!document.getElementById('toastStyle')) {
-        const s = document.createElement('style');
-        s.id = 'toastStyle';
-        s.textContent = '@keyframes toastIn { from { opacity:0; transform:translateX(40px);} to { opacity:1; transform:translateX(0);} }';
-        document.head.appendChild(s);
-    }
+// Toast animation
+if (!document.getElementById('toastStyle')) {
+    const s = document.createElement('style');
+    s.id = 'toastStyle';
+    s.textContent = '@keyframes toastIn { from { opacity:0; transform:translateX(40px);} to { opacity:1; transform:translateX(0);} }';
+    document.head.appendChild(s);
+}
 
-    /* =========================================================
-       AUTHENTICATION LOGIC (Login & Register)
-       ========================================================= */
+/* =========================================================
+   AUTHENTICATION LOGIC (Login & Register)
+   ========================================================= */
 
-    function updateNavAuthUI() {
-        const container = document.getElementById('navAuthContainer');
-        if (!container) return;
+function updateNavAuthUI() {
+    const container = document.getElementById('navAuthContainer');
+    if (!container) return;
 
-        if (currentUser) {
-            const roleBadge = currentUser.roles && currentUser.roles.includes('ROLE_ADMIN')
-                ? '<span class="badge bg-danger ms-1" style="font-size: 0.65rem;">Admin</span>'
-                : '<span class="badge bg-primary-subtle text-primary ms-1" style="font-size: 0.65rem;">Thành viên</span>';
+    if (currentUser) {
+        const roleBadge = currentUser.roles && currentUser.roles.includes('ROLE_ADMIN')
+            ? '<span class="badge bg-danger ms-1" style="font-size: 0.65rem;">Admin</span>'
+            : '<span class="badge bg-primary-subtle text-primary ms-1" style="font-size: 0.65rem;">Thành viên</span>';
 
-            container.innerHTML = `
+        container.innerHTML = `
             <div class="dropdown">
                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-pill d-flex align-items-center gap-1.5 py-1 px-2.5 shadow-sm border bg-white fs-8"
                     type="button" id="userDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
@@ -4825,8 +4829,8 @@ function processCheckoutSubmit() {
                 </ul>
             </div>
         `;
-        } else {
-            container.innerHTML = `
+    } else {
+        container.innerHTML = `
             <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fw-bold" style="font-size: 0.82rem;" onclick="openAuthModal('login')">
                 <i class="fas fa-sign-in-alt me-1"></i> Đăng Nhập
             </button>
@@ -4834,457 +4838,457 @@ function processCheckoutSubmit() {
                 <i class="fas fa-user-plus me-1"></i> Đăng Ký
             </button>
         `;
-        }
     }
+}
 
-    function escapeHtml(text) {
-        if (!text) return '';
-        return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
 
-    function openAuthModal(tab = 'login') {
-        switchAuthTab(tab);
-        openModal('authModal');
-    }
+function openAuthModal(tab = 'login') {
+    switchAuthTab(tab);
+    openModal('authModal');
+}
 
-    function switchAuthTab(tab) {
-        const loginBtn = document.getElementById('tabLoginBtn');
-        const regBtn = document.getElementById('tabRegisterBtn');
-        const loginForm = document.getElementById('loginForm');
-        const regForm = document.getElementById('registerForm');
-        const loginAlert = document.getElementById('loginAlert');
-        const regAlert = document.getElementById('registerAlert');
+function switchAuthTab(tab) {
+    const loginBtn = document.getElementById('tabLoginBtn');
+    const regBtn = document.getElementById('tabRegisterBtn');
+    const loginForm = document.getElementById('loginForm');
+    const regForm = document.getElementById('registerForm');
+    const loginAlert = document.getElementById('loginAlert');
+    const regAlert = document.getElementById('registerAlert');
 
-        if (loginAlert) loginAlert.classList.add('d-none');
-        if (regAlert) regAlert.classList.add('d-none');
+    if (loginAlert) loginAlert.classList.add('d-none');
+    if (regAlert) regAlert.classList.add('d-none');
 
-        if (tab === 'login') {
-            if (loginBtn) {
-                loginBtn.classList.add('active');
-                loginBtn.classList.remove('text-secondary');
-            }
-            if (regBtn) {
-                regBtn.classList.remove('active');
-                regBtn.classList.add('text-secondary');
-            }
-            if (loginForm) loginForm.classList.remove('d-none');
-            if (regForm) regForm.classList.add('d-none');
-        } else {
-            if (regBtn) {
-                regBtn.classList.add('active');
-                regBtn.classList.remove('text-secondary');
-            }
-            if (loginBtn) {
-                loginBtn.classList.remove('active');
-                loginBtn.classList.add('text-secondary');
-            }
-            if (regForm) regForm.classList.remove('d-none');
-            if (loginForm) loginForm.classList.add('d-none');
+    if (tab === 'login') {
+        if (loginBtn) {
+            loginBtn.classList.add('active');
+            loginBtn.classList.remove('text-secondary');
         }
-    }
-
-    function togglePasswordVisibility(inputId, btn) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-        const icon = btn.querySelector('i');
-        if (input.type === 'password') {
-            input.type = 'text';
-            if (icon) {
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            }
-        } else {
-            input.type = 'password';
-            if (icon) {
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
+        if (regBtn) {
+            regBtn.classList.remove('active');
+            regBtn.classList.add('text-secondary');
         }
-    }
-
-    async function validateSessionWithServer() {
-        if (!currentUser || !currentUser.id) return;
-        try {
-            const res = await fetch(`/api/auth/me?userId=${currentUser.id}`);
-            if (!res.ok) {
-                console.log('Tài khoản không còn tồn tại trên máy chủ (đã bị xóa). Tự động đăng xuất...');
-                localStorage.removeItem('bookmind_user');
-                localStorage.removeItem('currentUser');
-                currentUser = null;
-                updateNavAuthUI();
-                updateCartUI();
-            } else {
-                const resData = await res.json();
-                if (resData && resData.data) {
-                    currentUser = resData.data;
-                    localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    updateNavAuthUI();
-                }
-            }
-        } catch (e) {
-            console.warn('Lỗi kiểm tra phiên đăng nhập:', e);
-        }
-    }
-
-    // Khởi chạy đồng bộ trạng thái đăng nhập và kiểm tra tính hợp lệ với server
-    updateNavAuthUI();
-    validateSessionWithServer();
-
-    function quickFillLogin(email, password) {
-        const emailInput = document.getElementById('loginEmail');
-        const passwordInput = document.getElementById('loginPassword');
-        if (emailInput && passwordInput) {
-            emailInput.value = email;
-            passwordInput.value = password;
-            switchAuthTab('login');
-        }
-    }
-
-    async function handleLoginSubmit(event) {
-        event.preventDefault();
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        const alertBox = document.getElementById('loginAlert');
-        const submitBtn = document.getElementById('btnLoginSubmit');
-
-        alertBox.classList.add('d-none');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang đăng nhập...';
-
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-
-            const result = await response.json();
-
-            if (response.ok && result.success) {
-                currentUser = result.data;
-                localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                updateNavAuthUI();
-                closeModal('authModal');
-                document.getElementById('loginForm').reset();
-
-                const roles = currentUser.roles || [];
-                if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_STAFF')) {
-                    showToast(`Chào mừng Quản trị viên ${currentUser.fullName}! Đang chuyển đến Trang Quản Trị...`, 'success');
-                    setTimeout(() => {
-                        window.location.href = 'admin.html';
-                    }, 700);
-                } else {
-                    showToast(`Chào mừng ${currentUser.fullName} quay trở lại!`, 'success');
-                }
-            } else {
-                alertBox.textContent = result.message || 'Đăng nhập thất bại, vui lòng kiểm tra lại!';
-                alertBox.classList.remove('d-none');
-            }
-        } catch (error) {
-            alertBox.textContent = 'Không thể kết nối đến máy chủ backend (Port 8080). Vui lòng kiểm tra lại!';
-            alertBox.classList.remove('d-none');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-1"></i> Đăng Nhập';
-        }
-    }
-
-    async function handleRegisterSubmit(event) {
-        event.preventDefault();
-        const fullName = document.getElementById('regFullName').value.trim();
-        const email = document.getElementById('regEmail').value.trim();
-        const phone = document.getElementById('regPhone').value.trim();
-        const password = document.getElementById('regPassword').value;
-        const confirmPassword = document.getElementById('regConfirmPassword').value;
-        const alertBox = document.getElementById('registerAlert');
-        const submitBtn = document.getElementById('btnRegisterSubmit');
-
-        alertBox.classList.add('d-none');
-
-        if (password !== confirmPassword) {
-            alertBox.textContent = 'Mật khẩu xác nhận không khớp!';
-            alertBox.classList.remove('d-none');
-            return;
-        }
-
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang tạo tài khoản...';
-
-        try {
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullName, email, phone, password, confirmPassword })
-            });
-
-            const result = await response.json();
-
-            if (response.ok && result.success) {
-                currentUser = result.data;
-                localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
-                updateNavAuthUI();
-                closeModal('authModal');
-                showToast(`Đăng ký thành công! Chào mừng ${currentUser.fullName}!`, 'success');
-                document.getElementById('registerForm').reset();
-            } else {
-                alertBox.textContent = result.message || 'Đăng ký thất bại, vui lòng thử lại!';
-                alertBox.classList.remove('d-none');
-            }
-        } catch (error) {
-            alertBox.textContent = 'Không thể kết nối đến máy chủ backend (Port 8080). Vui lòng thử lại sau!';
-            alertBox.classList.remove('d-none');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i> Đăng Ký Tài Khoản';
-        }
-    }
-
-    function handleLogout() {
-        localStorage.removeItem('bookmind_user');
-        currentUser = null;
-        cart = [];
-        updateCartUI();
-        updateNavAuthUI();
-        showToast('Bạn đã đăng xuất tài khoản thành công.', 'info');
-    }
-
-    /* =========================================================
-       PROFILE MODAL LOGIC
-       ========================================================= */
-
-    function openProfileModal() {
-        if (!currentUser) {
-            openAuthModal('login');
-            return;
-        }
-
-        const avatarEl = document.getElementById('profileAvatar');
-        if (avatarEl) {
-            avatarEl.src = currentUser.avatarUrl || 'images/book_ai.png';
-        }
-
-        const nameDisplay = document.getElementById('profileFullNameDisplay');
-        if (nameDisplay) {
-            nameDisplay.textContent = currentUser.fullName || 'Người dùng';
-        }
-
-        const emailDisplay = document.getElementById('profileEmailDisplay');
-        if (emailDisplay) {
-            emailDisplay.textContent = currentUser.email || '';
-        }
-
-        const roleBadge = document.getElementById('profileRoleBadge');
-        if (roleBadge) {
-            if (currentUser.roles && currentUser.roles.includes('ROLE_ADMIN')) {
-                roleBadge.className = 'position-absolute bottom-0 end-0 badge bg-danger rounded-pill fs-8 px-2 py-1';
-                roleBadge.textContent = 'Admin';
-            } else {
-                roleBadge.className = 'position-absolute bottom-0 end-0 badge bg-primary rounded-pill fs-8 px-2 py-1';
-                roleBadge.textContent = 'Thành viên';
-            }
-        }
-
-        const nameInput = document.getElementById('profileFullNameInput');
-        if (nameInput) nameInput.value = currentUser.fullName || '';
-
-        const emailInput = document.getElementById('profileEmailInput');
-        if (emailInput) emailInput.value = currentUser.email || '';
-
-        const phoneInput = document.getElementById('profilePhoneInput');
-        if (phoneInput) phoneInput.value = currentUser.phone || '';
-
-        // Clear password inputs
-        const curPass = document.getElementById('profileCurrentPassword');
-        if (curPass) curPass.value = '';
-        const newPass = document.getElementById('profileNewPassword');
-        if (newPass) newPass.value = '';
-        const confirmPass = document.getElementById('profileConfirmNewPassword');
-        if (confirmPass) confirmPass.value = '';
-
-        const alertBox = document.getElementById('profileAlert');
-        if (alertBox) {
-            alertBox.className = 'alert py-2 fs-7 d-none';
-            alertBox.textContent = '';
-        }
-
-        updateProfileDeleteRequestUI();
-        openModal('profileModal');
-    }
-
-    function updateProfileDeleteRequestUI() {
-        const pendingBox = document.getElementById('deleteRequestPendingBox');
-        const initialBox = document.getElementById('deleteRequestInitialBox');
-        const timeText = document.getElementById('deleteRequestedAtText');
-        const sec = document.getElementById('profileDeleteRequestSection');
-
-        if (!pendingBox || !initialBox) return;
-
-        // Ẩn mục này nếu là tài khoản Admin
-        if (currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN')) {
-            if (sec) sec.classList.add('d-none');
-            return;
-        } else {
-            if (sec) sec.classList.remove('d-none');
-        }
-
-        if (currentUser && currentUser.deleteRequested) {
-            pendingBox.classList.remove('d-none');
-            initialBox.classList.add('d-none');
-            if (timeText) {
-                let formattedTime = 'gần đây';
-                if (currentUser.deleteRequestedAt) {
-                    try {
-                        const d = new Date(currentUser.deleteRequestedAt);
-                        formattedTime = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN');
-                    } catch (e) { }
-                }
-                timeText.textContent = formattedTime;
-            }
-        } else {
-            pendingBox.classList.add('d-none');
-            initialBox.classList.remove('d-none');
-        }
-    }
-
-    function showDeleteRequestConfirmModal() {
-        if (!currentUser) return;
-        const reasonInput = document.getElementById('requestDeleteReasonInput');
-        if (reasonInput) reasonInput.value = '';
-        openModal('requestDeleteConfirmModal');
-    }
-
-    async function submitDeleteRequest() {
-        if (!currentUser) return;
-        const btn = document.getElementById('btnSubmitDeleteRequest');
-        const reasonInput = document.getElementById('requestDeleteReasonInput');
-        const reason = reasonInput ? reasonInput.value.trim() : '';
-
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang gửi...';
-        }
-
-        try {
-            const res = await fetch('/api/auth/request-delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: currentUser.id, reason: reason })
-            });
-            const result = await res.json();
-            if (res.ok && result.success) {
-                currentUser = result.data;
-                localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                closeModal('requestDeleteConfirmModal');
-                updateProfileDeleteRequestUI();
-                showToast('Đã gửi yêu cầu xóa tài khoản đến Quản trị viên!', 'success');
-            } else {
-                showToast(result.message || 'Gửi yêu cầu thất bại!', 'danger');
-            }
-        } catch (e) {
-            showToast('Không thể kết nối đến máy chủ!', 'danger');
-        } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Xác Nhận Gửi Yêu Cầu';
-            }
-        }
-    }
-
-    async function handleCancelDeleteAccount() {
-        if (!currentUser) return;
-        if (!confirm('Bạn có chắc chắn muốn hủy yêu cầu xóa tài khoản không?')) return;
-
-        try {
-            const res = await fetch('/api/auth/cancel-delete-request', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: currentUser.id })
-            });
-            const result = await res.json();
-            if (res.ok && result.success) {
-                currentUser = result.data;
-                localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                updateProfileDeleteRequestUI();
-                showToast('Đã hủy yêu cầu xóa tài khoản thành công!', 'success');
-            } else {
-                showToast(result.message || 'Hủy yêu cầu thất bại!', 'danger');
-            }
-        } catch (e) {
-            showToast('Không thể kết nối đến máy chủ!', 'danger');
-        }
-    }
-
-    async function handleUpdateProfile(event) {
-        event.preventDefault();
-        if (!currentUser) return;
-
-        const fullName = document.getElementById('profileFullNameInput').value.trim();
-        const phone = document.getElementById('profilePhoneInput').value.trim();
-        const currentPassword = document.getElementById('profileCurrentPassword').value;
-        const newPassword = document.getElementById('profileNewPassword').value;
-        const confirmNewPassword = document.getElementById('profileConfirmNewPassword').value;
-        const alertBox = document.getElementById('profileAlert');
-        const saveBtn = document.getElementById('btnSaveProfile');
-
-        if (alertBox) alertBox.classList.add('d-none');
-
-        if (newPassword && newPassword !== confirmNewPassword) {
-            alertBox.className = 'alert alert-danger py-2 fs-7';
-            alertBox.textContent = 'Mật khẩu mới và xác nhận mật khẩu không khớp!';
-            alertBox.classList.remove('d-none');
-            return;
-        }
-
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang lưu...';
-
-        try {
-            const payload = {
-                userId: currentUser.id,
-                fullName: fullName,
-                phone: phone,
-                currentPassword: currentPassword,
-                newPassword: newPassword
-            };
-
-            const response = await fetch('/api/auth/profile', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (response.ok && result.success) {
-                currentUser = result.data;
-                localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
-                updateNavAuthUI();
-                closeModal('profileModal');
-                showToast('Cập nhật thông tin cá nhân thành công!', 'success');
-            } else {
-                alertBox.className = 'alert alert-danger py-2 fs-7';
-                alertBox.textContent = result.message || 'Cập nhật thất bại, vui lòng kiểm tra lại!';
-                alertBox.classList.remove('d-none');
-            }
-        } catch (error) {
-            alertBox.className = 'alert alert-danger py-2 fs-7';
-            alertBox.textContent = 'Không thể kết nối đến máy chủ backend. Vui lòng thử lại sau!';
-            alertBox.classList.remove('d-none');
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fas fa-save me-1"></i> Lưu Thay Đổi';
-        }
-    }
-
-    // Khởi chạy đồng bộ trạng thái đăng nhập và toàn bộ ứng dụng
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            initApp();
-        });
+        if (loginForm) loginForm.classList.remove('d-none');
+        if (regForm) regForm.classList.add('d-none');
     } else {
-        initApp();
+        if (regBtn) {
+            regBtn.classList.add('active');
+            regBtn.classList.remove('text-secondary');
+        }
+        if (loginBtn) {
+            loginBtn.classList.remove('active');
+            loginBtn.classList.add('text-secondary');
+        }
+        if (regForm) regForm.classList.remove('d-none');
+        if (loginForm) loginForm.classList.add('d-none');
     }
+}
+
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) {
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+    } else {
+        input.type = 'password';
+        if (icon) {
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+}
+
+async function validateSessionWithServer() {
+    if (!currentUser || !currentUser.id) return;
+    try {
+        const res = await fetch(`/api/auth/me?userId=${currentUser.id}`);
+        if (!res.ok) {
+            console.log('Tài khoản không còn tồn tại trên máy chủ (đã bị xóa). Tự động đăng xuất...');
+            localStorage.removeItem('bookmind_user');
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            updateNavAuthUI();
+            updateCartUI();
+        } else {
+            const resData = await res.json();
+            if (resData && resData.data) {
+                currentUser = resData.data;
+                localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                updateNavAuthUI();
+            }
+        }
+    } catch (e) {
+        console.warn('Lỗi kiểm tra phiên đăng nhập:', e);
+    }
+}
+
+// Khởi chạy đồng bộ trạng thái đăng nhập và kiểm tra tính hợp lệ với server
+updateNavAuthUI();
+validateSessionWithServer();
+
+function quickFillLogin(email, password) {
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    if (emailInput && passwordInput) {
+        emailInput.value = email;
+        passwordInput.value = password;
+        switchAuthTab('login');
+    }
+}
+
+async function handleLoginSubmit(event) {
+    event.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const alertBox = document.getElementById('loginAlert');
+    const submitBtn = document.getElementById('btnLoginSubmit');
+
+    alertBox.classList.add('d-none');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang đăng nhập...';
+
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            currentUser = result.data;
+            localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            updateNavAuthUI();
+            closeModal('authModal');
+            document.getElementById('loginForm').reset();
+
+            const roles = currentUser.roles || [];
+            if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_STAFF')) {
+                showToast(`Chào mừng Quản trị viên ${currentUser.fullName}! Đang chuyển đến Trang Quản Trị...`, 'success');
+                setTimeout(() => {
+                    window.location.href = 'admin.html';
+                }, 700);
+            } else {
+                showToast(`Chào mừng ${currentUser.fullName} quay trở lại!`, 'success');
+            }
+        } else {
+            alertBox.textContent = result.message || 'Đăng nhập thất bại, vui lòng kiểm tra lại!';
+            alertBox.classList.remove('d-none');
+        }
+    } catch (error) {
+        alertBox.textContent = 'Không thể kết nối đến máy chủ backend (Port 8080). Vui lòng kiểm tra lại!';
+        alertBox.classList.remove('d-none');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-1"></i> Đăng Nhập';
+    }
+}
+
+async function handleRegisterSubmit(event) {
+    event.preventDefault();
+    const fullName = document.getElementById('regFullName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const confirmPassword = document.getElementById('regConfirmPassword').value;
+    const alertBox = document.getElementById('registerAlert');
+    const submitBtn = document.getElementById('btnRegisterSubmit');
+
+    alertBox.classList.add('d-none');
+
+    if (password !== confirmPassword) {
+        alertBox.textContent = 'Mật khẩu xác nhận không khớp!';
+        alertBox.classList.remove('d-none');
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang tạo tài khoản...';
+
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullName, email, phone, password, confirmPassword })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            currentUser = result.data;
+            localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
+            updateNavAuthUI();
+            closeModal('authModal');
+            showToast(`Đăng ký thành công! Chào mừng ${currentUser.fullName}!`, 'success');
+            document.getElementById('registerForm').reset();
+        } else {
+            alertBox.textContent = result.message || 'Đăng ký thất bại, vui lòng thử lại!';
+            alertBox.classList.remove('d-none');
+        }
+    } catch (error) {
+        alertBox.textContent = 'Không thể kết nối đến máy chủ backend (Port 8080). Vui lòng thử lại sau!';
+        alertBox.classList.remove('d-none');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i> Đăng Ký Tài Khoản';
+    }
+}
+
+function handleLogout() {
+    localStorage.removeItem('bookmind_user');
+    currentUser = null;
+    cart = [];
+    updateCartUI();
+    updateNavAuthUI();
+    showToast('Bạn đã đăng xuất tài khoản thành công.', 'info');
+}
+
+/* =========================================================
+   PROFILE MODAL LOGIC
+   ========================================================= */
+
+function openProfileModal() {
+    if (!currentUser) {
+        openAuthModal('login');
+        return;
+    }
+
+    const avatarEl = document.getElementById('profileAvatar');
+    if (avatarEl) {
+        avatarEl.src = currentUser.avatarUrl || 'images/book_ai.png';
+    }
+
+    const nameDisplay = document.getElementById('profileFullNameDisplay');
+    if (nameDisplay) {
+        nameDisplay.textContent = currentUser.fullName || 'Người dùng';
+    }
+
+    const emailDisplay = document.getElementById('profileEmailDisplay');
+    if (emailDisplay) {
+        emailDisplay.textContent = currentUser.email || '';
+    }
+
+    const roleBadge = document.getElementById('profileRoleBadge');
+    if (roleBadge) {
+        if (currentUser.roles && currentUser.roles.includes('ROLE_ADMIN')) {
+            roleBadge.className = 'position-absolute bottom-0 end-0 badge bg-danger rounded-pill fs-8 px-2 py-1';
+            roleBadge.textContent = 'Admin';
+        } else {
+            roleBadge.className = 'position-absolute bottom-0 end-0 badge bg-primary rounded-pill fs-8 px-2 py-1';
+            roleBadge.textContent = 'Thành viên';
+        }
+    }
+
+    const nameInput = document.getElementById('profileFullNameInput');
+    if (nameInput) nameInput.value = currentUser.fullName || '';
+
+    const emailInput = document.getElementById('profileEmailInput');
+    if (emailInput) emailInput.value = currentUser.email || '';
+
+    const phoneInput = document.getElementById('profilePhoneInput');
+    if (phoneInput) phoneInput.value = currentUser.phone || '';
+
+    // Clear password inputs
+    const curPass = document.getElementById('profileCurrentPassword');
+    if (curPass) curPass.value = '';
+    const newPass = document.getElementById('profileNewPassword');
+    if (newPass) newPass.value = '';
+    const confirmPass = document.getElementById('profileConfirmNewPassword');
+    if (confirmPass) confirmPass.value = '';
+
+    const alertBox = document.getElementById('profileAlert');
+    if (alertBox) {
+        alertBox.className = 'alert py-2 fs-7 d-none';
+        alertBox.textContent = '';
+    }
+
+    updateProfileDeleteRequestUI();
+    openModal('profileModal');
+}
+
+function updateProfileDeleteRequestUI() {
+    const pendingBox = document.getElementById('deleteRequestPendingBox');
+    const initialBox = document.getElementById('deleteRequestInitialBox');
+    const timeText = document.getElementById('deleteRequestedAtText');
+    const sec = document.getElementById('profileDeleteRequestSection');
+
+    if (!pendingBox || !initialBox) return;
+
+    // Ẩn mục này nếu là tài khoản Admin
+    if (currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN')) {
+        if (sec) sec.classList.add('d-none');
+        return;
+    } else {
+        if (sec) sec.classList.remove('d-none');
+    }
+
+    if (currentUser && currentUser.deleteRequested) {
+        pendingBox.classList.remove('d-none');
+        initialBox.classList.add('d-none');
+        if (timeText) {
+            let formattedTime = 'gần đây';
+            if (currentUser.deleteRequestedAt) {
+                try {
+                    const d = new Date(currentUser.deleteRequestedAt);
+                    formattedTime = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN');
+                } catch (e) { }
+            }
+            timeText.textContent = formattedTime;
+        }
+    } else {
+        pendingBox.classList.add('d-none');
+        initialBox.classList.remove('d-none');
+    }
+}
+
+function showDeleteRequestConfirmModal() {
+    if (!currentUser) return;
+    const reasonInput = document.getElementById('requestDeleteReasonInput');
+    if (reasonInput) reasonInput.value = '';
+    openModal('requestDeleteConfirmModal');
+}
+
+async function submitDeleteRequest() {
+    if (!currentUser) return;
+    const btn = document.getElementById('btnSubmitDeleteRequest');
+    const reasonInput = document.getElementById('requestDeleteReasonInput');
+    const reason = reasonInput ? reasonInput.value.trim() : '';
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang gửi...';
+    }
+
+    try {
+        const res = await fetch('/api/auth/request-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id, reason: reason })
+        });
+        const result = await res.json();
+        if (res.ok && result.success) {
+            currentUser = result.data;
+            localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            closeModal('requestDeleteConfirmModal');
+            updateProfileDeleteRequestUI();
+            showToast('Đã gửi yêu cầu xóa tài khoản đến Quản trị viên!', 'success');
+        } else {
+            showToast(result.message || 'Gửi yêu cầu thất bại!', 'danger');
+        }
+    } catch (e) {
+        showToast('Không thể kết nối đến máy chủ!', 'danger');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Xác Nhận Gửi Yêu Cầu';
+        }
+    }
+}
+
+async function handleCancelDeleteAccount() {
+    if (!currentUser) return;
+    if (!confirm('Bạn có chắc chắn muốn hủy yêu cầu xóa tài khoản không?')) return;
+
+    try {
+        const res = await fetch('/api/auth/cancel-delete-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id })
+        });
+        const result = await res.json();
+        if (res.ok && result.success) {
+            currentUser = result.data;
+            localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            updateProfileDeleteRequestUI();
+            showToast('Đã hủy yêu cầu xóa tài khoản thành công!', 'success');
+        } else {
+            showToast(result.message || 'Hủy yêu cầu thất bại!', 'danger');
+        }
+    } catch (e) {
+        showToast('Không thể kết nối đến máy chủ!', 'danger');
+    }
+}
+
+async function handleUpdateProfile(event) {
+    event.preventDefault();
+    if (!currentUser) return;
+
+    const fullName = document.getElementById('profileFullNameInput').value.trim();
+    const phone = document.getElementById('profilePhoneInput').value.trim();
+    const currentPassword = document.getElementById('profileCurrentPassword').value;
+    const newPassword = document.getElementById('profileNewPassword').value;
+    const confirmNewPassword = document.getElementById('profileConfirmNewPassword').value;
+    const alertBox = document.getElementById('profileAlert');
+    const saveBtn = document.getElementById('btnSaveProfile');
+
+    if (alertBox) alertBox.classList.add('d-none');
+
+    if (newPassword && newPassword !== confirmNewPassword) {
+        alertBox.className = 'alert alert-danger py-2 fs-7';
+        alertBox.textContent = 'Mật khẩu mới và xác nhận mật khẩu không khớp!';
+        alertBox.classList.remove('d-none');
+        return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang lưu...';
+
+    try {
+        const payload = {
+            userId: currentUser.id,
+            fullName: fullName,
+            phone: phone,
+            currentPassword: currentPassword,
+            newPassword: newPassword
+        };
+
+        const response = await fetch('/api/auth/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            currentUser = result.data;
+            localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
+            updateNavAuthUI();
+            closeModal('profileModal');
+            showToast('Cập nhật thông tin cá nhân thành công!', 'success');
+        } else {
+            alertBox.className = 'alert alert-danger py-2 fs-7';
+            alertBox.textContent = result.message || 'Cập nhật thất bại, vui lòng kiểm tra lại!';
+            alertBox.classList.remove('d-none');
+        }
+    } catch (error) {
+        alertBox.className = 'alert alert-danger py-2 fs-7';
+        alertBox.textContent = 'Không thể kết nối đến máy chủ backend. Vui lòng thử lại sau!';
+        alertBox.classList.remove('d-none');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save me-1"></i> Lưu Thay Đổi';
+    }
+}
+
+// Khởi chạy đồng bộ trạng thái đăng nhập và toàn bộ ứng dụng
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initApp();
+    });
+} else {
+    initApp();
+}

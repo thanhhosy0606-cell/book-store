@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="ai-assistant">
+    <!-- Floating AI Chatbot Widget & Quick Contact -->
+    <div class="ai-widget-container">
+        <!-- Floating Quick Contact Stack (Above Chat Button) -->
+        <div id="floatingContactStack" class="floating-contact-stack">
+            <!-- Zalo Chat Button -->
+            <a href="https://zalo.me/0974932089" target="_blank" rel="noopener noreferrer"
+                class="floating-contact-btn btn-zalo" title="Nhắn tin Zalo: 0974 932 089">
+                <span class="contact-pulse-ring"></span>
+                <span class="contact-tooltip"><i class="fas fa-comment-dots text-info me-1"></i> Chat Zalo: 0974 932 089</span>
+                <span class="zalo-btn-text">Zalo</span>
+            </a>
+            <!-- Hotline Call Button -->
+            <a href="tel:0974932089" class="floating-contact-btn btn-hotline" title="Gọi Hotline: 0974 932 089">
+                <span class="contact-pulse-ring"></span>
+                <span class="contact-tooltip"><i class="fas fa-phone-alt text-warning me-1"></i> Gọi Hotline: 0974 932 089</span>
+                <i class="fas fa-phone-alt"></i>
+            </a>
+        </div>
+
+        <div id="aiChatWindow" class="ai-chat-window collapsed">
+            <div class="chat-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="position-relative">
+                        <i class="fas fa-robot fs-4"></i>
+                        <span class="chat-status-dot position-absolute bottom-0 end-0"></span>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0 fs-7">Trợ Lý AI Tư Vấn Sách</h6>
+                        <small class="opacity-75 fs-8">Trực tuyến 24/7 • Phản hồi tức thì</small>
+                    </div>
+                </div>
+                <button id="aiChatCloseBtn" class="btn btn-link text-white p-0 fs-5 border-0">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Quick Staff Contact Bar at the top of the chat box -->
+            <div class="chat-support-bar">
+                <div class="chat-support-label">
+                    <i class="fas fa-headset text-primary"></i>
+                    <span>Gặp nhân viên:</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="tel:0974932089" class="support-action-btn btn-call" title="Gọi điện cho nhân viên">
+                        <i class="fas fa-phone-alt"></i> 0974.932.089
+                    </a>
+                    <a href="https://zalo.me/0974932089" target="_blank" rel="noopener noreferrer"
+                        class="support-action-btn btn-chat-zalo" title="Nhắn tin Zalo với nhân viên">
+                        <i class="fas fa-comment-dots"></i> Chat Zalo
+                    </a>
+                </div>
+            </div>
+
+            <div id="aiChatBody" class="chat-body"></div>
+            <div class="chat-footer">
+                <div class="input-group">
+                    <input id="aiChatInput" type="text"
+                        class="form-control border border-end-0 rounded-start-pill fs-7 ps-3"
+                        placeholder="Hỏi AI về sách (ví dụ: tư vấn sách học AI)...">
+                    <button id="aiChatSendBtn" class="btn btn-primary rounded-end-pill px-3">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <button id="aiChatToggleBtn" class="ai-chat-btn" title="Trò chuyện với Trợ Lý AI">
+            <span class="ai-chat-pulse"></span>
+            <i class="fas fa-robot"></i>
+            <span id="aiUnreadBadge" class="badge-notify">1</span>
+        </button>
+    </div>
+</div>
+</body>
+</html>

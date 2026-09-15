@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/head :: head(${pageTitle})}"></head>
+
+<body>
+
+    <!-- 1. Header / Navbar -->
+    <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+
+    <!-- Breadcrumb -->
+    <div class="bg-light py-3 border-bottom mb-4">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 fs-8">
+                    <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none"><i class="fas fa-home me-1"></i>Trang Chủ</a></li>
+                    <li class="breadcrumb-item active">Đơn Hàng Của Tôi</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Orders Main Body -->
+    <div class="container mb-5">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+            <div>
+                <h3 class="fw-bold mb-1 text-dark"><i class="fas fa-boxes-packing text-primary me-2"></i>Lịch Sử Mua Hàng</h3>
+                <p class="text-muted fs-8 mb-0" id="myOrdersSubtitle">Quản lý và theo dõi tiến độ giao nhận tất cả các đơn hàng của bạn</p>
+            </div>
+            <a th:href="@{/books}" class="btn btn-outline-primary btn-sm rounded-pill px-3 fs-8 fw-semibold">
+                <i class="fas fa-book-open me-1"></i> Tiếp tục mua sắm
+            </a>
+        </div>
+
+        <!-- Filter Status Tabs -->
+        <div class="card border-0 shadow-sm rounded-4 p-2 mb-4 bg-white">
+            <ul class="nav nav-pills nav-fill bg-light rounded-pill p-1 gap-1" id="orderFilterTabs">
+                <li class="nav-item">
+                    <button class="nav-link active rounded-pill py-2 fs-8 fw-semibold" onclick="filterMyOrders('ALL', this)">Tất cả</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill py-2 fs-8 fw-semibold text-secondary" onclick="filterMyOrders('PENDING', this)">Chờ xác nhận</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill py-2 fs-8 fw-semibold text-secondary" onclick="filterMyOrders('CONFIRMED', this)">Chờ lấy hàng</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill py-2 fs-8 fw-semibold text-secondary" onclick="filterMyOrders('SHIPPING', this)">Đang giao</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill py-2 fs-8 fw-semibold text-secondary" onclick="filterMyOrders('DELIVERED', this)">Đã giao</button>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Orders List Container -->
+        <div id="myOrdersList" class="d-flex flex-column gap-3">
+            <!-- Rendered by JS from API / LocalStorage -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <!-- Floating AI Chat -->
+    <div th:replace="~{fragments/ai-assistant :: ai-assistant}"></div>
+
+    <!-- Auth Modal -->
+    <div th:replace="~{fragments/auth-modal :: auth-modal}"></div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+    <!-- Scripts -->
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/app.js?v=19.0}"></script>
+    <script th:src="@{/js/ai-bot.js?v=19.0}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof loadMyOrders === 'function') {
+                loadMyOrders();
+            }
+        });
+    </script>
+
+</body>
+</html>
