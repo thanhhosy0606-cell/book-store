@@ -49,6 +49,9 @@ public class AdminCategoryController {
         Category category = new Category();
         category.setName(name.trim());
         category.setSlug(slug);
+        if (body.containsKey("description") && body.get("description") != null) {
+            category.setDescription(body.get("description").trim());
+        }
         category.setStatus(true);
 
         Category saved = categoryRepository.save(category);
@@ -63,6 +66,9 @@ public class AdminCategoryController {
                 .map(cat -> {
                     if (body.containsKey("name") && body.get("name") != null) {
                         cat.setName(body.get("name").toString().trim());
+                    }
+                    if (body.containsKey("description")) {
+                        cat.setDescription(body.get("description") != null ? body.get("description").toString().trim() : null);
                     }
                     if (body.containsKey("status") && body.get("status") != null) {
                         cat.setStatus(Boolean.valueOf(body.get("status").toString()));

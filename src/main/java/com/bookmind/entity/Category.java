@@ -35,6 +35,9 @@ public class Category {
     @Column(name = "slug", length = 100, nullable = false, unique = true)
     private String slug;
 
+    @Column(name = "description", length = 500)
+    private String description;
+
     @Column(name = "status")
     @Builder.Default
     private Boolean status = true;
@@ -77,6 +80,14 @@ public class Category {
 
     public void setSlug(String slug) {
         this.slug = slug;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Boolean getStatus() {
