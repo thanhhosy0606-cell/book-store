@@ -4978,7 +4978,7 @@ async function handleLoginSubmit(event) {
             if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_STAFF')) {
                 showToast(`Chào mừng Quản trị viên ${currentUser.fullName}! Đang chuyển đến Trang Quản Trị...`, 'success');
                 setTimeout(() => {
-                    window.location.href = 'admin.html';
+                    window.location.href = '/admin/dashboard';
                 }, 700);
             } else {
                 showToast(`Chào mừng ${currentUser.fullName} quay trở lại!`, 'success');

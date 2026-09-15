@@ -1,18 +1,20 @@
-/* Custom Stylesheet for AI Bookstore (BookMind AI Initial Version) */
-
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --primary-color: #4f46e5;
-    --primary-hover: #4338ca;
-    --secondary-color: #06b6d4;
+    --primary-color: #059669; /* Nhã Nam Emerald Green */
+    --primary-hover: #047857;
+    --primary-light: #ecfdf5;
+    --primary-gradient: linear-gradient(135deg, #059669 0%, #047857 100%);
+    --secondary-color: #0284c7;
     --accent-color: #f59e0b;
+    --danger-color: #ef4444;
     --dark-bg: #0f172a;
-    --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-    --hover-shadow: 0 20px 30px -10px rgba(79, 70, 229, 0.2);
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.2);
+    --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    --hover-shadow: 0 20px 35px -8px rgba(5, 150, 105, 0.18);
+    --glass-bg: rgba(255, 255, 255, 0.92);
+    --glass-border: rgba(226, 232, 240, 0.8);
     --font-main: 'Plus Jakarta Sans', sans-serif;
+    --font-heading: 'Outfit', sans-serif;
 }
 
 body {
@@ -20,6 +22,32 @@ body {
     background-color: #f8fafc;
     color: #1e293b;
     overflow-x: hidden;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+}
+
+/* 0. Top Announcement Ticker Bar */
+.top-ticker-bar {
+    background: linear-gradient(90deg, #047857 0%, #059669 50%, #0d9488 100%);
+    color: #ffffff;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0.4rem 0;
+    letter-spacing: 0.02em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.top-ticker-bar .badge-gold {
+    background: #fef08a;
+    color: #854d0e;
+    font-weight: 800;
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 9999px;
 }
 
 /* Glassmorphism Navbar */

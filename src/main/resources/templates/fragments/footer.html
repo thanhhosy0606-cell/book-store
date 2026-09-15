@@ -1,53 +1,73 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-<footer th:fragment="footer" class="bg-dark text-white pt-5 pb-4 mt-5">
+<footer th:fragment="footer" class="bg-dark text-white pt-5 pb-4 mt-5" style="background-color: #0b1329 !important;">
     <div class="container">
         <div class="row g-4 mb-4">
-            <div class="col-lg-4">
+            <!-- Col 1: Brand Info -->
+            <div class="col-lg-4 col-md-6">
                 <a class="navbar-brand brand-logo text-white mb-3 d-inline-flex" th:href="@{/}">
                     <img th:src="@{/images/nhanam-logo-white.png}" alt="Nhã Nam Book Store" class="brand-logo-img brand-logo-img-footer">
                     <div class="brand-text-container text-start">
                         <span class="text-white fw-bold fs-5">NHÃ NAM</span>
-                        <span class="text-white-50 fs-8 fw-semibold letter-spacing-1">BOOK STORE AI</span>
+                        <span class="text-white-50 fs-9 fw-semibold letter-spacing-1">BOOK STORE AI</span>
                     </div>
                 </a>
-                <p class="text-secondary fs-7">Nhà sách Nhã Nam trực tuyến kết hợp trí tuệ nhân tạo tư vấn cá nhân hóa độc quyền.</p>
-                <div class="d-flex gap-3 fs-5 text-secondary">
-                    <a href="#" class="text-secondary"><i class="fab fa-facebook"></i></a>
-                    <a href="#" class="text-secondary"><i class="fab fa-youtube"></i></a>
-                    <a href="#" class="text-secondary"><i class="fab fa-tiktok"></i></a>
+                <p class="text-secondary fs-8 mb-3" style="line-height: 1.7;">
+                    Không gian tri thức Nhã Nam trực tuyến kết hợp công nghệ Trí tuệ Nhân tạo thế hệ mới, mang đến trải nghiệm chọn sách cá nhân hóa và tiện ích nhất.
+                </p>
+                <div class="d-flex gap-2 mb-3">
+                    <a href="https://facebook.com" target="_blank" class="btn btn-sm btn-outline-light rounded-circle p-2" style="width: 34px; height: 34px;"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://youtube.com" target="_blank" class="btn btn-sm btn-outline-light rounded-circle p-2" style="width: 34px; height: 34px;"><i class="fab fa-youtube"></i></a>
+                    <a href="https://tiktok.com" target="_blank" class="btn btn-sm btn-outline-light rounded-circle p-2" style="width: 34px; height: 34px;"><i class="fab fa-tiktok"></i></a>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 col-6">
-                <h6 class="fw-bold mb-3">Danh Mục Sách</h6>
-                <ul class="list-unstyled fs-7 text-secondary">
-                    <li class="mb-2"><a th:href="@{/books}" class="text-secondary text-decoration-none">Tất Cả Sách</a></li>
+
+            <!-- Col 2: Categories -->
+            <div class="col-lg-2 col-md-6 col-6">
+                <h6 class="fw-bold mb-3 text-white fs-7 text-uppercase letter-spacing-1">Tủ Sách Hay</h6>
+                <ul class="list-unstyled fs-8 text-secondary">
+                    <li class="mb-2"><a th:href="@{/books}" class="text-secondary text-decoration-none hover-white">Tất Cả Sách</a></li>
                     <li class="mb-2" th:each="cat, iter : ${categories}" th:if="${iter.index < 5}">
-                        <a th:href="@{/books(categoryId=${cat.id})}" th:text="${cat.name}" class="text-secondary text-decoration-none">Danh mục</a>
+                        <a th:href="@{/books(categoryId=${cat.id})}" th:text="${cat.name}" class="text-secondary text-decoration-none hover-white">Danh mục</a>
                     </li>
                 </ul>
             </div>
-            <div class="col-lg-3 col-md-4 col-6">
-                <h6 class="fw-bold mb-3">Hỗ Trợ Khách Hàng</h6>
-                <ul class="list-unstyled fs-7 text-secondary">
-                    <li class="mb-2"><a th:href="@{/my-orders}" class="text-secondary text-decoration-none">Tra Cứu Đơn Hàng</a></li>
-                    <li class="mb-2"><a href="#" class="text-secondary text-decoration-none">Chính Sách Đổi Trả</a></li>
-                    <li class="mb-2"><a href="#" class="text-secondary text-decoration-none">Phương Thức Thanh Toán VietQR</a></li>
-                    <li class="mb-2"><a href="#" class="text-secondary text-decoration-none">Hướng Dẫn Mua Hàng</a></li>
+
+            <!-- Col 3: Customer Support -->
+            <div class="col-lg-3 col-md-6 col-6">
+                <h6 class="fw-bold mb-3 text-white fs-7 text-uppercase letter-spacing-1">Chính Sách & Hỗ Trợ</h6>
+                <ul class="list-unstyled fs-8 text-secondary">
+                    <li class="mb-2"><a th:href="@{/my-orders}" class="text-secondary text-decoration-none hover-white"><i class="fas fa-truck-fast me-1.5 text-warning"></i>Tra Cứu Đơn Hàng</a></li>
+                    <li class="mb-2"><a href="javascript:void(0)" class="text-secondary text-decoration-none hover-white">Chính Sách Giao Nhận 24h</a></li>
+                    <li class="mb-2"><a href="javascript:void(0)" class="text-secondary text-decoration-none hover-white">Chính Sách Đổi Trả 7 Ngày</a></li>
+                    <li class="mb-2"><a href="javascript:void(0)" class="text-secondary text-decoration-none hover-white">Thanh Toán VietQR Tự Động</a></li>
                 </ul>
             </div>
-            <div class="col-lg-3 col-md-4">
-                <h6 class="fw-bold mb-3">Liên Hệ Trợ Giúp</h6>
-                <p class="fs-7 text-secondary mb-2"><i class="fas fa-envelope me-2 text-warning"></i> support@nhanam.vn</p>
-                <p class="fs-7 text-secondary mb-2"><i class="fas fa-phone-alt me-2 text-warning"></i> 1900 6868</p>
-                <p class="fs-7 text-secondary"><i class="fas fa-map-marker-alt me-2 text-warning"></i> Hà Nội & TP. Hồ Chí Minh</p>
+
+            <!-- Col 4: Contact & Payment Methods -->
+            <div class="col-lg-3 col-md-6">
+                <h6 class="fw-bold mb-3 text-white fs-7 text-uppercase letter-spacing-1">Liên Hệ & Thanh Toán</h6>
+                <p class="fs-8 text-secondary mb-1.5"><i class="fas fa-phone-alt me-2 text-warning"></i> Hotline: <b class="text-white">1900 6868</b></p>
+                <p class="fs-8 text-secondary mb-1.5"><i class="fas fa-envelope me-2 text-warning"></i> support@nhanam.vn</p>
+                <p class="fs-8 text-secondary mb-3"><i class="fas fa-map-marker-alt me-2 text-warning"></i> Hệ thống nhà sách Toàn Quốc</p>
+
+                <div class="pt-2 border-top border-secondary border-opacity-25">
+                    <small class="text-secondary fs-9 d-block mb-1.5">Cổng thanh toán bảo mật:</small>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-white text-dark px-2 py-1 fs-9 fw-bold"><i class="fas fa-qrcode text-primary me-1"></i>VietQR</span>
+                        <span class="badge bg-success text-white px-2 py-1 fs-9 fw-bold">PayOS</span>
+                        <span class="badge bg-secondary text-white px-2 py-1 fs-9 fw-bold">COD</span>
+                    </div>
+                </div>
             </div>
         </div>
-        <hr class="border-secondary opacity-25">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center fs-8 text-secondary">
-            <p class="mb-0">© 2026 Nhã Nam Book Store. All rights reserved.</p>
-            <p class="mb-0">Designed with modern Thymeleaf SSR & AI Smart Assistant.</p>
+
+        <hr class="border-secondary opacity-20 my-4">
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center fs-9 text-secondary">
+            <p class="mb-1 mb-md-0">© 2026 Nhã Nam Book Store. Bản quyền thuộc Công ty Cổ phần Văn hóa và Truyền thông Nhã Nam.</p>
+            <p class="mb-0">Ứng dụng công nghệ Thymeleaf SSR & Trợ lý ảo BookMind AI.</p>
         </div>
     </div>
 </footer>

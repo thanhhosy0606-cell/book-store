@@ -33,7 +33,7 @@ function initAdminAuth() {
                 // Đã đăng nhập nhưng là tài khoản khách hàng -> chuyển về trang khách hàng
                 showAdminToast('Tài khoản của bạn là Khách hàng. Đang chuyển về trang Cửa hàng...', 'info');
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = '/';
                 }, 800);
                 return;
             }
@@ -85,7 +85,7 @@ function handleAdminLogin(e) {
             if (!roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_STAFF')) {
                 showAdminToast('Tài khoản của bạn là Khách hàng. Đang chuyển về trang Cửa hàng...', 'info');
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = '/';
                 }, 800);
                 return;
             }
@@ -102,7 +102,7 @@ function handleAdminLogin(e) {
 function handleAdminLogout() {
     localStorage.removeItem('bookmind_user');
     localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    window.location.href = '/';
 }
 
 // =====================================================

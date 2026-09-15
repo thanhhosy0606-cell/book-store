@@ -6,82 +6,141 @@
 <body>
 
     <!-- 1. Header / Navbar -->
-    <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+    <header th:replace="~{fragments/navbar :: navbar}"></header>
 
-    <!-- 2. Hero Section -->
-    <section class="hero-section">
+    <!-- 2. Hero Section with 3D Aesthetic & AI Consultation -->
+    <section class="hero-section position-relative overflow-hidden py-5" style="background: radial-gradient(circle at 80% 20%, #065f46 0%, #047857 35%, #064e3b 100%);">
+        <!-- Floating decorative glowing orbs -->
+        <div class="position-absolute top-0 end-0 translate-middle-y bg-emerald-400 opacity-20 rounded-circle blur-3xl pointer-events-none" style="width: 400px; height: 400px; filter: blur(90px); background: #34d399;"></div>
+        <div class="position-absolute bottom-0 start-0 translate-middle-x bg-cyan-400 opacity-15 rounded-circle blur-3xl pointer-events-none" style="width: 350px; height: 350px; filter: blur(90px); background: #38bdf8;"></div>
+
         <div class="container position-relative" style="z-index: 2;">
-            <div class="row align-items-center gy-4">
-                <div class="col-lg-7 text-center text-lg-start">
-                    <span class="badge-ai mb-3">
-                        <i class="fas fa-robot"></i> Trợ Lý AI Thế Hệ Mới 2026
-                    </span>
-                    <h1 class="display-4 fw-extrabold mb-3 text-white">
-                        Khám Phá Tri Thức <br class="d-none d-md-inline">Tư Vấn Chuẩn Gu Cùng <span class="text-info">AI Smart Assistant</span>
+            <div class="row align-items-center gy-5">
+                <div class="col-lg-7 text-center text-lg-start text-white">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-white bg-opacity-15 border border-white border-opacity-25 backdrop-blur mb-3 shadow-sm">
+                        <span class="badge bg-warning text-dark fw-bold rounded-pill px-2 py-0.5 fs-9">HOT 2026</span>
+                        <span class="fs-8 fw-semibold text-white"><i class="fas fa-robot text-warning me-1"></i> Trí Tuệ Nhân Tạo Tư Vấn Đọc Sách</span>
+                    </div>
+
+                    <h1 class="display-4 fw-extrabold mb-3 text-white lh-tight">
+                        Khơi Nguồn Tri Thức <br class="d-none d-md-inline">
+                        Chọn Sách Chuẩn Gu Cùng <span class="text-warning">BookMind AI</span>
                     </h1>
-                    <p class="lead text-light opacity-90 mb-4 me-lg-5">
-                        Bạn chưa biết đọc cuốn gì tiếp theo? Hãy để Trợ lý AI phân tích tâm trạng, sở thích và đề xuất những tác phẩm làm thay đổi tư duy của bạn!
+
+                    <p class="lead text-light opacity-90 mb-4 me-lg-5 fs-6" style="line-height: 1.7;">
+                        Không gian sách bản quyền Nhã Nam tinh tuyển kết hợp cùng Trợ lý AI thế hệ mới, phân tích gu đọc và đề xuất tác phẩm đánh thức cảm hứng trong bạn chỉ sau 30 giây!
                     </p>
+
                     <div class="d-flex flex-wrap justify-content-center justify-content-lg-start gap-3">
-                        <a th:href="@{/books}" class="btn btn-warning btn-lg rounded-pill px-4 fw-bold shadow">
-                            <i class="fas fa-book-open me-2"></i> Khám Phá Kho Sách
+                        <a th:href="@{/books}" class="btn btn-warning btn-lg rounded-pill px-4.5 py-2.5 fw-bold shadow-lg d-inline-flex align-items-center gap-2 text-dark hover-scale">
+                            <i class="fas fa-book-open"></i> Khám Phá Kho Sách
                         </a>
-                        <button onclick="openAIChatWithPrompt('Gợi ý cho tôi sách phát triển bản thân')"
-                            class="btn btn-outline-light btn-lg rounded-pill px-4 fw-bold">
-                            <i class="fas fa-comments me-2"></i> Trò Chuyện Với AI
+                        <button onclick="openAIChatWithPrompt('Gợi ý cho tôi những cuốn sách phát triển bản thân và tư duy hay nhất')"
+                            class="btn btn-outline-light btn-lg rounded-pill px-4.5 py-2.5 fw-bold backdrop-blur d-inline-flex align-items-center gap-2 hover-scale">
+                            <i class="fas fa-comments text-warning"></i> Trò Chuyện Cùng AI
                         </button>
                     </div>
+
+                    <!-- Trust Stats Counter -->
+                    <div class="row g-3 mt-4 pt-3 border-top border-white border-opacity-20 text-start">
+                        <div class="col-4">
+                            <div class="fw-extrabold fs-4 text-white">100%</div>
+                            <small class="text-white-50 fs-9">Sách thật bản quyền</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-extrabold fs-4 text-warning">24/7</div>
+                            <small class="text-white-50 fs-9">Tư vấn AI tức thì</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-extrabold fs-4 text-white">VietQR</div>
+                            <small class="text-white-50 fs-9">Thanh toán PayOS 1s</small>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-lg-5 text-center">
+
+                <!-- Right Hero Image with Floating Cards -->
+                <div class="col-lg-5 text-center position-relative">
                     <div class="position-relative d-inline-block">
-                        <img th:src="@{/images/book_ai.png}" alt="Featured Book"
-                            class="img-fluid rounded-4 shadow-lg border border-white border-2"
-                            style="max-height: 380px; transform: rotate(-3deg); transition: transform 0.4s ease;"
-                            onmouseover="this.style.transform='rotate(0deg) scale(1.03)'"
-                            onmouseout="this.style.transform='rotate(-3deg) scale(1)'">
+                        <img th:src="@{/images/book_ai.png}" alt="Sách Tinh Tuyển Nhã Nam"
+                            class="img-fluid rounded-4 shadow-2xl border border-white border-opacity-30"
+                            style="max-height: 400px; transform: perspective(1000px) rotateY(-8deg) rotateX(4deg); transition: all 0.5s ease;"
+                            onmouseover="this.style.transform='perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1.04)'"
+                            onmouseout="this.style.transform='perspective(1000px) rotateY(-8deg) rotateX(4deg) scale(1)'">
+
+                        <!-- Floating Micro Card 1 -->
+                        <div class="position-absolute top-0 start-0 translate-middle-y bg-white rounded-4 p-2.5 shadow-xl border d-none d-sm-flex align-items-center gap-2.5"
+                             style="z-index: 3; animation: floatSlow 4s ease-in-out infinite;">
+                            <div class="rounded-circle bg-success text-white p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                <i class="fas fa-certificate"></i>
+                            </div>
+                            <div class="text-start">
+                                <div class="fw-bold fs-8 text-dark">Nhà Sách Nhã Nam</div>
+                                <small class="text-muted fs-9">Chất lượng bản quyền</small>
+                            </div>
+                        </div>
+
+                        <!-- Floating Micro Card 2 -->
+                        <div class="position-absolute bottom-0 end-0 bg-white rounded-4 p-2.5 shadow-xl border d-none d-sm-flex align-items-center gap-2.5"
+                             style="z-index: 3; transform: translateY(20px); animation: floatSlow 4s ease-in-out infinite 2s;">
+                            <div class="rounded-circle bg-warning text-dark p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                <i class="fas fa-qrcode"></i>
+                            </div>
+                            <div class="text-start">
+                                <div class="fw-bold fs-8 text-dark">VietQR Tự Động</div>
+                                <small class="text-success fw-bold fs-9"><i class="fas fa-bolt me-0.5"></i>Duyệt trong 1 giây</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 3. Key Value Features -->
-    <section class="py-4 bg-white border-bottom">
+    <!-- 3. Key Value Features Assurance Bar -->
+    <section class="py-4 bg-white border-bottom shadow-xs">
         <div class="container">
             <div class="row g-3">
-                <div class="col-md-3 col-6">
-                    <div class="feature-box d-flex align-items-center gap-3">
-                        <div class="feature-icon bg-primary-subtle text-primary"><i class="fas fa-robot"></i></div>
+                <div class="col-lg-3 col-6">
+                    <div class="d-flex align-items-center gap-3 p-2 rounded-3 hover-bg-light transition-all">
+                        <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 46px; height: 46px; font-size: 1.2rem;">
+                            <i class="fas fa-robot"></i>
+                        </div>
                         <div>
-                            <h6 class="fw-bold mb-0">Tư Vấn AI 24/7</h6>
-                            <small class="text-muted">Gợi ý chuẩn gu trong 30s</small>
+                            <h6 class="fw-bold mb-0 fs-7 text-dark">Trợ Lý AI 24/7</h6>
+                            <small class="text-muted fs-8">Gợi ý chuẩn gu 30s</small>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6">
-                    <div class="feature-box d-flex align-items-center gap-3">
-                        <div class="feature-icon bg-success-subtle text-success"><i class="fas fa-truck-fast"></i></div>
+                <div class="col-lg-3 col-6">
+                    <div class="d-flex align-items-center gap-3 p-2 rounded-3 hover-bg-light transition-all">
+                        <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center flex-shrink-0" style="width: 46px; height: 46px; font-size: 1.2rem;">
+                            <i class="fas fa-truck-fast"></i>
+                        </div>
                         <div>
-                            <h6 class="fw-bold mb-0">Giao Hàng Hỏa Tốc</h6>
-                            <small class="text-muted">Nhận sách trong 24h</small>
+                            <h6 class="fw-bold mb-0 fs-7 text-dark">Giao Hàng Hỏa Tốc</h6>
+                            <small class="text-muted fs-8">Freeship từ 250.000đ</small>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6">
-                    <div class="feature-box d-flex align-items-center gap-3">
-                        <div class="feature-icon bg-warning-subtle text-warning"><i class="fas fa-certificate"></i></div>
+                <div class="col-lg-3 col-6">
+                    <div class="d-flex align-items-center gap-3 p-2 rounded-3 hover-bg-light transition-all">
+                        <div class="rounded-circle bg-warning-subtle text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 46px; height: 46px; font-size: 1.2rem;">
+                            <i class="fas fa-shield-halved"></i>
+                        </div>
                         <div>
-                            <h6 class="fw-bold mb-0">100% Sách Thật</h6>
-                            <small class="text-muted">Bản quyền & Chất lượng</small>
+                            <h6 class="fw-bold mb-0 fs-7 text-dark">100% Sách Thật</h6>
+                            <small class="text-muted fs-8">Bản quyền xuất bản</small>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6">
-                    <div class="feature-box d-flex align-items-center gap-3">
-                        <div class="feature-icon bg-info-subtle text-info"><i class="fas fa-rotate-left"></i></div>
+                <div class="col-lg-3 col-6">
+                    <div class="d-flex align-items-center gap-3 p-2 rounded-3 hover-bg-light transition-all">
+                        <div class="rounded-circle bg-info-subtle text-info d-flex align-items-center justify-content-center flex-shrink-0" style="width: 46px; height: 46px; font-size: 1.2rem;">
+                            <i class="fas fa-rotate-left"></i>
+                        </div>
                         <div>
-                            <h6 class="fw-bold mb-0">Đổi Trả Dễ Dàng</h6>
-                            <small class="text-muted">7 ngày hoàn tiền 100%</small>
+                            <h6 class="fw-bold mb-0 fs-7 text-dark">Đổi Trả 7 Ngày</h6>
+                            <small class="text-muted fs-8">Hoàn tiền nếu lỗi in</small>
                         </div>
                     </div>
                 </div>
@@ -90,17 +149,77 @@
     </section>
 
     <!-- 3.5. Voucher & Promo Codes Section -->
-    <section id="voucherSection" class="py-4 bg-light border-top border-bottom">
+    <section id="voucherSection" class="py-5 bg-light border-bottom">
         <div class="container">
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-danger rounded-pill px-3 py-1.5 fs-8"><i class="fas fa-bolt me-1"></i>SIÊU ƯU ĐÃI</span>
-                    <h4 class="fw-bold mb-0 fs-5 text-dark">Mã Giảm Giá & Voucher Hôm Nay</h4>
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <span class="badge bg-danger rounded-pill px-3 py-1 fs-9 fw-bold"><i class="fas fa-bolt me-1"></i>SIÊU ƯU ĐÃI</span>
+                    <h3 class="fw-bold mb-0 fs-4 text-dark mt-1">Mã Giảm Giá & Voucher Hôm Nay</h3>
                 </div>
-                <div class="text-muted fs-8">Nhấn <strong>"Lưu Mã"</strong> để tự động áp dụng chiết khấu khi thanh toán đơn hàng</div>
+                <div class="text-muted fs-8">Nhấn <strong>"Lưu & Áp Dụng"</strong> để nhận ngay chiết khấu trực tiếp khi thanh toán</div>
             </div>
+
             <div class="row g-3" id="homeVoucherListContainer">
-                <!-- Dynamic vouchers loaded from API -->
+                <!-- Fallback Voucher items rendered directly by Thymeleaf SSR -->
+                <div class="col-lg-3 col-md-6 col-12">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white" style="border: 1.5px dashed #cbd5e1 !important;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-danger text-white rounded-pill px-2.5 py-1 fs-9 fw-bold">HOT 🔥</span>
+                            <span class="font-monospace fw-bold text-primary fs-8 px-2 py-0.5 rounded bg-primary-subtle">AI10</span>
+                        </div>
+                        <h5 class="fw-bold text-danger mb-1 fs-6">GIẢM 10% TOÀN ĐƠN</h5>
+                        <div class="fw-semibold text-dark fs-8 mb-1 text-truncate">Giảm 10% Toàn Đơn Hàng</div>
+                        <div class="text-muted fs-9 mb-3">Mọi đơn hàng • Tối đa 50.000đ</div>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill w-100 fs-8 fw-bold py-1.5" onclick="saveAndApplyHomeCoupon('AI10')">
+                            <i class="fas fa-ticket-alt me-1"></i> Lưu & Áp Dụng Mã
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 col-12">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white" style="border: 1.5px dashed #cbd5e1 !important;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 fs-9 fw-bold">PHỔ BIẾN ⭐</span>
+                            <span class="font-monospace fw-bold text-primary fs-8 px-2 py-0.5 rounded bg-primary-subtle">BOOK20K</span>
+                        </div>
+                        <h5 class="fw-bold text-danger mb-1 fs-6">GIẢM 20.000đ</h5>
+                        <div class="fw-semibold text-dark fs-8 mb-1 text-truncate">Giảm 20.000đ Đơn Từ 200k</div>
+                        <div class="text-muted fs-9 mb-3">Đơn hàng từ 200.000đ</div>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill w-100 fs-8 fw-bold py-1.5" onclick="saveAndApplyHomeCoupon('BOOK20K')">
+                            <i class="fas fa-ticket-alt me-1"></i> Lưu & Áp Dụng Mã
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 col-12">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white" style="border: 1.5px dashed #cbd5e1 !important;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-success text-white rounded-pill px-2.5 py-1 fs-9 fw-bold">BẠN MỚI 🎁</span>
+                            <span class="font-monospace fw-bold text-primary fs-8 px-2 py-0.5 rounded bg-primary-subtle">NEWBIE</span>
+                        </div>
+                        <h5 class="fw-bold text-danger mb-1 fs-6">GIẢM 15.000đ</h5>
+                        <div class="fw-semibold text-dark fs-8 mb-1 text-truncate">Ưu Đãi Độc Giả Mới</div>
+                        <div class="text-muted fs-9 mb-3">Đơn hàng từ 100.000đ</div>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill w-100 fs-8 fw-bold py-1.5" onclick="saveAndApplyHomeCoupon('NEWBIE')">
+                            <i class="fas fa-ticket-alt me-1"></i> Lưu & Áp Dụng Mã
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 col-12">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white" style="border: 1.5px dashed #cbd5e1 !important;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 fs-9 fw-bold">VIP 👑</span>
+                            <span class="font-monospace fw-bold text-primary fs-8 px-2 py-0.5 rounded bg-primary-subtle">VIP50K</span>
+                        </div>
+                        <h5 class="fw-bold text-danger mb-1 fs-6">GIẢM 50.000đ</h5>
+                        <div class="fw-semibold text-dark fs-8 mb-1 text-truncate">Đơn Lớn Tiết Kiệm Khủng</div>
+                        <div class="text-muted fs-9 mb-3">Đơn hàng từ 400.000đ</div>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill w-100 fs-8 fw-bold py-1.5" onclick="saveAndApplyHomeCoupon('VIP50K')">
+                            <i class="fas fa-ticket-alt me-1"></i> Lưu & Áp Dụng Mã
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -108,45 +227,54 @@
     <!-- 4. Featured Books Section (SSR + Dynamic Link) -->
     <section class="py-5 bg-white">
         <div class="container">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
                 <div>
-                    <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-1 rounded-pill mb-1">🔥 Nổi Bật Nhất</span>
-                    <h3 class="fw-bold mb-0 text-dark">Sách Bán Chạy & Đánh Giá Cao</h3>
+                    <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-1 rounded-pill mb-1">🔥 TINH TUYỂN ĐẶC BIỆT</span>
+                    <h2 class="fw-bold mb-0 text-dark fs-3">Sách Bán Chạy & Đánh Giá Cao</h2>
                 </div>
-                <a th:href="@{/books(sort='rating')}" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
-                    Xem tất cả <i class="fas fa-arrow-right ms-1"></i>
+                <a th:href="@{/books(sort='rating')}" class="btn btn-outline-primary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1">
+                    Xem tất cả kho sách <i class="fas fa-arrow-right fs-9"></i>
                 </a>
             </div>
 
+            <!-- Book Cards Grid -->
             <div class="row g-4">
                 <div class="col-xl-3 col-lg-4 col-md-6" th:each="book : ${featuredBooks}">
-                    <div class="card book-card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative">
+                    <div class="card book-card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative bg-white transition-all hover-lift">
                         <!-- Discount Badge -->
-                        <span class="position-absolute top-0 start-0 m-3 badge bg-danger rounded-pill px-2.5 py-1.5 shadow-sm"
+                        <span class="position-absolute top-0 start-0 m-3 badge bg-danger rounded-pill px-2.5 py-1.5 shadow-sm fw-bold fs-9"
+                              style="z-index: 2;"
                               th:if="${book.originalPrice != null and book.originalPrice > book.salePrice}"
                               th:text="'-' + ${#numbers.formatDecimal((book.originalPrice - book.salePrice) * 100 / book.originalPrice, 0, 0)} + '%'">-20%</span>
 
-                        <!-- Thumbnail -->
-                        <div class="book-img-wrapper text-center pt-3 pb-2 bg-light">
-                            <a th:href="@{/books/{id}(id=${book.id})}">
+                        <!-- Thumbnail with dynamic link -->
+                        <div class="book-img-wrapper text-center pt-4 pb-3 bg-light position-relative overflow-hidden">
+                            <a th:href="@{/books/{id}(id=${book.id})}" class="d-block">
                                 <img th:src="${book.images != null and not #lists.isEmpty(book.images) ? book.images[0].imageUrl : (book.slug != null ? '/images/' + book.slug + '.jpg' : '/images/book_ai.png')}"
                                      th:alt="${book.title}"
-                                     class="book-img img-fluid"
+                                     class="book-img img-fluid transition-transform"
                                      style="height: 220px; object-fit: contain;"
                                      onerror="this.src='/images/book_ai.png'">
                             </a>
                         </div>
 
-                        <!-- Content -->
+                        <!-- Content Details -->
                         <div class="card-body d-flex flex-column p-3.5">
-                            <small class="text-primary fw-semibold fs-8 text-uppercase" th:text="${book.category != null ? book.category.name : 'Nhã Nam'}">Danh mục</small>
-                            <h6 class="book-title fw-bold my-1 text-truncate-2">
-                                <a th:href="@{/books/{id}(id=${book.id})}" th:text="${book.title}" class="text-dark text-decoration-none">Tên sách</a>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-primary fw-bold fs-9 text-uppercase letter-spacing-1" th:text="${book.category != null ? book.category.name : 'Nhã Nam'}">Danh mục</small>
+                                <div class="text-warning fs-9 d-flex align-items-center gap-1">
+                                    <i class="fas fa-star"></i>
+                                    <span class="fw-bold text-dark" th:text="${book.avgRating != null ? book.avgRating : '5.0'}">5.0</span>
+                                </div>
+                            </div>
+
+                            <h6 class="book-title fw-bold my-1 text-truncate-2" style="min-height: 42px;">
+                                <a th:href="@{/books/{id}(id=${book.id})}" th:text="${book.title}" class="text-dark text-decoration-none hover-primary">Tên cuốn sách</a>
                             </h6>
-                            <p class="text-muted fs-8 mb-2" th:text="${book.author}">Tác giả</p>
+                            <p class="text-muted fs-8 mb-3" th:text="${book.author}">Tác giả</p>
 
                             <div class="mt-auto pt-2 border-top">
-                                <div class="d-flex align-items-baseline gap-2 mb-2">
+                                <div class="d-flex align-items-baseline gap-2 mb-2.5">
                                     <span class="fs-6 fw-extrabold text-danger" th:text="${#numbers.formatDecimal(book.salePrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</span>
                                     <span class="fs-8 text-muted text-decoration-line-through"
                                           th:if="${book.originalPrice != null and book.originalPrice > book.salePrice}"
@@ -154,10 +282,10 @@
                                 </div>
 
                                 <div class="d-flex gap-2">
-                                    <a th:href="@{/books/{id}(id=${book.id})}" class="btn btn-light btn-sm rounded-pill flex-fill fw-semibold fs-8 border">
+                                    <a th:href="@{/books/{id}(id=${book.id})}" class="btn btn-light btn-sm rounded-pill flex-fill fw-semibold fs-8 border hover-bg-primary">
                                         <i class="fas fa-eye me-1"></i> Chi tiết
                                     </a>
-                                    <button class="btn btn-primary btn-sm rounded-pill px-3 fw-bold fs-8"
+                                    <button class="btn btn-primary btn-sm rounded-pill px-3 fw-bold fs-8 shadow-xs"
                                             th:onclick="'addToCartById(' + ${book.id} + ', 1)'"
                                             title="Thêm vào giỏ hàng">
                                         <i class="fas fa-cart-plus"></i>
@@ -171,25 +299,68 @@
         </div>
     </section>
 
-    <!-- 5. Category Showcase Section -->
-    <section class="py-5 bg-light">
+    <!-- 5. AI Consultation Interactive Banner -->
+    <section class="py-5" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #e0f2fe 100%);">
+        <div class="container">
+            <div class="card border-0 shadow-lg rounded-5 p-4 p-md-5 bg-white position-relative overflow-hidden">
+                <div class="row align-items-center gy-4">
+                    <div class="col-lg-8">
+                        <span class="badge bg-primary rounded-pill px-3 py-1 fs-9 fw-bold mb-2">
+                            <i class="fas fa-sparkles me-1"></i> ĐỘC QUYỀN TRÊN BOOKMIND AI
+                        </span>
+                        <h3 class="fw-extrabold text-dark mb-2 fs-3">Bạn Vẫn Đang Phân Vân Chưa Biết Đọc Gì?</h3>
+                        <p class="text-secondary fs-7 mb-4">
+                            Đừng mất hàng giờ lướt tìm sách! Hãy chia sẻ thể loại yêu thích, tâm trạng hoặc mục tiêu công việc hiện tại, Trợ lý AI Nhã Nam sẽ phân tích hàng trăm tựa sách và đưa ra gợi ý phù hợp nhất.
+                        </p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fs-8 fw-semibold"
+                                    onclick="openAIChatWithPrompt('Tư vấn cho tôi sách tài chính đầu tư cho người mới bắt đầu')">
+                                💡 Sách Tài chính cho F0
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fs-8 fw-semibold"
+                                    onclick="openAIChatWithPrompt('Gợi ý sách văn học kinh điển Nhã Nam sâu sắc')">
+                                📖 Văn học kinh điển hay
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fs-8 fw-semibold"
+                                    onclick="openAIChatWithPrompt('Những cuốn sách về AI và công nghệ đáng đọc nhất 2026')">
+                                🤖 Sách Trí tuệ nhân tạo
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-center">
+                        <button class="btn btn-primary btn-lg rounded-pill px-4 py-3 fw-bold shadow-lg hover-scale d-inline-flex align-items-center gap-2"
+                                onclick="openAIChatWithPrompt('Xin chào, hãy giới thiệu tủ sách hay nhất hôm nay')">
+                            <i class="fas fa-robot text-warning fs-4"></i>
+                            <div class="text-start">
+                                <div class="fs-7 fw-bold">Mở Trợ Lý AI Ngay</div>
+                                <small class="fs-9 opacity-75">Phản hồi tức thì 24/7</small>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Category Showcase Section -->
+    <section class="py-5 bg-white">
         <div class="container">
             <div class="text-center mb-4">
-                <span class="badge bg-secondary-subtle text-secondary fw-bold px-3 py-1 rounded-pill mb-1">Khám Phá Theo Chủ Đề</span>
-                <h3 class="fw-bold mb-1 text-dark">Danh Mục Sách Nhã Nam</h3>
-                <p class="text-muted fs-7">Hàng nghìn tựa sách bản quyền hấp dẫn đang chờ đón bạn</p>
+                <span class="badge bg-secondary-subtle text-secondary fw-bold px-3 py-1 rounded-pill mb-1">CHỦ ĐỀ ĐA DẠNG</span>
+                <h3 class="fw-bold mb-1 text-dark fs-3">Danh Mục Thể Loại Sách Nhã Nam</h3>
+                <p class="text-muted fs-7">Khám phá kho tàng tri thức với đa dạng thể loại phù hợp cho mọi độc giả</p>
             </div>
 
             <div class="row g-3 justify-content-center">
                 <div class="col-lg-3 col-md-4 col-6" th:each="cat : ${categories}">
                     <a th:href="@{/books(categoryId=${cat.id})}" class="text-decoration-none">
-                        <div class="card border-0 shadow-sm rounded-4 p-3.5 text-center h-100 bg-white hover-shadow transition-all">
-                            <div class="category-icon-wrapper rounded-circle bg-primary-subtle text-primary mx-auto mb-2 d-flex align-items-center justify-content-center"
-                                 style="width: 52px; height: 52px; font-size: 1.3rem;">
+                        <div class="card border-0 shadow-xs rounded-4 p-3.5 text-center h-100 bg-light hover-shadow transition-all hover-lift">
+                            <div class="category-icon-wrapper rounded-circle bg-white text-primary shadow-xs mx-auto mb-2.5 d-flex align-items-center justify-content-center"
+                                 style="width: 54px; height: 54px; font-size: 1.35rem;">
                                 <i class="fas fa-book-bookmark"></i>
                             </div>
                             <h6 class="fw-bold text-dark mb-1 fs-7" th:text="${cat.name}">Tên thể loại</h6>
-                            <small class="text-muted fs-8" th:text="${cat.description != null ? cat.description : 'Sách chọn lọc chất lượng cao'}">Mô tả</small>
+                            <small class="text-muted fs-8 line-clamp-1" th:text="${cat.description != null ? cat.description : 'Sách chọn lọc chất lượng cao'}">Mô tả</small>
                         </div>
                     </a>
                 </div>
@@ -197,13 +368,13 @@
         </div>
     </section>
 
-    <!-- 6. Footer -->
+    <!-- 7. Footer -->
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 
-    <!-- 7. Floating AI Chat & Quick Contact -->
+    <!-- 8. Floating AI Chat & Quick Contact -->
     <div th:replace="~{fragments/ai-assistant :: ai-assistant}"></div>
 
-    <!-- 8. Auth Modal -->
+    <!-- 9. Auth Modal -->
     <div th:replace="~{fragments/auth-modal :: auth-modal}"></div>
 
     <!-- Toast Container -->
@@ -211,8 +382,8 @@
 
     <!-- JavaScripts -->
     <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-    <script th:src="@{/js/app.js?v=20.0}"></script>
-    <script th:src="@{/js/ai-bot.js?v=20.0}"></script>
+    <script th:src="@{/js/app.js?v=22.0}"></script>
+    <script th:src="@{/js/ai-bot.js?v=22.0}"></script>
 
 </body>
 </html>
