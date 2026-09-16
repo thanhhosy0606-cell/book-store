@@ -165,6 +165,174 @@
             </div>
         </div>
     </div>
+
+    <!-- PROFILE MODAL (Thông Tin Cá Nhân & Đổi Mật Khẩu) -->
+    <div class="custom-modal-overlay" id="profileModal" onclick="handleOverlayClick(event,'profileModal')">
+        <div class="custom-modal-box" style="max-width: 540px;">
+            <div class="custom-modal-header bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fas fa-user-shield fs-6"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0 fs-7">Hồ Sơ Cá Nhân</h6>
+                        <small class="text-muted fs-9">Quản lý thông tin tài khoản và bảo mật</small>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('profileModal')">&times;</button>
+            </div>
+
+            <div class="custom-modal-body py-3">
+                <!-- User Profile Header Card -->
+                <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-4 mb-3 border">
+                    <div class="position-relative">
+                        <img id="profileAvatar" src="images/book_ai.png" alt="Avatar" class="rounded-circle border border-2 border-white shadow-sm" style="width: 58px; height: 58px; object-fit: cover;">
+                        <span id="profileRoleBadge" class="position-absolute bottom-0 end-0 badge bg-primary rounded-pill fs-9 px-2 py-0.5">Thành viên</span>
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <h6 class="fw-bold text-dark mb-0 fs-7 text-truncate" id="profileFullNameDisplay">Người dùng</h6>
+                        <span class="text-muted fs-8 d-block text-truncate" id="profileEmailDisplay">user@example.com</span>
+                        <span class="badge bg-success-subtle text-success fs-9 mt-1"><i class="fas fa-check-circle me-1"></i>Tài khoản hoạt động</span>
+                    </div>
+                </div>
+
+                <!-- Update Form -->
+                <form id="profileForm" onsubmit="handleUpdateProfile(event)">
+                    <div id="profileAlert" class="alert py-2 fs-7 d-none" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-8 fw-bold text-secondary mb-1">Họ và tên <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="fas fa-user text-muted"></i></span>
+                            <input type="text" id="profileFullNameInput" class="form-control border-start-0 rounded-end-pill py-2 fs-8" placeholder="Nhập họ và tên" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 fw-bold text-secondary mb-1">Email đăng nhập</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="fas fa-envelope text-muted"></i></span>
+                                <input type="email" id="profileEmailInput" class="form-control border-start-0 rounded-end-pill py-2 fs-8 bg-light" readonly disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 fw-bold text-secondary mb-1">Số điện thoại</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="fas fa-phone text-muted"></i></span>
+                                <input type="tel" id="profilePhoneInput" class="form-control border-start-0 rounded-end-pill py-2 fs-8" placeholder="0912345678">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Password Accordion / Section -->
+                    <div class="border rounded-3 p-3 bg-light-subtle mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold fs-8 text-dark"><i class="fas fa-key text-warning me-1.5"></i>Đổi Mật Khẩu (Để trống nếu không đổi)</span>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fs-9 fw-semibold text-muted mb-1">Mật khẩu hiện tại</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="fas fa-lock text-muted"></i></span>
+                                <input type="password" id="profileCurrentPassword" class="form-control border-start-0 py-1.5 fs-8" placeholder="Mật khẩu hiện tại">
+                                <button type="button" class="btn btn-light border border-start-0 rounded-end-pill text-muted px-2.5" onclick="togglePasswordVisibility('profileCurrentPassword', this)">
+                                    <i class="fas fa-eye fs-9"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label fs-9 fw-semibold text-muted mb-1">Mật khẩu mới</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="fas fa-shield-alt text-muted"></i></span>
+                                    <input type="password" id="profileNewPassword" class="form-control border-start-0 py-1.5 fs-8" placeholder="Ít nhất 6 ký tự" minlength="6">
+                                    <button type="button" class="btn btn-light border border-start-0 rounded-end-pill text-muted px-2.5" onclick="togglePasswordVisibility('profileNewPassword', this)">
+                                        <i class="fas fa-eye fs-9"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fs-9 fw-semibold text-muted mb-1">Nhập lại mật khẩu mới</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light border-end-0 rounded-start-pill"><i class="fas fa-check text-muted"></i></span>
+                                    <input type="password" id="profileConfirmNewPassword" class="form-control border-start-0 py-1.5 fs-8" placeholder="Xác nhận mật khẩu">
+                                    <button type="button" class="btn btn-light border border-start-0 rounded-end-pill text-muted px-2.5" onclick="togglePasswordVisibility('profileConfirmNewPassword', this)">
+                                        <i class="fas fa-eye fs-9"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-3 py-1.5 fs-8 fw-semibold" onclick="closeModal('profileModal')">Hủy bỏ</button>
+                        <button type="submit" id="btnSaveProfile" class="btn btn-primary rounded-pill px-4 py-1.5 fs-8 fw-bold shadow-sm">
+                            <i class="fas fa-save me-1"></i> Lưu Thay Đổi
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Section: Delete Account Request -->
+                <div id="profileDeleteRequestSection" class="mt-4 pt-3 border-top">
+                    <div id="deleteRequestInitialBox" class="d-flex align-items-center justify-content-between p-2.5 rounded-3 bg-danger-subtle border border-danger-subtle">
+                        <div>
+                            <div class="fw-bold text-danger fs-8"><i class="fas fa-exclamation-triangle me-1"></i>Yêu cầu xóa tài khoản</div>
+                            <small class="text-muted fs-9">Dữ liệu và lịch sử đơn hàng của bạn sẽ được gửi đến Admin xử lý</small>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fs-9 fw-bold" onclick="showDeleteRequestConfirmModal()">
+                            Yêu Cầu Xóa
+                        </button>
+                    </div>
+
+                    <div id="deleteRequestPendingBox" class="p-2.5 rounded-3 bg-warning-subtle border border-warning-subtle d-none">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="fw-bold text-warning-emphasis fs-8">
+                                    <i class="fas fa-hourglass-half me-1"></i>Đã gửi yêu cầu xóa tài khoản
+                                </div>
+                                <small class="text-secondary fs-9">
+                                    Gửi lúc: <span id="deleteRequestedAtText" class="fw-semibold">gần đây</span>. Đang chờ Ban quản trị phê duyệt.
+                                </small>
+                            </div>
+                            <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 fs-9 fw-bold shadow-xs text-dark" onclick="handleCancelDeleteAccount()">
+                                <i class="fas fa-undo me-1"></i>Hủy Yêu Cầu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REQUEST DELETE CONFIRM MODAL -->
+    <div class="custom-modal-overlay" id="requestDeleteConfirmModal" onclick="handleOverlayClick(event,'requestDeleteConfirmModal')">
+        <div class="custom-modal-box" style="max-width: 440px;">
+            <div class="custom-modal-header bg-danger-subtle border-bottom border-danger-subtle">
+                <div class="d-flex align-items-center gap-2 text-danger">
+                    <i class="fas fa-trash-alt fs-5"></i>
+                    <h6 class="fw-bold mb-0 fs-7">Xác Nhận Yêu Cầu Xóa Tài Khoản</h6>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('requestDeleteConfirmModal')">&times;</button>
+            </div>
+            <div class="custom-modal-body py-3">
+                <p class="text-secondary fs-8 mb-3">
+                    Bạn có chắc chắn muốn gửi yêu cầu xóa tài khoản BookMind AI? Sau khi Quản trị viên duyệt, tài khoản của bạn sẽ bị vô hiệu hóa vĩnh viễn.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label fs-8 fw-bold text-secondary mb-1">Lý do xóa tài khoản (tùy chọn):</label>
+                    <textarea id="requestDeleteReasonInput" class="form-control fs-8 rounded-3" rows="3" placeholder="Ví dụ: Không có nhu cầu sử dụng tiếp..."></textarea>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-3 py-1.5 fs-8 fw-semibold" onclick="closeModal('requestDeleteConfirmModal')">Hủy Bỏ</button>
+                    <button type="button" id="btnSubmitDeleteRequest" class="btn btn-danger rounded-pill px-3.5 py-1.5 fs-8 fw-bold shadow-sm" onclick="submitDeleteRequest()">
+                        <i class="fas fa-paper-plane me-1"></i> Xác Nhận Gửi Yêu Cầu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 </body>
 </html>
