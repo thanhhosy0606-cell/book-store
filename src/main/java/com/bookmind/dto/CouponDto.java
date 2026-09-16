@@ -22,6 +22,11 @@ public class CouponDto {
     private Integer usedCount;
     private String badgeText;
     private String badgeColor;
+    private String applicableType; // "ALL", "CATEGORY", "BOOK"
+    private Long applicableCategoryId;
+    private String applicableCategoryName;
+    private Long applicableBookId;
+    private String applicableBookTitle;
     private Boolean isActive;
     private LocalDateTime createdAt;
 
@@ -61,6 +66,21 @@ public class CouponDto {
     public String getBadgeColor() { return badgeColor; }
     public void setBadgeColor(String badgeColor) { this.badgeColor = badgeColor; }
 
+    public String getApplicableType() { return applicableType != null ? applicableType : "ALL"; }
+    public void setApplicableType(String applicableType) { this.applicableType = applicableType; }
+
+    public Long getApplicableCategoryId() { return applicableCategoryId; }
+    public void setApplicableCategoryId(Long applicableCategoryId) { this.applicableCategoryId = applicableCategoryId; }
+
+    public String getApplicableCategoryName() { return applicableCategoryName; }
+    public void setApplicableCategoryName(String applicableCategoryName) { this.applicableCategoryName = applicableCategoryName; }
+
+    public Long getApplicableBookId() { return applicableBookId; }
+    public void setApplicableBookId(Long applicableBookId) { this.applicableBookId = applicableBookId; }
+
+    public String getApplicableBookTitle() { return applicableBookTitle; }
+    public void setApplicableBookTitle(String applicableBookTitle) { this.applicableBookTitle = applicableBookTitle; }
+
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 
@@ -84,6 +104,11 @@ public class CouponDto {
         private Integer usedCount;
         private String badgeText;
         private String badgeColor;
+        private String applicableType;
+        private Long applicableCategoryId;
+        private String applicableCategoryName;
+        private Long applicableBookId;
+        private String applicableBookTitle;
         private Boolean isActive;
         private LocalDateTime createdAt;
 
@@ -99,6 +124,11 @@ public class CouponDto {
         public CouponDtoBuilder usedCount(Integer usedCount) { this.usedCount = usedCount; return this; }
         public CouponDtoBuilder badgeText(String badgeText) { this.badgeText = badgeText; return this; }
         public CouponDtoBuilder badgeColor(String badgeColor) { this.badgeColor = badgeColor; return this; }
+        public CouponDtoBuilder applicableType(String applicableType) { this.applicableType = applicableType; return this; }
+        public CouponDtoBuilder applicableCategoryId(Long applicableCategoryId) { this.applicableCategoryId = applicableCategoryId; return this; }
+        public CouponDtoBuilder applicableCategoryName(String applicableCategoryName) { this.applicableCategoryName = applicableCategoryName; return this; }
+        public CouponDtoBuilder applicableBookId(Long applicableBookId) { this.applicableBookId = applicableBookId; return this; }
+        public CouponDtoBuilder applicableBookTitle(String applicableBookTitle) { this.applicableBookTitle = applicableBookTitle; return this; }
         public CouponDtoBuilder isActive(Boolean isActive) { this.isActive = isActive; return this; }
         public CouponDtoBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 
@@ -116,6 +146,11 @@ public class CouponDto {
             dto.setUsedCount(this.usedCount);
             dto.setBadgeText(this.badgeText);
             dto.setBadgeColor(this.badgeColor);
+            dto.setApplicableType(this.applicableType);
+            dto.setApplicableCategoryId(this.applicableCategoryId);
+            dto.setApplicableCategoryName(this.applicableCategoryName);
+            dto.setApplicableBookId(this.applicableBookId);
+            dto.setApplicableBookTitle(this.applicableBookTitle);
             dto.setIsActive(this.isActive);
             dto.setCreatedAt(this.createdAt);
             return dto;

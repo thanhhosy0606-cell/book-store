@@ -56,6 +56,22 @@ public class Coupon {
     @Builder.Default
     private String badgeColor = "danger"; // danger, primary, success, warning, info
 
+    @Column(name = "applicable_type", length = 30)
+    @Builder.Default
+    private String applicableType = "ALL"; // "ALL", "CATEGORY", "BOOK"
+
+    @Column(name = "applicable_category_id")
+    private Long applicableCategoryId;
+
+    @Column(name = "applicable_category_name", length = 150)
+    private String applicableCategoryName;
+
+    @Column(name = "applicable_book_id")
+    private Long applicableBookId;
+
+    @Column(name = "applicable_book_title", length = 255)
+    private String applicableBookTitle;
+
     @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;
@@ -74,6 +90,7 @@ public class Coupon {
         if (this.isActive == null) this.isActive = true;
         if (this.minOrderAmount == null) this.minOrderAmount = 0.0;
         if (this.discountType == null) this.discountType = "PERCENT";
+        if (this.applicableType == null) this.applicableType = "ALL";
         if (this.badgeText == null) this.badgeText = "HOT 🔥";
         if (this.badgeColor == null) this.badgeColor = "danger";
     }
@@ -118,6 +135,21 @@ public class Coupon {
 
     public String getBadgeColor() { return badgeColor != null ? badgeColor : "danger"; }
     public void setBadgeColor(String badgeColor) { this.badgeColor = badgeColor; }
+
+    public String getApplicableType() { return applicableType != null ? applicableType : "ALL"; }
+    public void setApplicableType(String applicableType) { this.applicableType = applicableType; }
+
+    public Long getApplicableCategoryId() { return applicableCategoryId; }
+    public void setApplicableCategoryId(Long applicableCategoryId) { this.applicableCategoryId = applicableCategoryId; }
+
+    public String getApplicableCategoryName() { return applicableCategoryName; }
+    public void setApplicableCategoryName(String applicableCategoryName) { this.applicableCategoryName = applicableCategoryName; }
+
+    public Long getApplicableBookId() { return applicableBookId; }
+    public void setApplicableBookId(Long applicableBookId) { this.applicableBookId = applicableBookId; }
+
+    public String getApplicableBookTitle() { return applicableBookTitle; }
+    public void setApplicableBookTitle(String applicableBookTitle) { this.applicableBookTitle = applicableBookTitle; }
 
     public Boolean getIsActive() { return isActive != null ? isActive : true; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }

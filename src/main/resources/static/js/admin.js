@@ -1531,6 +1531,13 @@ function renderCouponsTable(coupons) {
         const minOrderText = c.minOrderAmount && c.minOrderAmount > 0 ? `Đơn từ ${formatCurrency(c.minOrderAmount)}` : 'Mọi đơn hàng';
         const maxDiscountText = isPercent && c.maxDiscountAmount ? `<br><small class="text-muted">Tối đa ${formatCurrency(c.maxDiscountAmount)}</small>` : '';
 
+        let scopeText = '<span class="badge bg-secondary-subtle text-secondary fs-9">Toàn đơn</span>';
+        if (c.applicableType === 'CATEGORY') {
+            scopeText = `<span class="badge bg-info-subtle text-info fs-9">📁 ${escapeHtml(c.applicableCategoryName || 'Danh mục')}</span>`;
+        } else if (c.applicableType === 'BOOK') {
+            scopeText = `<span class="badge bg-warning-subtle text-dark fs-9 text-truncate" style="max-width: 150px;" title="${escapeHtml(c.applicableBookTitle || 'Sách cụ thể')}">📖 ${escapeHtml(c.applicableBookTitle || 'Sách cụ thể')}</span>`;
+        }
+
         const badgeColor = c.badgeColor || 'danger';
         const badgeTag = `<span class="badge bg-${badgeColor} text-white fs-9 me-1">${escapeHtml(c.badgeText || 'ƯU ĐÃI')}</span>`;
 
@@ -1565,6 +1572,7 @@ function renderCouponsTable(coupons) {
                 <td>
                     <div class="fs-8 text-dark">${minOrderText}</div>
                     ${maxDiscountText}
+                    <div class="mt-1">${scopeText}</div>
                 </td>
                 <td>${statusSwitch}</td>
                 <td>
@@ -1582,11 +1590,38 @@ function renderCouponsTable(coupons) {
     }).join('');
 }
 
+function loadCategoriesForCouponModal() {
+    const select = document.getElementById('couponCategorySelect');
+    if (!select) return;
+    fetch('/api/admin/categories')
+        .then(r => r.json())
+        .then(cats => {
+            select.innerHTML = '<option value="">-- Chọn danh mục --</option>' +
+                cats.map(c => `<option value="${c.id}" data-name="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
+        })
+        .catch(err => console.warn('Could not load categories for coupon modal:', err));
+}
+
+function loadBooksForCouponModal() {
+    const select = document.getElementById('couponBookSelect');
+    if (!select) return;
+    fetch('/api/admin/books')
+        .then(r => r.json())
+        .then(books => {
+            select.innerHTML = '<option value="">-- Chọn cuốn sách --</option>' +
+                books.map(b => `<option value="${b.id}" data-title="${escapeHtml(b.title)}">[#${b.id}] ${escapeHtml(b.title)}</option>`).join('');
+        })
+        .catch(err => console.warn('Could not load books for coupon modal:', err));
+}
+
 function openCouponModal(couponId = null) {
     const isEdit = !!couponId;
     const titleEl = document.getElementById('couponModalTitle');
     const form = document.getElementById('couponForm');
     if (form) form.reset();
+
+    loadCategoriesForCouponModal();
+    loadBooksForCouponModal();
 
     document.getElementById('couponIdInput').value = couponId || '';
 
@@ -1603,6 +1638,15 @@ function openCouponModal(couponId = null) {
         document.getElementById('couponMaxDiscountInput').value = coupon.maxDiscountAmount || '';
         document.getElementById('couponBadgeTextInput').value = coupon.badgeText || 'HOT 🔥';
         document.getElementById('couponBadgeColorSelect').value = coupon.badgeColor || 'danger';
+        document.getElementById('couponScopeSelect').value = coupon.applicableType || 'ALL';
+        setTimeout(() => {
+            if (coupon.applicableCategoryId && document.getElementById('couponCategorySelect')) {
+                document.getElementById('couponCategorySelect').value = coupon.applicableCategoryId;
+            }
+            if (coupon.applicableBookId && document.getElementById('couponBookSelect')) {
+                document.getElementById('couponBookSelect').value = coupon.applicableBookId;
+            }
+        }, 300);
         document.getElementById('couponDescInput').value = coupon.description || '';
         document.getElementById('couponActiveCheck').checked = coupon.isActive !== false;
     } else {
@@ -1615,11 +1659,13 @@ function openCouponModal(couponId = null) {
         document.getElementById('couponMaxDiscountInput').value = '50000';
         document.getElementById('couponBadgeTextInput').value = 'HOT 🔥';
         document.getElementById('couponBadgeColorSelect').value = 'danger';
+        document.getElementById('couponScopeSelect').value = 'ALL';
         document.getElementById('couponDescInput').value = 'Áp dụng cho mọi giá trị đơn hàng';
         document.getElementById('couponActiveCheck').checked = true;
     }
 
     handleCouponTypeChange();
+    if (typeof handleCouponScopeChange === 'function') handleCouponScopeChange();
     updateCouponPreview();
     openAdminModal('couponModal');
 }
@@ -1665,6 +1711,24 @@ function handleSaveCoupon(e) {
     const id = document.getElementById('couponIdInput')?.value;
     const isEdit = !!id;
 
+    const scope = document.getElementById('couponScopeSelect')?.value || 'ALL';
+    const catSelect = document.getElementById('couponCategorySelect');
+    const bookSelect = document.getElementById('couponBookSelect');
+
+    let applicableCategoryId = null;
+    let applicableCategoryName = null;
+    if (scope === 'CATEGORY' && catSelect && catSelect.value) {
+        applicableCategoryId = parseInt(catSelect.value);
+        applicableCategoryName = catSelect.options[catSelect.selectedIndex]?.text || '';
+    }
+
+    let applicableBookId = null;
+    let applicableBookTitle = null;
+    if (scope === 'BOOK' && bookSelect && bookSelect.value) {
+        applicableBookId = parseInt(bookSelect.value);
+        applicableBookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || '';
+    }
+
     const payload = {
         code: document.getElementById('couponCodeInput').value.trim().toUpperCase(),
         title: document.getElementById('couponTitleInput').value.trim(),
@@ -1674,6 +1738,11 @@ function handleSaveCoupon(e) {
         maxDiscountAmount: parseFloat(document.getElementById('couponMaxDiscountInput').value) || null,
         badgeText: document.getElementById('couponBadgeTextInput').value.trim(),
         badgeColor: document.getElementById('couponBadgeColorSelect').value,
+        applicableType: scope,
+        applicableCategoryId: applicableCategoryId,
+        applicableCategoryName: applicableCategoryName,
+        applicableBookId: applicableBookId,
+        applicableBookTitle: applicableBookTitle,
         description: document.getElementById('couponDescInput').value.trim(),
         isActive: document.getElementById('couponActiveCheck').checked
     };
@@ -1708,7 +1777,7 @@ function handleSaveCoupon(e) {
         .finally(() => {
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save"></i> Lưu Voucher';
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Lưu Voucher';
             }
         });
 }

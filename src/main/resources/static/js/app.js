@@ -2226,7 +2226,7 @@ let selectedCartIds = new Set(cart.map(item => item.id)); // ID sách được t
 let appliedCoupon = null;
 let currentUser = null;
 try {
-    currentUser = JSON.parse(localStorage.getItem('bookmind_user') || 'null');
+    currentUser = JSON.parse(localStorage.getItem('bookmind_user') || localStorage.getItem('currentUser') || 'null');
 } catch (e) {
     currentUser = null;
 }
@@ -2317,70 +2317,63 @@ async function syncCatalogFromApi() {
         const res = await fetch('/api/books');
         if (!res.ok) return;
         const apiBooks = await res.json();
-        if (!Array.isArray(apiBooks) || apiBooks.length === 0) return;
+        if (!Array.isArray(apiBooks)) return;
 
-        apiBooks.forEach(apiBook => {
-            const existing = BOOK_CATALOG.find(b => b.id === apiBook.id);
-            const mappedCategory = apiBook.categorySlug ||
-                CATEGORY_SLUG_TO_ID[apiBook.slug] ||
-                getCategoryCodeById(apiBook.categoryId) ||
-                (existing ? existing.category : 'tech');
+        if (apiBooks.length > 0) {
+            BOOK_CATALOG = apiBooks.map(apiBook => {
+                const mappedCategory = apiBook.categorySlug ||
+                    CATEGORY_SLUG_TO_ID[apiBook.slug] ||
+                    getCategoryCodeById(apiBook.categoryId) ||
+                    'tech';
 
-            const basePrice = (apiBook.originalPrice && apiBook.originalPrice > 0) ? apiBook.originalPrice : (existing && existing.oldPrice ? existing.oldPrice : apiBook.salePrice);
-            const calculatedDiscount = (basePrice && basePrice > apiBook.salePrice)
-                ? Math.round((basePrice - apiBook.salePrice) / basePrice * 100)
-                : 0;
+                const basePrice = (apiBook.originalPrice && apiBook.originalPrice > 0)
+                    ? apiBook.originalPrice
+                    : apiBook.salePrice;
 
-            if (existing) {
-                existing.title = apiBook.title;
-                existing.author = apiBook.author;
-                existing.price = apiBook.salePrice;
-                existing.oldPrice = basePrice;
-                existing.discount = calculatedDiscount;
-                existing.stockQuantity = apiBook.stockQuantity;
-                existing.status = apiBook.status || 'AVAILABLE';
-                if (apiBook.imageUrl) existing.image = apiBook.imageUrl;
-                if (apiBook.categoryName) existing.categoryName = apiBook.categoryName;
-                if (apiBook.categorySlug) existing.categorySlug = apiBook.categorySlug;
-                if (apiBook.description) existing.description = apiBook.description;
-                if (mappedCategory) existing.category = mappedCategory;
-                existing.categoryId = apiBook.categoryId;
-            } else {
-                BOOK_CATALOG.push({
+                const calculatedDiscount = (basePrice && basePrice > apiBook.salePrice)
+                    ? Math.round((basePrice - apiBook.salePrice) / basePrice * 100)
+                    : 0;
+
+                const imgUrl = apiBook.imageUrl || (apiBook.images && apiBook.images[0] ? apiBook.images[0].imageUrl : (apiBook.slug ? `/images/${apiBook.slug}.jpg` : 'images/book_ai.png'));
+
+                return {
                     id: apiBook.id,
                     title: apiBook.title,
                     author: apiBook.author || 'Đang cập nhật',
                     category: mappedCategory,
                     categoryId: apiBook.categoryId,
                     categorySlug: apiBook.categorySlug || '',
-                    categoryName: apiBook.categoryName || 'Sách tổng hợp',
+                    categoryName: apiBook.categoryName || 'Sách tinh tuyển',
                     price: apiBook.salePrice,
                     oldPrice: basePrice,
                     rating: apiBook.avgRating || 5.0,
-                    reviewsCount: 10,
+                    reviewsCount: 12,
                     discount: calculatedDiscount,
-                    image: apiBook.imageUrl || 'images/book_ai.png',
+                    image: imgUrl,
                     description: apiBook.description || '',
-                    tags: [apiBook.title.toLowerCase()],
+                    tags: [apiBook.title ? apiBook.title.toLowerCase() : ''],
                     isBestseller: false,
                     status: apiBook.status || 'AVAILABLE',
                     stockQuantity: apiBook.stockQuantity || 0
-                });
-            }
-        });
+                };
+            });
+        }
 
-        // Đồng bộ lại status vào giỏ hàng
+        // Đồng bộ lại status và giá mới nhất vào giỏ hàng
         cart.forEach(item => {
             const b = BOOK_CATALOG.find(x => x.id === item.id);
             if (b) {
                 item.status = b.status;
                 item.price = b.price;
+                item.title = b.title;
+                item.image = b.image;
                 if (b.status === 'STOPPED' && typeof selectedCartIds !== 'undefined') {
                     selectedCartIds.delete(item.id);
                 }
             }
         });
 
+        saveCartToStorage();
         renderCategoryFilters();
         renderBookGrid();
         updateCartUI();
@@ -3401,6 +3394,11 @@ async function loadCouponsFromApi() {
                 value: c.discountValue || 0,
                 maxDiscount: c.maxDiscountAmount || null,
                 minOrder: c.minOrderAmount || 0,
+                applicableType: c.applicableType || 'ALL',
+                applicableCategoryId: c.applicableCategoryId,
+                applicableCategoryName: c.applicableCategoryName,
+                applicableBookId: c.applicableBookId,
+                applicableBookTitle: c.applicableBookTitle,
                 badge: c.badgeText || 'ƯU ĐÃI ✨',
                 badgeClass: `bg-${c.badgeColor || 'danger'} text-white`
             }));
@@ -3435,11 +3433,18 @@ function renderHomePageCoupons() {
         const maxDiscountText = c.type === 'PERCENT' && c.maxDiscount > 0 ? ` • Tối đa ${formatCurrency(c.maxDiscount)}` : '';
         const isApplied = appliedCoupon === c.code;
 
+        let scopeBadge = '';
+        if (c.applicableType === 'CATEGORY') {
+            scopeBadge = `<div class="fs-9 text-info fw-semibold mt-0.5"><i class="fas fa-folder me-1"></i>${escapeHtml(c.applicableCategoryName || 'Danh mục')}</div>`;
+        } else if (c.applicableType === 'BOOK') {
+            scopeBadge = `<div class="fs-9 text-warning text-truncate fw-semibold mt-0.5"><i class="fas fa-book me-1"></i>${escapeHtml(c.applicableBookTitle || 'Sách cụ thể')}</div>`;
+        }
+
         return `
             <div class="col-lg-3 col-md-6 col-12">
                 <div class="card h-100 border-0 shadow-sm rounded-4 position-relative overflow-hidden" 
                      style="background: #ffffff; border: 1.5px dashed #e2e8f0 !important; transition: transform 0.2s, box-shadow 0.2s;">
-                    <div class="p-3">
+                    <div class="p-3 d-flex flex-column h-100">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <span class="badge ${c.badgeClass || 'bg-danger text-white'} rounded-pill px-2.5 py-1 fs-9 fw-bold">
                                 ${escapeHtml(c.badge)}
@@ -3450,7 +3455,8 @@ function renderHomePageCoupons() {
                         </div>
                         <h6 class="fw-bold text-danger mb-1 fs-6">${discountText}</h6>
                         <div class="fw-semibold text-dark fs-8 mb-1 text-truncate">${escapeHtml(c.title)}</div>
-                        <div class="text-muted fs-9 mb-2">${minOrderText}${maxDiscountText}</div>
+                        <div class="text-muted fs-9 mb-1">${minOrderText}${maxDiscountText}</div>
+                        ${scopeBadge}
                         
                         <div class="d-flex gap-2 align-items-center mt-auto pt-2 border-top">
                             <button type="button" class="btn btn-sm ${isApplied ? 'btn-success' : 'btn-outline-danger'} rounded-pill flex-fill fs-8 fw-bold py-1" 
@@ -3498,20 +3504,39 @@ function saveAndApplyHomeCoupon(code) {
     }
 }
 
-function calculateCouponDiscount(code, subtotal) {
+function calculateCouponDiscount(code, subtotal, cartItems = null) {
     if (!code || !subtotal || subtotal <= 0) return 0;
     const coupon = AVAILABLE_COUPONS.find(c => c.code === code);
     if (!coupon) return 0;
     if (coupon.minOrder && subtotal < coupon.minOrder) return 0;
 
+    let eligibleSubtotal = subtotal;
+    const items = cartItems || (typeof cart !== 'undefined' ? cart : []);
+
+    if (coupon.applicableType === 'CATEGORY' && coupon.applicableCategoryId && Array.isArray(items) && items.length > 0) {
+        eligibleSubtotal = items
+            .filter(item => {
+                const book = typeof BOOK_CATALOG !== 'undefined' ? BOOK_CATALOG.find(b => b.id === item.id) : null;
+                return (item.categoryId && Number(item.categoryId) === Number(coupon.applicableCategoryId)) ||
+                       (book && book.categoryId && Number(book.categoryId) === Number(coupon.applicableCategoryId));
+            })
+            .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        if (eligibleSubtotal <= 0) return 0;
+    } else if (coupon.applicableType === 'BOOK' && coupon.applicableBookId && Array.isArray(items) && items.length > 0) {
+        eligibleSubtotal = items
+            .filter(item => Number(item.id) === Number(coupon.applicableBookId))
+            .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        if (eligibleSubtotal <= 0) return 0;
+    }
+
     if (coupon.type === 'PERCENT') {
-        let discount = subtotal * (coupon.value / 100);
+        let discount = eligibleSubtotal * (coupon.value / 100);
         if (coupon.maxDiscount && discount > coupon.maxDiscount) {
             discount = coupon.maxDiscount;
         }
         return Math.round(discount);
     } else if (coupon.type === 'FIXED') {
-        return Math.min(coupon.value, subtotal);
+        return Math.min(coupon.value, eligibleSubtotal);
     }
     return 0;
 }
@@ -4897,17 +4922,26 @@ function togglePasswordVisibility(inputId, btn) {
 }
 
 async function validateSessionWithServer() {
-    if (!currentUser || !currentUser.id) return;
+    if (!currentUser) return;
+    const uid = currentUser.id || currentUser.userId;
+    if (!uid) return;
     try {
-        const res = await fetch(`/api/auth/me?userId=${currentUser.id}`);
-        if (!res.ok) {
-            console.log('Tài khoản không còn tồn tại trên máy chủ (đã bị xóa). Tự động đăng xuất...');
-            localStorage.removeItem('bookmind_user');
-            localStorage.removeItem('currentUser');
-            currentUser = null;
-            updateNavAuthUI();
-            updateCartUI();
-        } else {
+        const res = await fetch(`/api/auth/me?userId=${encodeURIComponent(uid)}`);
+        if (res.status === 401 || res.status === 404) {
+            try {
+                const resData = await res.json();
+                if (resData && (resData.message?.toLowerCase().includes('không tìm thấy') || resData.message?.toLowerCase().includes('tài khoản đã bị xóa') || res.status === 401)) {
+                    console.log('Tài khoản không còn tồn tại trên máy chủ (đã bị xóa). Tự động đăng xuất...');
+                    localStorage.removeItem('bookmind_user');
+                    localStorage.removeItem('currentUser');
+                    currentUser = null;
+                    updateNavAuthUI();
+                    updateCartUI();
+                }
+            } catch (errJson) {
+                // Keep local credentials on transient JSON parse error
+            }
+        } else if (res.ok) {
             const resData = await res.json();
             if (resData && resData.data) {
                 currentUser = resData.data;
@@ -4917,13 +4951,14 @@ async function validateSessionWithServer() {
             }
         }
     } catch (e) {
-        console.warn('Lỗi kiểm tra phiên đăng nhập:', e);
+        console.warn('Lỗi kiểm tra phiên đăng nhập (giữ nguyên phiên đăng nhập):', e);
     }
 }
 
 // Khởi chạy đồng bộ trạng thái đăng nhập và kiểm tra tính hợp lệ với server
 updateNavAuthUI();
 validateSessionWithServer();
+window.addEventListener('load', updateNavAuthUI);
 
 function quickFillLogin(email, password) {
     const emailInput = document.getElementById('loginEmail');

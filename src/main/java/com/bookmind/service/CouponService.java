@@ -31,7 +31,10 @@ public class CouponService {
                                      String discountType, Double discountValue,
                                      Double minOrderAmount, Double maxDiscountAmount,
                                      Integer usageLimit, String badgeText,
-                                     String badgeColor, Boolean isActive) {
+                                     String badgeColor, Boolean isActive,
+                                     String applicableType, Long applicableCategoryId,
+                                     String applicableCategoryName, Long applicableBookId,
+                                     String applicableBookTitle) {
         Coupon c = new Coupon();
         c.setCode(code);
         c.setTitle(title);
@@ -45,6 +48,11 @@ public class CouponService {
         c.setBadgeText(badgeText != null && !badgeText.isBlank() ? badgeText : "ƯU ĐÃI ✨");
         c.setBadgeColor(badgeColor != null && !badgeColor.isBlank() ? badgeColor : "danger");
         c.setIsActive(isActive != null ? isActive : Boolean.TRUE);
+        c.setApplicableType(applicableType != null ? applicableType : "ALL");
+        c.setApplicableCategoryId(applicableCategoryId);
+        c.setApplicableCategoryName(applicableCategoryName);
+        c.setApplicableBookId(applicableBookId);
+        c.setApplicableBookTitle(applicableBookTitle);
         return c;
     }
 
@@ -64,7 +72,8 @@ public class CouponService {
                     null,
                     "HOT 🔥",
                     "danger",
-                    Boolean.TRUE));
+                    Boolean.TRUE,
+                    "ALL", null, null, null, null));
 
             couponRepository.save(createCouponEntity(
                     "BOOK20K",
@@ -77,7 +86,8 @@ public class CouponService {
                     null,
                     "PHỔ BIẾN ⭐",
                     "primary",
-                    Boolean.TRUE));
+                    Boolean.TRUE,
+                    "ALL", null, null, null, null));
 
             couponRepository.save(createCouponEntity(
                     "NEWBIE",
@@ -90,7 +100,8 @@ public class CouponService {
                     null,
                     "QUÀ TẶNG 🎁",
                     "success",
-                    Boolean.TRUE));
+                    Boolean.TRUE,
+                    "ALL", null, null, null, null));
 
             couponRepository.save(createCouponEntity(
                     "VIP50K",
@@ -103,7 +114,8 @@ public class CouponService {
                     null,
                     "TIẾT KIỆM 💰",
                     "warning",
-                    Boolean.TRUE));
+                    Boolean.TRUE,
+                    "ALL", null, null, null, null));
             log.info("Khởi tạo mã khuyến mãi mặc định thành công!");
         }
     }
@@ -140,7 +152,12 @@ public class CouponService {
                 dto.getUsageLimit(),
                 dto.getBadgeText() != null && !dto.getBadgeText().isBlank() ? dto.getBadgeText().trim() : "ƯU ĐÃI ✨",
                 dto.getBadgeColor() != null && !dto.getBadgeColor().isBlank() ? dto.getBadgeColor().trim() : "danger",
-                dto.getIsActive() != null ? dto.getIsActive() : Boolean.TRUE
+                dto.getIsActive() != null ? dto.getIsActive() : Boolean.TRUE,
+                dto.getApplicableType() != null ? dto.getApplicableType() : "ALL",
+                dto.getApplicableCategoryId(),
+                dto.getApplicableCategoryName(),
+                dto.getApplicableBookId(),
+                dto.getApplicableBookTitle()
         );
 
         Coupon saved = couponRepository.save(coupon);
@@ -174,6 +191,11 @@ public class CouponService {
         if (dto.getIsActive() != null) {
             coupon.setIsActive(dto.getIsActive());
         }
+        coupon.setApplicableType(dto.getApplicableType() != null ? dto.getApplicableType() : "ALL");
+        coupon.setApplicableCategoryId(dto.getApplicableCategoryId());
+        coupon.setApplicableCategoryName(dto.getApplicableCategoryName());
+        coupon.setApplicableBookId(dto.getApplicableBookId());
+        coupon.setApplicableBookTitle(dto.getApplicableBookTitle());
 
         Coupon saved = couponRepository.save(coupon);
         return mapToDto(saved);
@@ -310,6 +332,11 @@ public class CouponService {
         dto.setUsedCount(c.getUsedCount());
         dto.setBadgeText(c.getBadgeText());
         dto.setBadgeColor(c.getBadgeColor());
+        dto.setApplicableType(c.getApplicableType() != null ? c.getApplicableType() : "ALL");
+        dto.setApplicableCategoryId(c.getApplicableCategoryId());
+        dto.setApplicableCategoryName(c.getApplicableCategoryName());
+        dto.setApplicableBookId(c.getApplicableBookId());
+        dto.setApplicableBookTitle(c.getApplicableBookTitle());
         dto.setIsActive(c.getIsActive());
         dto.setCreatedAt(c.getCreatedAt());
         return dto;
