@@ -75,6 +75,15 @@ public class OrderService {
 
         BigDecimal subtotal = request.getSubtotal() != null ? request.getSubtotal() : BigDecimal.ZERO;
         BigDecimal shippingFee = request.getShippingFee() != null ? request.getShippingFee() : BigDecimal.ZERO;
+
+        if (subtotal.compareTo(BigDecimal.ZERO) == 0 && request.getItems() != null && !request.getItems().isEmpty()) {
+            for (CreateOrderRequest.OrderItemDto itemReq : request.getItems()) {
+                BigDecimal itemPrice = itemReq.getPrice() != null ? itemReq.getPrice() : BigDecimal.ZERO;
+                int qty = itemReq.getQuantity() != null && itemReq.getQuantity() > 0 ? itemReq.getQuantity() : 1;
+                subtotal = subtotal.add(itemPrice.multiply(BigDecimal.valueOf(qty)));
+            }
+        }
+
         BigDecimal totalAmount = request.getTotalAmount() != null ? request.getTotalAmount() : subtotal.add(shippingFee);
 
         // Xác thực trước các sản phẩm trong giỏ hàng
