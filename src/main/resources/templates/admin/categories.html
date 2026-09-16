@@ -73,7 +73,7 @@
                             </tr>
                         </thead>
                         <tbody id="categoriesTableBody">
-                            <tr th:each="cat : ${categories}">
+                            <tr th:each="cat, stat : ${categories}">
                                 <td th:text="'#' + ${cat.id}">#1</td>
                                 <td>
                                     <strong class="text-dark" th:text="${cat.name}">Tên thể loại</strong>
@@ -83,13 +83,8 @@
                                 </td>
                                 <td class="text-secondary fs-8" th:text="${cat.description != null ? cat.description : 'Chưa có mô tả'}">Mô tả</td>
                                 <td>
-                                    <div class="d-flex gap-1">
-                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fs-9"
-                                                th:onclick="'openCategoryEditModal(' + ${cat.id} + ', \'' + ${cat.name} + '\', \'' + ${cat.slug} + '\', \'' + ${cat.description != null ? cat.description : ''} + '\')'">
-                                            <i class="fas fa-edit"></i> Sửa
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-9"
-                                                th:onclick="'handleDeleteCategory(' + ${cat.id} + ')'">
+                                    <div class="table-actions">
+                                        <button class="btn-action delete" th:onclick="'deleteCategory(' + ${cat.id} + ')'" title="Xóa thể loại">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

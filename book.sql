@@ -46,6 +46,7 @@ CREATE TABLE categories (
     parent_id BIGINT NULL, -- NULL nếu là danh mục gốc. VD: Sách IT -> Lập trình
     name VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL UNIQUE, -- URL thân thiện (vd: sach-lap-trinh)
+    description TEXT NULL,
     status BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL
 );
