@@ -1007,6 +1007,9 @@ function renderOrdersTable(orders) {
                     <button class="btn-action view" onclick="openOrderDetailModal(${o.id})" title="Xem chi tiết">
                         <i class="fas fa-eye"></i>
                     </button>
+                    <button class="btn-action view text-success" onclick="window.open('/api/orders/' + ${o.id} + '/invoice/print', '_blank')" title="In Hóa Đơn Điện Tử">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </button>
                     <select class="form-select form-select-sm fs-8 py-1" style="width: 130px;" onchange="updateOrderStatus(${o.id}, this.value)">
                         <option value="PENDING" ${o.status === 'PENDING' ? 'selected' : ''}>Chờ duyệt</option>
                         <option value="CONFIRMED" ${o.status === 'CONFIRMED' ? 'selected' : ''}>Đã duyệt</option>
@@ -1018,6 +1021,14 @@ function renderOrdersTable(orders) {
             </td>
         </tr>
     `).join('');
+}
+
+let currentAdminDetailOrderId = null;
+
+function printCurrentAdminOrderInvoice() {
+    if (currentAdminDetailOrderId) {
+        window.open('/api/orders/' + currentAdminDetailOrderId + '/invoice/print', '_blank');
+    }
 }
 
 function updateOrderStatus(orderId, newStatus) {
@@ -1040,6 +1051,7 @@ function updateOrderStatus(orderId, newStatus) {
 }
 
 function openOrderDetailModal(orderId) {
+    currentAdminDetailOrderId = orderId;
     fetch('/api/admin/orders/' + orderId)
         .then(res => res.json())
         .then(order => {
@@ -1055,7 +1067,7 @@ function openOrderDetailModal(orderId) {
             document.getElementById('detailShippingFee').textContent = formatCurrency(order.shippingFee);
             document.getElementById('detailTotalAmount').textContent = formatCurrency(order.totalAmount);
 
-            const itemsTbody = document.getElementById('detailItemsTableBody');
+            const itemsTbody = document.getElementById('detailOrderItemsBody') || document.getElementById('detailItemsTableBody');
             if (itemsTbody) {
                 if (!order.items || order.items.length === 0) {
                     itemsTbody.innerHTML = `<tr><td colspan="4" class="text-center py-2 text-muted">Không có dữ liệu sản phẩm</td></tr>`;

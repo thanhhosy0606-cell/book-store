@@ -143,7 +143,10 @@
                     <span class="fs-5 fw-extrabold text-danger" id="detailOrderTotal">0₫</span>
                 </div>
             </div>
-            <div class="admin-modal-footer">
+            <div class="admin-modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-bold" id="btnAdminPrintInvoice" onclick="printCurrentAdminOrderInvoice()">
+                    <i class="fas fa-print me-1.5"></i> In Hóa Đơn Điện Tử
+                </button>
                 <button type="button" class="btn-admin-secondary" onclick="closeAdminModal('orderDetailModal')">Đóng</button>
             </div>
         </div>
@@ -151,7 +154,7 @@
 
     <!-- Scripts -->
     <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-    <script th:src="@{/js/admin.js?v=24.0}"></script>
+    <script th:src="@{/js/admin.js?v=25.0}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof loadOrders === 'function') {

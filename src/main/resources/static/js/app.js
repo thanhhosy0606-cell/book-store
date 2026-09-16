@@ -4582,7 +4582,7 @@ function renderOrdersList(orders, filter) {
                         <span class="fw-bold fs-6 text-primary">${formatCurrency(order.totalAmount || 0)}</span>
                     </div>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <button class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="openInvoicePrintView(${order.id})" title="Xem và In Hóa Đơn Điện Tử">
+                        <button class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="openInvoicePrintView('${order.id}')" title="Xem và In Hóa Đơn Điện Tử">
                             <i class="fas fa-file-invoice-dollar me-1"></i>Hóa Đơn
                         </button>
                         ${statusCode < 4 ? `
@@ -4602,6 +4602,170 @@ function renderOrdersList(orders, filter) {
             </div>
         `;
     }).join('');
+}
+
+function openInvoicePrintView(orderId) {
+    if (!orderId) {
+        showToast('Không tìm thấy thông tin mã đơn hàng!', 'warning');
+        return;
+    }
+
+    const numId = Number(orderId);
+    // Nếu là ID số trong CSDL (id < 100.000.000)
+    if (!isNaN(numId) && numId > 0 && numId < 100000000) {
+        const invoiceUrl = `/api/orders/${numId}/invoice/print`;
+        const win = window.open(invoiceUrl, '_blank');
+        if (win) {
+            win.focus();
+            return;
+        } else {
+            window.location.href = invoiceUrl;
+            return;
+        }
+    }
+
+    // Fallback cho đơn hàng lưu trên localStorage / client-side
+    let order = null;
+    if (typeof myOrdersListCache !== 'undefined' && Array.isArray(myOrdersListCache)) {
+        order = myOrdersListCache.find(o => o.id == orderId);
+    }
+    if (!order) {
+        const localOrders = getLocalOrders();
+        order = localOrders.find(o => o.id == orderId);
+    }
+
+    if (!order) {
+        window.open(`/api/orders/${orderId}/invoice/print`, '_blank');
+        return;
+    }
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+        window.location.href = `/api/orders/${orderId}/invoice/print`;
+        return;
+    }
+
+    const items = (order.items && order.items.length > 0) ? order.items : [];
+    let itemsRows = '';
+    let idx = 1;
+    items.forEach(it => {
+        const title = it.title || it.bookTitle || 'Sách Nhã Nam';
+        const author = it.author || it.bookAuthor || 'Nhã Nam';
+        const qty = it.quantity || 1;
+        const price = it.price || it.unitPrice || (order.totalAmount / (items.length || 1));
+        const total = price * qty;
+        itemsRows += `
+            <tr>
+                <td style="text-align: center;">${idx++}</td>
+                <td><strong>${escapeHtml(title)}</strong><br><small style="color: #64748b;">${escapeHtml(author)}</small></td>
+                <td style="text-align: center;">${qty}</td>
+                <td style="text-align: right;">${formatCurrency(price)}</td>
+                <td style="text-align: right; font-weight: bold;">${formatCurrency(total)}</td>
+            </tr>
+        `;
+    });
+
+    const invNum = order.invoiceNumber || `HD-${String(order.id || Date.now()).slice(-6)}`;
+    const issueDate = order.createdAt || new Date().toLocaleString('vi-VN');
+    const trackingNum = order.trackingNumber || order.orderCode || `DH${String(order.id || Date.now()).slice(-6)}`;
+    const customerName = order.receiverName || (currentUser ? currentUser.fullName : 'Quý khách');
+    const customerPhone = order.receiverPhone || (currentUser ? currentUser.phone : 'N/A');
+    const customerAddress = order.shippingAddress || 'Địa chỉ nhận hàng';
+    const subtotal = order.subtotal || order.totalAmount || 0;
+    const shippingFee = order.shippingFee || 0;
+    const totalAmount = order.totalAmount || subtotal;
+
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="vi">
+        <head>
+            <meta charset="UTF-8">
+            <title>Hóa Đơn Điện Tử - ${invNum}</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 2rem 0; }
+                .invoice-card { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); padding: 2.5rem; border: 1px solid #e2e8f0; position: relative; }
+                .invoice-header { border-bottom: 2px solid #00482b; padding-bottom: 1.5rem; margin-bottom: 2rem; }
+                .brand-title { color: #00482b; font-weight: 800; font-size: 1.5rem; letter-spacing: 0.5px; }
+                .stamp-box { border: 2px solid #10b981; color: #10b981; font-weight: 800; font-size: 0.9rem; padding: 0.4rem 1rem; border-radius: 8px; display: inline-block; transform: rotate(-5deg); text-transform: uppercase; letter-spacing: 1px; }
+                .table-invoice th { background-color: #f1f5f9; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+                @media print {
+                    body { background: #fff; padding: 0; }
+                    .invoice-card { box-shadow: none; border: none; padding: 1.5rem; max-width: 100%; }
+                    .no-print { display: none !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="text-center mb-3 no-print">
+                    <button onclick="window.print()" class="btn btn-primary rounded-pill px-4 me-2"><i class="fas fa-print me-2"></i>In / Tải PDF</button>
+                    <button onclick="window.close()" class="btn btn-outline-secondary rounded-pill px-3">Đóng</button>
+                </div>
+                <div class="invoice-card">
+                    <div class="invoice-header d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="brand-title"><i class="fas fa-book-open me-2"></i>NHÃ NAM BOOK STORE</div>
+                            <div class="text-muted fs-7 mt-1">CÔNG TY CỔ PHẦN VĂN HÓA VÀ TRUYỀN THÔNG NHÃ NAM</div>
+                            <div class="text-muted fs-8">MST: 0101484888 &bull; Hotline: 1900 6868</div>
+                            <div class="text-muted fs-8">Số 59 Đỗ Quang, P. Trung Hòa, Q. Cầu Giấy, Hà Nội</div>
+                        </div>
+                        <div class="text-end">
+                            <h4 class="fw-bold text-dark mb-1">HÓA ĐƠN ĐIỆN TỬ</h4>
+                            <div class="text-primary fw-bold fs-6">${invNum}</div>
+                            <div class="text-muted fs-8 mt-1">Ngày: ${issueDate}</div>
+                            <div class="mt-2"><span class="stamp-box"><i class="fas fa-check-circle me-1"></i>ĐÃ XÁC THỰC</span></div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-sm-6">
+                            <h6 class="fw-bold text-secondary text-uppercase fs-8">Khách hàng (Người nhận)</h6>
+                            <div class="fw-bold text-dark fs-6">${escapeHtml(customerName)}</div>
+                            <div class="text-muted fs-7">SĐT: ${escapeHtml(customerPhone)}</div>
+                            <div class="text-muted fs-7">Địa chỉ: ${escapeHtml(customerAddress)}</div>
+                        </div>
+                        <div class="col-sm-6 text-sm-end">
+                            <h6 class="fw-bold text-secondary text-uppercase fs-8">Thông tin giao dịch</h6>
+                            <div>Mã vận đơn: <strong class="text-dark">${trackingNum}</strong></div>
+                            <div>Hình thức: <span class="badge bg-light text-dark border">${order.paymentMethod || 'VietQR'}</span></div>
+                        </div>
+                    </div>
+                    <table class="table table-bordered table-invoice mb-3">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;" class="text-center">STT</th>
+                                <th>Tên Sách / Tác Phẩm</th>
+                                <th style="width: 80px;" class="text-center">SL</th>
+                                <th style="width: 140px;" class="text-end">Đơn Giá</th>
+                                <th style="width: 150px;" class="text-end">Thành Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsRows}
+                        </tbody>
+                    </table>
+                    <div class="row justify-content-end">
+                        <div class="col-md-6 col-lg-5">
+                            <div class="d-flex justify-content-between mb-1 fs-7 text-muted"><span>Tiền sách:</span><span>${formatCurrency(subtotal)}</span></div>
+                            <div class="d-flex justify-content-between mb-1 fs-7 text-muted"><span>Phí vận chuyển:</span><span>${formatCurrency(shippingFee)}</span></div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between fs-5 fw-bold text-primary"><span>Tổng cộng:</span><span>${formatCurrency(totalAmount)}</span></div>
+                        </div>
+                    </div>
+                    <div class="border-top pt-3 mt-4 text-center text-muted fs-8">
+                        <p class="mb-1"><i class="fas fa-shield-alt text-success me-1"></i>Được ký số điện tử bởi Nhã Nam e-Invoice Gateway</p>
+                        <p class="mb-0">Cảm ơn bạn đã lựa chọn Nhã Nam Book Store! Hotline: 1900 6868</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    printWin.document.open();
+    printWin.document.write(htmlContent);
+    printWin.document.close();
 }
 
 function getOrderStatusCode(status) {
