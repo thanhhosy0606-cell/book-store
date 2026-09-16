@@ -4598,13 +4598,12 @@ function renderOrdersList(orders, filter) {
                         <button class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="openInvoicePrintView('${order.id}')" title="Xem và In Hóa Đơn Điện Tử">
                             <i class="fas fa-file-invoice-dollar me-1"></i>Hóa Đơn
                         </button>
-                        ${statusCode < 4 ? `
-                            <button class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="advanceOrderStatus(${order.id}, '${order.status}')">
-                                <i class="fas fa-arrow-circle-right me-1"></i>Mô phỏng chuyển bước tiếp
-                            </button>
-                        ` : `
+                        ${order.status === 'DELIVERED' ? `
                             <span class="text-success fs-8 fw-bold"><i class="fas fa-check-circle me-1"></i>Đơn hàng hoàn tất</span>
-                        `}
+                        ` : ''}
+                        ${order.status === 'CANCELLED' ? `
+                            <span class="text-danger fs-8 fw-bold"><i class="fas fa-times-circle me-1"></i>Đã hủy</span>
+                        ` : ''}
                         ${order.status === 'PENDING' ? `
                             <button class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="cancelOrder(${order.id})">
                                 Hủy đơn
