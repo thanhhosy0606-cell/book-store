@@ -1010,6 +1010,9 @@ function renderOrdersTable(orders) {
                     <button class="btn-action view text-success" onclick="window.open('/api/orders/' + ${o.id} + '/invoice/print', '_blank')" title="In Hóa Đơn Điện Tử">
                         <i class="fas fa-file-invoice-dollar"></i>
                     </button>
+                    <button class="btn-action view text-danger" onclick="window.open('/api/orders/' + ${o.id} + '/invoice/print?download=pdf', '_blank')" title="Xuất / Tải Hóa Đơn PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
                     <button class="btn-action delete" onclick="deleteAdminOrder(${o.id})" title="Xóa đơn hàng">
                         <i class="fas fa-trash-alt"></i>
                     </button>
@@ -1031,6 +1034,12 @@ let currentAdminDetailOrderId = null;
 function printCurrentAdminOrderInvoice() {
     if (currentAdminDetailOrderId) {
         window.open('/api/orders/' + currentAdminDetailOrderId + '/invoice/print', '_blank');
+    }
+}
+
+function downloadCurrentAdminOrderPdf() {
+    if (currentAdminDetailOrderId) {
+        window.open('/api/orders/' + currentAdminDetailOrderId + '/invoice/print?download=pdf', '_blank');
     }
 }
 

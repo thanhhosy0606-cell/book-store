@@ -48,10 +48,13 @@
                     </span>
                 </div>
 
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
                     <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1.5 fs-7 fw-bold" th:text="${order.status}">PENDING</span>
+                    <a th:href="@{'/api/orders/' + (${order.trackingNumber != null ? order.trackingNumber : order.id}) + '/invoice/print?download=pdf'}" target="_blank" class="btn btn-outline-danger btn-sm rounded-pill px-3 fs-8 fw-semibold shadow-sm" title="Tải Hóa Đơn PDF Trực Tiếp">
+                        <i class="fas fa-file-pdf me-1"></i> Tải PDF Hóa Đơn
+                    </a>
                     <a th:href="@{'/api/orders/' + (${order.trackingNumber != null ? order.trackingNumber : order.id}) + '/invoice/print'}" target="_blank" class="btn btn-outline-success btn-sm rounded-pill px-3 fs-8 fw-semibold shadow-sm" title="Xuất Hóa Đơn Điện Tử Đầy Đủ">
-                        <i class="fas fa-file-invoice-dollar me-1"></i> Xuất Hóa Đơn Điện Tử
+                        <i class="fas fa-file-invoice-dollar me-1"></i> Xem & In Hóa Đơn
                     </a>
                 </div>
             </div>

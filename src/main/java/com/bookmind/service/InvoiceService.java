@@ -244,6 +244,8 @@ public class InvoiceService {
                 "    <title>Hóa Đơn Điện Tử - " + inv.getInvoiceNumber() + "</title>\n" +
                 "    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>\n" +
                 "    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>\n" +
+                "    <script src='/js/html2pdf.bundle.min.js'></script>\n" +
+                "    <script src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'></script>\n" +
                 "    <style>\n" +
                 "        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 2rem 0; }\n" +
                 "        .invoice-card { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); padding: 2.5rem; border: 1px solid #e2e8f0; position: relative; }\n" +
@@ -260,11 +262,12 @@ public class InvoiceService {
                 "</head>\n" +
                 "<body>\n" +
                 "    <div class='container'>\n" +
-                "        <div class='text-center mb-3 no-print'>\n" +
-                "            <button onclick='window.print()' class='btn btn-primary rounded-pill px-4 me-2'><i class='fas fa-print me-2'></i>In / Tải PDF</button>\n" +
+                "        <div class='text-center mb-3 no-print d-flex justify-content-center gap-2 flex-wrap'>\n" +
+                "            <button id='btnExportPdf' onclick='exportInvoiceToPDF()' class='btn btn-danger rounded-pill px-4 shadow-sm fw-bold'><i class='fas fa-file-pdf me-2'></i>Xuất / Tải File PDF</button>\n" +
+                "            <button onclick='window.print()' class='btn btn-primary rounded-pill px-4 shadow-sm fw-semibold'><i class='fas fa-print me-2'></i>In Hóa Đơn</button>\n" +
                 "            <button onclick='window.close()' class='btn btn-outline-secondary rounded-pill px-3'>Đóng</button>\n" +
                 "        </div>\n" +
-                "        <div class='invoice-card'>\n" +
+                "        <div class='invoice-card' id='invoiceContentCard' data-invoice-number='" + inv.getInvoiceNumber() + "'>\n" +
                 "            <div class='invoice-header d-flex justify-content-between align-items-start'>\n" +
                 "                <div>\n" +
                 "                    <div class='brand-title'><i class='fas fa-book-open me-2'></i>NHÃ NAM BOOK STORE</div>\n" +
@@ -321,6 +324,44 @@ public class InvoiceService {
                 "            </div>\n" +
                 "        </div>\n" +
                 "    </div>\n" +
+                "    <script>\n" +
+                "        function exportInvoiceToPDF() {\n" +
+                "            var btn = document.getElementById('btnExportPdf');\n" +
+                "            var origText = btn ? btn.innerHTML : '';\n" +
+                "            if (btn) {\n" +
+                "                btn.disabled = true;\n" +
+                "                btn.innerHTML = '<span class=\"spinner-border spinner-border-sm me-2\"></span>Đang tạo PDF...';\n" +
+                "            }\n" +
+                "            var element = document.getElementById('invoiceContentCard');\n" +
+                "            var invNumber = element ? (element.getAttribute('data-invoice-number') || 'DH') : 'DH';\n" +
+                "            var filename = 'HoaDon_' + invNumber + '.pdf';\n" +
+                "            var opt = {\n" +
+                "                margin: [8, 8, 8, 8],\n" +
+                "                filename: filename,\n" +
+                "                image: { type: 'jpeg', quality: 0.98 },\n" +
+                "                html2canvas: { scale: 2, useCORS: true, logging: false },\n" +
+                "                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }\n" +
+                "            };\n" +
+                "            if (typeof html2pdf !== 'undefined') {\n" +
+                "                html2pdf().set(opt).from(element).save().then(function() {\n" +
+                "                    if (btn) { btn.disabled = false; btn.innerHTML = origText; }\n" +
+                "                }).catch(function(err) {\n" +
+                "                    console.error('Lỗi xuất PDF:', err);\n" +
+                "                    window.print();\n" +
+                "                    if (btn) { btn.disabled = false; btn.innerHTML = origText; }\n" +
+                "                });\n" +
+                "            } else {\n" +
+                "                window.print();\n" +
+                "                if (btn) { btn.disabled = false; btn.innerHTML = origText; }\n" +
+                "            }\n" +
+                "        }\n" +
+                "        document.addEventListener('DOMContentLoaded', function() {\n" +
+                "            var urlParams = new URLSearchParams(window.location.search);\n" +
+                "            if (urlParams.get('download') === 'pdf' || urlParams.get('pdf') === 'true') {\n" +
+                "                setTimeout(exportInvoiceToPDF, 600);\n" +
+                "            }\n" +
+                "        });\n" +
+                "    </script>\n" +
                 "</body>\n" +
                 "</html>";
     }

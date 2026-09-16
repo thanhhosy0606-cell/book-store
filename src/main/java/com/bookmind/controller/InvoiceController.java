@@ -37,4 +37,11 @@ public class InvoiceController {
             return ResponseEntity.badRequest().body("<h3>Không thể tạo hóa đơn: " + e.getMessage() + "</h3>");
         }
     }
+
+    @GetMapping(value = "/{identifier}/invoice/pdf")
+    public ResponseEntity<Void> downloadInvoicePdfRedirect(@PathVariable("identifier") String identifier) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
+                .location(java.net.URI.create("/api/orders/" + identifier + "/invoice/print?download=pdf"))
+                .build();
+    }
 }

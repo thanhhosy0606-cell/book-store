@@ -4625,6 +4625,9 @@ function renderOrdersList(orders, filter) {
                         <span class="fw-bold fs-6 text-primary">${formatCurrency(order.totalAmount || 0)}</span>
                     </div>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <a href="/api/orders/${encodeURIComponent(order.trackingNumber || order.id)}/invoice/print?download=pdf" target="_blank" class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 fs-8" title="Tải Hóa Đơn PDF Trực Tiếp">
+                            <i class="fas fa-file-pdf me-1"></i>Tải PDF
+                        </a>
                         <button class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="openInvoicePrintView('${order.trackingNumber || order.id}')" title="Xem và In Hóa Đơn Điện Tử">
                             <i class="fas fa-file-invoice-dollar me-1"></i>Hóa Đơn
                         </button>
