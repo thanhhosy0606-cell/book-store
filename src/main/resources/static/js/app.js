@@ -2892,18 +2892,20 @@ function renderBookGrid() {
 
         return `
         <div class="col-6 col-md-4 col-lg-3 mb-4">
-            <div class="book-card h-100 d-flex flex-column shadow-sm rounded-4 overflow-hidden border position-relative ${isStopped ? 'border-danger-subtle bg-light-subtle' : (isLowStock ? 'border-warning-subtle' : '')}">
+            <div class="book-card h-100 d-flex flex-column shadow-sm rounded-4 overflow-hidden border position-relative ${isStopped ? 'is-stopped border-danger-subtle' : (isOutOfStock ? 'is-out-of-stock' : (isLowStock ? 'border-warning-subtle' : ''))}">
                 ${isStopped
-                ? `<span class="badge bg-danger position-absolute top-0 start-0 m-2 shadow-sm fs-8" style="z-index: 3;"><i class="fas fa-ban me-1"></i>Ngưng kinh doanh</span>`
+                ? `<span class="badge bg-danger text-white position-absolute top-0 start-0 m-2 shadow-sm fs-8 fw-bold" style="z-index: 4;"><i class="fas fa-ban me-1"></i>Ngừng kinh doanh</span>`
                 : isOutOfStock
-                    ? `<span class="badge bg-secondary position-absolute top-0 start-0 m-2 shadow-sm fs-8" style="z-index: 3;"><i class="fas fa-box-open me-1"></i>Hết hàng</span>`
+                    ? `<span class="badge bg-secondary text-white position-absolute top-0 start-0 m-2 shadow-sm fs-8 fw-bold" style="z-index: 4;"><i class="fas fa-box-open me-1"></i>Hết hàng</span>`
                     : isLowStock
                         ? `<span class="badge bg-danger text-white position-absolute top-0 start-0 m-2 shadow-sm fs-8 fw-bold" style="z-index: 3;"><i class="fas fa-exclamation-circle me-1"></i>Chỉ còn ${stock} cuốn!</span>`
                         : (discountPct > 0 ? `<span class="book-discount-badge">-${discountPct}%</span>` : '')
             }
                 <a href="/books/${book.id}" class="book-cover-wrapper position-relative d-block text-decoration-none">
-                    <img src="${book.image}" class="book-cover-img ${isStopped ? 'opacity-75' : ''}" alt="${book.title}" loading="lazy"
+                    <img src="${book.image}" class="book-cover-img ${isStopped ? 'is-stopped' : ''}" alt="${book.title}" loading="lazy"
                          onerror="this.onerror=null;this.src='images/book_ai.png'">
+                    ${isStopped ? `<div class="book-stopped-ribbon"><i class="fas fa-ban me-1"></i>Tạm ngừng kinh doanh</div>` : ''}
+                    ${isOutOfStock ? `<div class="book-stopped-ribbon bg-dark text-warning"><i class="fas fa-box-open me-1"></i>Tạm hết hàng</div>` : ''}
                 </a>
                 <div class="p-3 d-flex flex-column flex-grow-1">
                     <span class="book-category-tag mb-1">${book.categoryName}</span>

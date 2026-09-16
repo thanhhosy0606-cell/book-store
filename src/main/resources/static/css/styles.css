@@ -265,6 +265,44 @@ h1, h2, h3, h4, h5, h6 {
     z-index: 2;
 }
 
+.book-card.is-stopped {
+    background-color: #f8fafc;
+    border: 1px dashed #cbd5e1 !important;
+}
+
+.book-card.is-stopped .book-img,
+.book-card.is-stopped .book-cover-img {
+    filter: grayscale(85%) opacity(0.8);
+    transition: filter 0.3s ease;
+}
+
+.book-card.is-stopped:hover .book-img,
+.book-card.is-stopped:hover .book-cover-img {
+    filter: grayscale(40%) opacity(0.95);
+}
+
+.book-stopped-ribbon {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(4px);
+    color: #f87171;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.35rem 0.5rem;
+    text-align: center;
+    z-index: 3;
+}
+
+.book-card.is-out-of-stock .book-img,
+.book-card.is-out-of-stock .book-cover-img {
+    filter: grayscale(50%) opacity(0.85);
+}
+
 .book-category-tag {
     font-size: 0.75rem;
     font-weight: 700;

@@ -33,17 +33,36 @@
             <div class="row g-4">
                 <!-- Left: Book Images -->
                 <div class="col-lg-5 col-md-6 text-center">
-                    <div class="position-relative d-inline-block bg-light p-3 rounded-4 border w-100 text-center"
+                    <div class="position-relative d-inline-block bg-light p-3 rounded-4 border w-100 text-center overflow-hidden"
+                        th:classappend="${book.status != null and book.status.name() == 'STOPPED' ? 'is-stopped' : (book.status != null and book.status.name() == 'OUT_OF_STOCK' ? 'is-out-of-stock' : '')}"
                         style="min-height: 380px;">
+                        <!-- Status Badges -->
+                        <span class="position-absolute top-0 start-0 m-3 badge bg-danger text-white rounded-pill px-3 py-1.5 fs-8 shadow-sm fw-bold"
+                            style="z-index: 4;"
+                            th:if="${book.status != null and book.status.name() == 'STOPPED'}">
+                            <i class="fas fa-ban me-1"></i>Ngừng kinh doanh</span>
+                        <span class="position-absolute top-0 start-0 m-3 badge bg-secondary text-white rounded-pill px-3 py-1.5 fs-8 shadow-sm fw-bold"
+                            style="z-index: 4;"
+                            th:if="${book.status != null and book.status.name() == 'OUT_OF_STOCK'}">
+                            <i class="fas fa-box-open me-1"></i>Tạm hết hàng</span>
                         <span
-                            class="position-absolute top-0 start-0 m-3 badge bg-danger rounded-pill px-3 py-1.5 fs-8 shadow-sm"
-                            th:if="${book.originalPrice != null and book.originalPrice > book.salePrice}"
+                            class="position-absolute top-0 start-0 m-3 badge bg-danger rounded-pill px-3 py-1.5 fs-8 shadow-sm fw-bold"
+                            style="z-index: 3;"
+                            th:if="${(book.status == null or book.status.name() == 'AVAILABLE') and book.originalPrice != null and book.originalPrice > book.salePrice}"
                             th:text="'-' + ${#numbers.formatDecimal((book.originalPrice - book.salePrice) * 100 / book.originalPrice, 0, 0)} + '%'">-20%</span>
 
                         <img id="mainDetailImage"
                             th:src="${book.images != null and not #lists.isEmpty(book.images) ? book.images[0].imageUrl : (book.slug != null ? '/images/' + book.slug + '.jpg' : '/images/book_ai.png')}"
                             th:alt="${book.title}" class="img-fluid rounded-3 shadow-sm"
+                            th:classappend="${book.status != null and book.status.name() == 'STOPPED' ? 'is-stopped' : ''}"
                             style="max-height: 400px; object-fit: contain;" onerror="this.src='/images/book_ai.png'">
+
+                        <div class="book-stopped-ribbon" th:if="${book.status != null and book.status.name() == 'STOPPED'}">
+                            <i class="fas fa-ban me-1"></i>Tạm ngừng kinh doanh
+                        </div>
+                        <div class="book-stopped-ribbon bg-dark text-warning" th:if="${book.status != null and book.status.name() == 'OUT_OF_STOCK'}">
+                            <i class="fas fa-box-open me-1"></i>Tạm hết hàng
+                        </div>
                     </div>
 
                     <!-- Image Gallery thumbnails if multiple -->
@@ -64,19 +83,26 @@
                         <span
                             class="badge bg-primary-subtle text-primary fw-bold px-3 py-1 rounded-pill fs-8 text-uppercase"
                             th:text="${book.category != null ? book.category.name : 'Nhã Nam'}">Danh Mục</span>
+                        <span class="badge bg-danger text-white fw-bold px-3 py-1 rounded-pill fs-8 ms-1 shadow-xs"
+                            th:if="${book.status != null and book.status.name() == 'STOPPED'}">
+                            <i class="fas fa-ban me-1"></i>Ngừng kinh doanh</span>
+                        <span class="badge bg-secondary text-white fw-bold px-3 py-1 rounded-pill fs-8 ms-1 shadow-xs"
+                            th:if="${book.status != null and book.status.name() == 'OUT_OF_STOCK'}">
+                            <i class="fas fa-box-open me-1"></i>Tạm hết hàng</span>
                         <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill fs-8 ms-1"
-                            th:if="${book.stockQuantity > 0}">Còn hàng: <span th:text="${book.stockQuantity}"></span>
-                            cuốn</span>
-                        <span class="badge bg-danger-subtle text-danger fw-bold px-3 py-1 rounded-pill fs-8 ms-1"
-                            th:if="${book.stockQuantity <= 0}">Tạm hết hàng</span>
+                            th:if="${(book.status == null or book.status.name() == 'AVAILABLE') and book.stockQuantity > 0}">
+                            <i class="fas fa-check-circle me-1"></i>Còn hàng: <span th:text="${book.stockQuantity}"></span> cuốn</span>
+                        <span class="badge bg-warning-subtle text-warning-emphasis fw-bold px-3 py-1 rounded-pill fs-8 ms-1"
+                            th:if="${(book.status == null or book.status.name() == 'AVAILABLE') and book.stockQuantity <= 0}">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Tạm hết hàng</span>
                     </div>
 
                     <h2 class="fw-bold text-dark mb-2" th:text="${book.title}">Tựa Đề Cuốn Sách</h2>
 
-                    <div class="d-flex flex-wrap align-items-center gap-3 fs-8 text-muted mb-3">
-                        <div><i class="fas fa-user-edit text-primary me-1"></i>Tác giả: <strong class="text-dark"
-                                th:text="${book.author != null ? book.author : 'Đang cập nhật'}">Tác giả</strong></div>
-                        <div><i class="fas fa-building text-primary me-1"></i>NXB: <strong class="text-dark"
+                    <div class="d-flex flex-wrap gap-4 text-secondary fs-8 mb-3 pb-3 border-bottom">
+                        <div><i class="fas fa-pen-nib text-primary me-1"></i>Tác giả: <strong class="text-dark"
+                                th:text="${book.author}">Tác giả</strong></div>
+                        <div><i class="fas fa-building text-primary me-1"></i>Nhà xuất bản: <strong class="text-dark"
                                 th:text="${book.publisher != null ? book.publisher : 'Nhã Nam'}">NXB</strong></div>
                         <div><i class="fas fa-barcode text-primary me-1"></i>Mã ISBN: <strong class="text-dark"
                                 th:text="${book.isbn != null ? book.isbn : 'N/A'}">ISBN</strong></div>
@@ -90,17 +116,15 @@
                     <!-- Pricing Box -->
                     <div class="p-3 bg-light rounded-4 mb-4 border">
                         <div class="d-flex align-items-baseline gap-3">
-                            <span class="fs-2 fw-extrabold text-danger"
-                                th:text="${#numbers.formatDecimal(book.salePrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000
-                                đ</span>
+                            <span class="fs-2 fw-extrabold"
+                                th:classappend="${book.status != null and book.status.name() == 'STOPPED' ? 'text-muted text-decoration-line-through' : 'text-danger'}"
+                                th:text="${#numbers.formatDecimal(book.salePrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</span>
                             <span class="fs-6 text-muted text-decoration-line-through"
-                                th:if="${book.originalPrice != null and book.originalPrice > book.salePrice}"
-                                th:text="${#numbers.formatDecimal(book.originalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">120.000
-                                đ</span>
+                                th:if="${(book.status == null or book.status.name() != 'STOPPED') and book.originalPrice != null and book.originalPrice > book.salePrice}"
+                                th:text="${#numbers.formatDecimal(book.originalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">120.000 đ</span>
                             <span class="badge bg-danger text-white rounded-pill px-2.5 py-1 fs-8"
-                                th:if="${book.originalPrice != null and book.originalPrice > book.salePrice}"
-                                th:text="'Tiết kiệm ' + ${#numbers.formatDecimal(book.originalPrice - book.salePrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">Tiết
-                                kiệm</span>
+                                th:if="${(book.status == null or book.status.name() != 'STOPPED') and book.originalPrice != null and book.originalPrice > book.salePrice}"
+                                th:text="'Tiết kiệm ' + ${#numbers.formatDecimal(book.originalPrice - book.salePrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">Tiết kiệm</span>
                         </div>
                     </div>
 
@@ -114,30 +138,76 @@
                          th:data-book-stock="${book.stockQuantity}"
                          th:data-book-status="${book.status}"
                          th:data-book-image="${book.images != null and not #lists.isEmpty(book.images) ? book.images[0].imageUrl : (book.slug != null ? '/images/' + book.slug + '.jpg' : '/images/book_ai.png')}">
-                        <label class="form-label fs-8 fw-bold text-secondary mb-2">Số lượng mua:</label>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="input-group" style="width: 130px;">
-                                <button class="btn btn-outline-secondary btn-sm" type="button"
-                                    onclick="let qDec = document.getElementById('bookDetailQty'); if(qDec && parseInt(qDec.value) > 1) qDec.value = parseInt(qDec.value) - 1;">
-                                    <i class="fas fa-minus"></i>
+
+                        <!-- Stopped Product Alert & Disabled Action -->
+                        <div th:if="${book.status != null and book.status.name() == 'STOPPED'}">
+                            <div class="alert alert-danger rounded-4 py-3 px-3.5 d-flex align-items-center gap-3 mb-3 shadow-xs">
+                                <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; min-width: 44px;">
+                                    <i class="fas fa-ban fs-5"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-danger mb-1">Sản Phẩm Tạm Ngừng Kinh Doanh</h6>
+                                    <p class="mb-0 fs-8 text-secondary">Cuốn sách này hiện đã ngừng kinh doanh trên hệ thống. Quý khách vui lòng tham khảo các cuốn sách hấp dẫn khác cùng thể loại.</p>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-secondary rounded-pill px-4 py-2.5 fw-bold fs-7 disabled opacity-75" disabled>
+                                    <i class="fas fa-ban me-1"></i> Tạm Ngừng Kinh Doanh
                                 </button>
-                                <input type="number" id="bookDetailQty"
-                                    class="form-control form-control-sm text-center fw-bold" value="1" min="1"
-                                    th:max="${book.stockQuantity > 0 ? book.stockQuantity : 1}">
-                                <button class="btn btn-outline-secondary btn-sm" type="button"
-                                    onclick="let qInc = document.getElementById('bookDetailQty'); if(qInc) qInc.value = (parseInt(qInc.value) || 1) + 1;">
-                                    <i class="fas fa-plus"></i>
+                                <a th:href="@{/books(categoryId=${book.category != null ? book.category.id : ''})}" class="btn btn-outline-primary rounded-pill px-4 py-2.5 fw-bold fs-7">
+                                    <i class="fas fa-compass me-1"></i> Khám Phá Sách Tương Tự
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Out of Stock Alert & Disabled Action -->
+                        <div th:if="${book.status != null and book.status.name() == 'OUT_OF_STOCK'}">
+                            <div class="alert alert-warning rounded-4 py-3 px-3.5 d-flex align-items-center gap-3 mb-3 shadow-xs">
+                                <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; min-width: 44px;">
+                                    <i class="fas fa-box-open fs-5"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-1">Sản Phẩm Tạm Hết Hàng</h6>
+                                    <p class="mb-0 fs-8 text-secondary">Cuốn sách này hiện tại đang tạm hết hàng trong kho. Chúng tôi sẽ sớm bổ sung thêm số lượng.</p>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-secondary rounded-pill px-4 py-2.5 fw-bold fs-7 disabled opacity-75" disabled>
+                                    <i class="fas fa-box-open me-1"></i> Tạm Hết Hàng
+                                </button>
+                                <a th:href="@{/books(categoryId=${book.category != null ? book.category.id : ''})}" class="btn btn-outline-primary rounded-pill px-4 py-2.5 fw-bold fs-7">
+                                    <i class="fas fa-compass me-1"></i> Khám Phá Sách Khác
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Available Product Action -->
+                        <div th:if="${book.status == null or book.status.name() == 'AVAILABLE'}">
+                            <label class="form-label fs-8 fw-bold text-secondary mb-2">Số lượng mua:</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="input-group" style="width: 130px;">
+                                    <button class="btn btn-outline-secondary btn-sm" type="button"
+                                        onclick="let qDec = document.getElementById('bookDetailQty'); if(qDec && parseInt(qDec.value) > 1) qDec.value = parseInt(qDec.value) - 1;">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" id="bookDetailQty"
+                                        class="form-control form-control-sm text-center fw-bold" value="1" min="1"
+                                        th:max="${book.stockQuantity > 0 ? book.stockQuantity : 1}">
+                                    <button class="btn btn-outline-secondary btn-sm" type="button"
+                                        onclick="let qInc = document.getElementById('bookDetailQty'); if(qInc) qInc.value = (parseInt(qInc.value) || 1) + 1;">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+
+                                <button class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold fs-7 hover-scale"
+                                    onclick="handleDetailAddToCart()">
+                                    <i class="fas fa-cart-plus me-1"></i> Thêm Vào Giỏ
+                                </button>
+                                <button class="btn btn-danger rounded-pill px-4 py-2 fw-bold fs-7 shadow-sm hover-scale"
+                                    onclick="handleDetailBuyNow()">
+                                    <i class="fas fa-bolt me-1"></i> Mua Ngay
                                 </button>
                             </div>
-
-                            <button class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold fs-7 hover-scale"
-                                onclick="handleDetailAddToCart()">
-                                <i class="fas fa-cart-plus me-1"></i> Thêm Vào Giỏ
-                            </button>
-                            <button class="btn btn-danger rounded-pill px-4 py-2 fw-bold fs-7 shadow-sm hover-scale"
-                                onclick="handleDetailBuyNow()">
-                                <i class="fas fa-bolt me-1"></i> Mua Ngay
-                            </button>
                         </div>
                     </div>
 
@@ -296,15 +366,31 @@
 
             <div class="row g-3">
                 <div class="col-lg-3 col-md-6" th:each="rel : ${relatedBooks}">
-                    <div
-                        class="card book-card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative bg-light">
-                        <div class="book-img-wrapper text-center pt-3 pb-2">
+                    <div class="card book-card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative bg-light"
+                         th:classappend="${rel.status != null and rel.status.name() == 'STOPPED' ? 'is-stopped' : (rel.status != null and rel.status.name() == 'OUT_OF_STOCK' ? 'is-out-of-stock' : '')}">
+                        <!-- Badges -->
+                        <span class="position-absolute top-0 start-0 m-2 badge bg-danger text-white rounded-pill px-2 py-1 shadow-sm fw-bold fs-9"
+                              style="z-index: 4;"
+                              th:if="${rel.status != null and rel.status.name() == 'STOPPED'}">
+                            <i class="fas fa-ban me-1"></i>Ngừng bán
+                        </span>
+                        <span class="position-absolute top-0 start-0 m-2 badge bg-secondary text-white rounded-pill px-2 py-1 shadow-sm fw-bold fs-9"
+                              style="z-index: 4;"
+                              th:if="${rel.status != null and rel.status.name() == 'OUT_OF_STOCK'}">
+                            <i class="fas fa-box-open me-1"></i>Hết hàng
+                        </span>
+
+                        <div class="book-img-wrapper text-center pt-3 pb-2 position-relative overflow-hidden">
                             <a th:href="@{/books/{id}(id=${rel.id})}">
                                 <img th:src="${rel.images != null and not #lists.isEmpty(rel.images) ? rel.images[0].imageUrl : (rel.slug != null ? '/images/' + rel.slug + '.jpg' : '/images/book_ai.png')}"
                                     th:alt="${rel.title}" class="book-img img-fluid"
+                                    th:classappend="${rel.status != null and rel.status.name() == 'STOPPED' ? 'is-stopped' : ''}"
                                     style="height: 170px; object-fit: contain;"
                                     onerror="this.src='/images/book_ai.png'">
                             </a>
+                            <div class="book-stopped-ribbon" th:if="${rel.status != null and rel.status.name() == 'STOPPED'}">
+                                <i class="fas fa-ban me-1"></i>Ngừng bán
+                            </div>
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="book-title fw-bold my-1 text-truncate-2 fs-8">
@@ -313,9 +399,9 @@
                             </h6>
                             <p class="text-muted fs-9 mb-2" th:text="${rel.author}">Tác giả</p>
                             <div class="mt-auto d-flex justify-content-between align-items-center">
-                                <span class="fs-7 fw-bold text-danger"
-                                    th:text="${#numbers.formatDecimal(rel.salePrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000
-                                    đ</span>
+                                <span class="fs-7 fw-bold"
+                                    th:classappend="${rel.status != null and rel.status.name() == 'STOPPED' ? 'text-muted text-decoration-line-through' : 'text-danger'}"
+                                    th:text="${#numbers.formatDecimal(rel.salePrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</span>
                                 <a th:href="@{/books/{id}(id=${rel.id})}"
                                     class="btn btn-sm btn-primary rounded-pill px-2.5 py-1 fs-9 fw-bold">
                                     Chi tiết

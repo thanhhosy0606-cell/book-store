@@ -137,21 +137,40 @@
                 <!-- Books Grid -->
                 <div class="row g-4" th:if="${books != null and not #lists.isEmpty(books)}">
                     <div class="col-xl-4 col-md-6" th:each="book : ${books}">
-                        <div class="card book-card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative bg-white">
-                            <!-- Discount Badge -->
-                            <span class="position-absolute top-0 start-0 m-3 badge bg-danger rounded-pill px-2.5 py-1.5 shadow-sm"
-                                  th:if="${book.originalPrice != null and book.originalPrice > book.salePrice}"
+                        <div class="card book-card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative bg-white"
+                             th:classappend="${book.status != null and book.status.name() == 'STOPPED' ? 'is-stopped' : (book.status != null and book.status.name() == 'OUT_OF_STOCK' ? 'is-out-of-stock' : '')}">
+                            <!-- Status & Discount Badges -->
+                            <span class="position-absolute top-0 start-0 m-2.5 badge bg-danger text-white rounded-pill px-2.5 py-1.5 shadow-sm fw-bold fs-9"
+                                  style="z-index: 4;"
+                                  th:if="${book.status != null and book.status.name() == 'STOPPED'}">
+                                <i class="fas fa-ban me-1"></i>Ngừng kinh doanh
+                            </span>
+                            <span class="position-absolute top-0 start-0 m-2.5 badge bg-secondary text-white rounded-pill px-2.5 py-1.5 shadow-sm fw-bold fs-9"
+                                  style="z-index: 4;"
+                                  th:if="${book.status != null and book.status.name() == 'OUT_OF_STOCK'}">
+                                <i class="fas fa-box-open me-1"></i>Tạm hết hàng
+                            </span>
+                            <span class="position-absolute top-0 start-0 m-2.5 badge bg-danger rounded-pill px-2.5 py-1.5 shadow-sm fw-bold fs-9"
+                                  style="z-index: 3;"
+                                  th:if="${(book.status == null or book.status.name() == 'AVAILABLE') and book.originalPrice != null and book.originalPrice > book.salePrice}"
                                   th:text="'-' + ${#numbers.formatDecimal((book.originalPrice - book.salePrice) * 100 / book.originalPrice, 0, 0)} + '%'">-20%</span>
 
                             <!-- Thumbnail -->
-                            <div class="book-img-wrapper text-center pt-3 pb-2 bg-light">
+                            <div class="book-img-wrapper text-center pt-3 pb-2 bg-light position-relative overflow-hidden">
                                 <a th:href="@{/books/{id}(id=${book.id})}">
                                     <img th:src="${book.images != null and not #lists.isEmpty(book.images) ? book.images[0].imageUrl : (book.slug != null ? '/images/' + book.slug + '.jpg' : '/images/book_ai.png')}"
                                          th:alt="${book.title}"
                                          class="book-img img-fluid"
+                                         th:classappend="${book.status != null and book.status.name() == 'STOPPED' ? 'is-stopped' : ''}"
                                          style="height: 200px; object-fit: contain;"
                                          onerror="this.src='/images/book_ai.png'">
                                 </a>
+                                <div class="book-stopped-ribbon" th:if="${book.status != null and book.status.name() == 'STOPPED'}">
+                                    <i class="fas fa-ban me-1"></i>Tạm ngừng kinh doanh
+                                </div>
+                                <div class="book-stopped-ribbon bg-dark text-warning" th:if="${book.status != null and book.status.name() == 'OUT_OF_STOCK'}">
+                                    <i class="fas fa-box-open me-1"></i>Tạm hết hàng
+                                </div>
                             </div>
 
                             <!-- Content -->
@@ -164,9 +183,11 @@
 
                                 <div class="mt-auto pt-2 border-top">
                                     <div class="d-flex align-items-baseline gap-2 mb-2">
-                                        <span class="fs-6 fw-extrabold text-danger" th:text="${#numbers.formatDecimal(book.salePrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</span>
+                                        <span class="fs-6 fw-extrabold"
+                                              th:classappend="${book.status != null and book.status.name() == 'STOPPED' ? 'text-muted text-decoration-line-through' : 'text-danger'}"
+                                              th:text="${#numbers.formatDecimal(book.salePrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</span>
                                         <span class="fs-8 text-muted text-decoration-line-through"
-                                              th:if="${book.originalPrice != null and book.originalPrice > book.salePrice}"
+                                              th:if="${(book.status == null or book.status.name() != 'STOPPED') and book.originalPrice != null and book.originalPrice > book.salePrice}"
                                               th:text="${#numbers.formatDecimal(book.originalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">120.000 đ</span>
                                     </div>
 
@@ -174,7 +195,18 @@
                                         <a th:href="@{/books/{id}(id=${book.id})}" class="btn btn-light btn-sm rounded-pill flex-fill fw-semibold fs-8 border">
                                             <i class="fas fa-eye me-1"></i> Chi tiết
                                         </a>
+                                        <button class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 fw-semibold fs-8 disabled opacity-75"
+                                                th:if="${book.status != null and book.status.name() == 'STOPPED'}"
+                                                disabled title="Sách đã ngừng kinh doanh">
+                                            <i class="fas fa-ban me-1"></i>Ngừng bán
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm rounded-pill px-2.5 py-1 fw-semibold fs-8 disabled opacity-75"
+                                                th:if="${book.status != null and book.status.name() == 'OUT_OF_STOCK'}"
+                                                disabled title="Sách tạm hết hàng">
+                                            <i class="fas fa-box-open me-1"></i>Hết hàng
+                                        </button>
                                         <button class="btn btn-primary btn-sm rounded-pill px-3 fw-bold fs-8"
+                                                th:if="${book.status == null or book.status.name() == 'AVAILABLE'}"
                                                 th:onclick="'addToCartById(' + ${book.id} + ', 1)'"
                                                 title="Thêm vào giỏ hàng">
                                             <i class="fas fa-cart-plus"></i>
