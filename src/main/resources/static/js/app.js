@@ -3084,6 +3084,14 @@ async function buyNow(bookId, qty = 1) {
         selectedCartIds.clear();
         selectedCartIds.add(Number(bookId));
         saveCartToStorage();
+
+        if (!currentUser) {
+            sessionStorage.setItem('bookmind_redirect_after_login', '/checkout');
+            showToast('Vui lòng đăng nhập tài khoản để tiến hành mua ngay cuốn sách này!', 'warning');
+            openAuthModal('login');
+            return;
+        }
+
         window.location.href = '/checkout';
     }
 }
@@ -3243,6 +3251,48 @@ function renderCartPage() {
     if (finalTotalEl) finalTotalEl.textContent = formatCurrency(finalTotal);
 
     renderCouponList('cart');
+}
+
+function handleProceedToCheckout(event) {
+    if (event) event.preventDefault();
+
+    if (cart.length === 0) {
+        showToast('Giỏ hàng của bạn đang trống! Vui lòng chọn sách.', 'warning');
+        return;
+    }
+
+    const selectedItems = getSelectedCartItems();
+    if (selectedItems.length === 0) {
+        showToast('Vui lòng chọn ít nhất 1 sản phẩm trong giỏ hàng để đặt hàng!', 'warning');
+        return;
+    }
+
+    const stoppedItem = selectedItems.find(item => item.status === 'STOPPED');
+    if (stoppedItem) {
+        showToast(`Sách "<b>${stoppedItem.title}</b>" đã ngừng kinh doanh. Vui lòng xóa khỏi giỏ trước khi thanh toán!`, 'danger');
+        return;
+    }
+
+    const overStockItem = selectedItems.find(item => {
+        const b = BOOK_CATALOG.find(x => x.id === item.id);
+        const s = (b && b.stockQuantity !== undefined && b.stockQuantity !== null) ? b.stockQuantity : (item.stockQuantity != null ? item.stockQuantity : 99);
+        return item.quantity > s;
+    });
+    if (overStockItem) {
+        const b = BOOK_CATALOG.find(x => x.id === overStockItem.id);
+        const s = (b && b.stockQuantity !== undefined && b.stockQuantity !== null) ? b.stockQuantity : overStockItem.stockQuantity;
+        showToast(`Kho không đủ sách cho cuốn "<b>${overStockItem.title}</b>"! Bạn chọn ${overStockItem.quantity} cuốn nhưng kho chỉ còn <b>${s}</b> cuốn. Vui lòng giảm số lượng.`, 'danger');
+        return;
+    }
+
+    if (!currentUser) {
+        sessionStorage.setItem('bookmind_redirect_after_login', '/checkout');
+        showToast('Vui lòng đăng nhập hoặc đăng ký tài khoản để tiến hành đặt hàng & thanh toán!', 'warning');
+        openAuthModal('login');
+        return;
+    }
+
+    window.location.href = '/checkout';
 }
 
 function updateCartSummary() {
@@ -3884,6 +3934,12 @@ function initCheckoutPage() {
     const listContainer = document.getElementById('checkoutOrderItemsList');
     if (!listContainer) return;
 
+    if (!currentUser) {
+        sessionStorage.setItem('bookmind_redirect_after_login', '/checkout');
+        showToast('Vui lòng đăng nhập hoặc tạo tài khoản để tiếp tục thanh toán!', 'warning');
+        openAuthModal('login');
+    }
+
     let items = getSelectedCartItems();
     if (!items || items.length === 0) {
         items = cart;
@@ -3945,6 +4001,13 @@ function initCheckoutPage() {
 }
 
 function processCheckoutSubmit() {
+    if (!currentUser) {
+        sessionStorage.setItem('bookmind_redirect_after_login', '/checkout');
+        showToast('Vui lòng đăng nhập tài khoản trước khi hoàn tất đặt hàng!', 'warning');
+        openAuthModal('login');
+        return;
+    }
+
     const name = document.getElementById('checkoutReceiverName')?.value.trim();
     const phone = document.getElementById('checkoutReceiverPhone')?.value.trim();
     const address = document.getElementById('checkoutShippingAddress')?.value.trim();
@@ -4900,14 +4963,25 @@ async function handleLoginSubmit(event) {
             closeModal('authModal');
             document.getElementById('loginForm').reset();
 
+            const redirectTarget = sessionStorage.getItem('bookmind_redirect_after_login');
+            sessionStorage.removeItem('bookmind_redirect_after_login');
+
             const roles = currentUser.roles || [];
             if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_STAFF')) {
                 showToast(`Chào mừng Quản trị viên ${currentUser.fullName}! Đang chuyển đến Trang Quản Trị...`, 'success');
                 setTimeout(() => {
                     window.location.href = '/admin/dashboard';
                 }, 700);
+            } else if (redirectTarget) {
+                showToast(`Đăng nhập thành công! Đang chuyển tiếp vào thanh toán...`, 'success');
+                setTimeout(() => {
+                    window.location.href = redirectTarget;
+                }, 500);
             } else {
                 showToast(`Chào mừng ${currentUser.fullName} quay trở lại!`, 'success');
+                if (document.getElementById('checkoutOrderItemsList')) {
+                    initCheckoutPage();
+                }
             }
         } else {
             alertBox.textContent = result.message || 'Đăng nhập thất bại, vui lòng kiểm tra lại!';
@@ -4955,10 +5029,25 @@ async function handleRegisterSubmit(event) {
         if (response.ok && result.success) {
             currentUser = result.data;
             localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
             updateNavAuthUI();
             closeModal('authModal');
-            showToast(`Đăng ký thành công! Chào mừng ${currentUser.fullName}!`, 'success');
             document.getElementById('registerForm').reset();
+
+            const redirectTarget = sessionStorage.getItem('bookmind_redirect_after_login');
+            sessionStorage.removeItem('bookmind_redirect_after_login');
+
+            if (redirectTarget) {
+                showToast(`Đăng ký tài khoản thành công! Đang chuyển đến thanh toán...`, 'success');
+                setTimeout(() => {
+                    window.location.href = redirectTarget;
+                }, 500);
+            } else {
+                showToast(`Đăng ký thành công! Chào mừng ${currentUser.fullName}!`, 'success');
+                if (document.getElementById('checkoutOrderItemsList')) {
+                    initCheckoutPage();
+                }
+            }
         } else {
             alertBox.textContent = result.message || 'Đăng ký thất bại, vui lòng thử lại!';
             alertBox.classList.remove('d-none');
