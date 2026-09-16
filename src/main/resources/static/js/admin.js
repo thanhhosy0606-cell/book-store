@@ -1010,6 +1010,9 @@ function renderOrdersTable(orders) {
                     <button class="btn-action view text-success" onclick="window.open('/api/orders/' + ${o.id} + '/invoice/print', '_blank')" title="In Hóa Đơn Điện Tử">
                         <i class="fas fa-file-invoice-dollar"></i>
                     </button>
+                    <button class="btn-action delete" onclick="deleteAdminOrder(${o.id})" title="Xóa đơn hàng">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                     <select class="form-select form-select-sm fs-8 py-1" style="width: 130px;" onchange="updateOrderStatus(${o.id}, this.value)">
                         <option value="PENDING" ${o.status === 'PENDING' ? 'selected' : ''}>Chờ duyệt</option>
                         <option value="CONFIRMED" ${o.status === 'CONFIRMED' ? 'selected' : ''}>Đã duyệt</option>
@@ -1029,6 +1032,26 @@ function printCurrentAdminOrderInvoice() {
     if (currentAdminDetailOrderId) {
         window.open('/api/orders/' + currentAdminDetailOrderId + '/invoice/print', '_blank');
     }
+}
+
+function deleteAdminOrder(orderId) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn đơn hàng #${orderId} không? Hành động này không thể hoàn tác.`)) {
+        return;
+    }
+    fetch('/api/admin/orders/' + orderId, {
+        method: 'DELETE'
+    })
+        .then(res => {
+            if (!res.ok) throw new Error('Không thể xóa đơn hàng');
+            return res.json();
+        })
+        .then(() => {
+            showAdminToast('Đã xóa vĩnh viễn đơn hàng #' + orderId + ' thành công!', 'success');
+            loadOrders();
+        })
+        .catch(err => {
+            showAdminToast('Lỗi khi xóa đơn: ' + err.message, 'error');
+        });
 }
 
 function updateOrderStatus(orderId, newStatus) {

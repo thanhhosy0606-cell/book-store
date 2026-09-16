@@ -49,18 +49,46 @@ public class OrderController {
         }
     }
 
-    @PutMapping("/{id}/status")
+    @PutMapping("/{identifier}/status")
     public ResponseEntity<ApiResponse<OrderDto>> updateOrderStatus(
-            @PathVariable("id") Long id,
+            @PathVariable("identifier") String identifier,
             @RequestBody Map<String, String> body) {
         String status = body.get("status");
-        log.info("Updating order #{} status to: {}", id, status);
+        log.info("Updating order #{} status to: {}", identifier, status);
         try {
+            Long id = null;
+            try {
+                id = Long.parseLong(identifier.trim());
+            } catch (NumberFormatException ignored) {}
+
+            if (id == null) {
+                OrderDto existing = orderService.getOrderByTrackingNumber(identifier.trim());
+                if (existing != null && existing.getId() != null) {
+                    id = existing.getId();
+                }
+            }
+
+            if (id == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Không tìm thấy đơn hàng: " + identifier));
+            }
+
             OrderDto updated = orderService.updateOrderStatus(id, status);
             return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái đơn hàng thành công!", updated));
         } catch (Exception e) {
             log.error("Error updating order status", e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{identifier}")
+    public ResponseEntity<ApiResponse<String>> deleteOrder(@PathVariable("identifier") String identifier) {
+        log.info("Deleting order: {}", identifier);
+        try {
+            orderService.deleteOrderByIdentifier(identifier);
+            return ResponseEntity.ok(ApiResponse.success("Xóa đơn hàng thành công!", "DELETED"));
+        } catch (Exception e) {
+            log.error("Error deleting order", e);
+            return ResponseEntity.badRequest().body(ApiResponse.error("Không thể xóa đơn hàng: " + e.getMessage()));
         }
     }
 

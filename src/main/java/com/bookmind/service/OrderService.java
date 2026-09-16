@@ -213,6 +213,34 @@ public class OrderService {
         }
     }
 
+    @Transactional
+    public void deleteOrder(Long orderId) {
+        if (orderId == null) return;
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + orderId));
+        paymentRepository.deleteAll(paymentRepository.findByOrderId(order.getId()));
+        orderDetailRepository.deleteAll(orderDetailRepository.findByOrderId(order.getId()));
+        orderRepository.delete(order);
+        log.info("Successfully deleted order #{}", orderId);
+    }
+
+    @Transactional
+    public void deleteOrderByIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) return;
+        String idStr = identifier.trim();
+        try {
+            Long id = Long.parseLong(idStr);
+            if (orderRepository.existsById(id)) {
+                deleteOrder(id);
+                return;
+            }
+        } catch (NumberFormatException ignored) {}
+
+        orderRepository.findByTrackingNumber(idStr).ifPresent(order -> {
+            deleteOrder(order.getId());
+        });
+    }
+
     public OrderDto getOrderByTrackingNumber(String trackingNumber) {
         Order order = orderRepository.findByTrackingNumber(trackingNumber)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + trackingNumber));

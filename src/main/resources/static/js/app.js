@@ -4623,7 +4623,7 @@ function renderOrdersList(orders, filter) {
                         <span class="fw-bold fs-6 text-primary">${formatCurrency(order.totalAmount || 0)}</span>
                     </div>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <button class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="openInvoicePrintView('${order.id}')" title="Xem và In Hóa Đơn Điện Tử">
+                        <button class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="openInvoicePrintView('${order.trackingNumber || order.id}')" title="Xem và In Hóa Đơn Điện Tử">
                             <i class="fas fa-file-invoice-dollar me-1"></i>Hóa Đơn
                         </button>
                         ${order.status === 'DELIVERED' ? `
@@ -4633,7 +4633,7 @@ function renderOrdersList(orders, filter) {
                             <span class="text-danger fs-8 fw-bold"><i class="fas fa-times-circle me-1"></i>Đã hủy</span>
                         ` : ''}
                         ${order.status === 'PENDING' ? `
-                            <button class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="cancelOrder(${order.id})">
+                            <button class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 fs-8" onclick="cancelOrder('${order.trackingNumber || order.id}')">
                                 Hủy đơn
                             </button>
                         ` : ''}
@@ -4871,30 +4871,74 @@ async function advanceOrderStatus(orderId, currentStatus) {
 }
 
 async function cancelOrder(orderId) {
+    if (!orderId) return;
     if (!confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?')) return;
 
     try {
-        await fetch(`/api/orders/${orderId}/status`, {
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'CANCELLED' })
         });
-    } catch (e) { }
+        const result = await res.json().catch(() => ({}));
+        if (res.ok) {
+            showToast('Đã hủy đơn hàng thành công!', 'info');
+        }
+    } catch (e) {
+        console.warn('Lỗi kết nối hủy đơn:', e);
+    }
 
-    const item = myOrdersListCache.find(o => o.id === orderId);
-    if (item) item.status = 'CANCELLED';
+    if (Array.isArray(myOrdersListCache)) {
+        const item = myOrdersListCache.find(o => String(o.id) === String(orderId) || o.trackingNumber === String(orderId));
+        if (item) {
+            item.status = 'CANCELLED';
+            item.statusLabel = 'Đã hủy';
+            item.statusCode = 0;
+        }
+    }
 
     try {
         let localOrders = getLocalOrders();
-        const loc = localOrders.find(o => o.id === orderId);
+        const loc = localOrders.find(o => String(o.id) === String(orderId) || o.trackingNumber === String(orderId));
         if (loc) {
             loc.status = 'CANCELLED';
+            loc.statusLabel = 'Đã hủy';
+            loc.statusCode = 0;
+            const key = getLocalOrdersKey();
+            localStorage.setItem(key, JSON.stringify(localOrders));
             localStorage.setItem('bookmind_user_orders', JSON.stringify(localOrders));
         }
     } catch (e) { }
 
     renderOrdersList(myOrdersListCache, currentOrderFilter);
-    showToast('Đã hủy đơn hàng thành công', 'info');
+}
+
+async function deleteCustomerOrder(orderId) {
+    if (!orderId) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa đơn hàng này khỏi danh sách không?')) return;
+
+    try {
+        await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+            method: 'DELETE'
+        });
+    } catch (e) {
+        console.warn('Lỗi kết nối xóa đơn:', e);
+    }
+
+    if (Array.isArray(myOrdersListCache)) {
+        myOrdersListCache = myOrdersListCache.filter(o => String(o.id) !== String(orderId) && o.trackingNumber !== String(orderId));
+    }
+
+    try {
+        let localOrders = getLocalOrders();
+        localOrders = localOrders.filter(o => String(o.id) !== String(orderId) && o.trackingNumber !== String(orderId));
+        const key = getLocalOrdersKey();
+        localStorage.setItem(key, JSON.stringify(localOrders));
+        localStorage.setItem('bookmind_user_orders', JSON.stringify(localOrders));
+    } catch (e) { }
+
+    renderOrdersList(myOrdersListCache, currentOrderFilter);
+    showToast('Đã xóa đơn hàng thành công!', 'success');
 }
 
 

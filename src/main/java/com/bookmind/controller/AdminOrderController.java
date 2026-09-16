@@ -26,9 +26,11 @@ public class AdminOrderController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminOrderController.class);
     private final OrderRepository orderRepository;
+    private final com.bookmind.service.OrderService orderService;
 
-    public AdminOrderController(OrderRepository orderRepository) {
+    public AdminOrderController(OrderRepository orderRepository, com.bookmind.service.OrderService orderService) {
         this.orderRepository = orderRepository;
+        this.orderService = orderService;
     }
 
     @GetMapping
@@ -91,6 +93,22 @@ public class AdminOrderController {
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Trạng thái không tồn tại: " + statusStr);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<?> deleteOrder(@PathVariable Long id) {
+        try {
+            if (!orderRepository.existsById(id)) {
+                return ResponseEntity.notFound().build();
+            }
+            orderService.deleteOrder(id);
+            log.info("Admin deleted order #{}", id);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa đơn hàng thành công!"));
+        } catch (Exception e) {
+            log.error("Error deleting order #{}", id, e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
