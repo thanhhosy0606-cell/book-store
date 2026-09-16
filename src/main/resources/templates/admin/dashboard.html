@@ -13,8 +13,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script th:src="@{/js/chart.umd.min.js}"></script>
     <!-- Admin CSS -->
-    <link th:href="@{/css/admin.css?v=3.0}" rel="stylesheet">
+    <link th:href="@{/css/admin.css?v=24.0}" rel="stylesheet">
 </head>
 
 <body class="admin-body">
@@ -217,7 +218,7 @@
 
     <!-- Scripts -->
     <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-    <script th:src="@{/js/admin.js?v=23.0}"></script>
+    <script th:src="@{/js/admin.js?v=24.0}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof loadDashboardStats === 'function') {

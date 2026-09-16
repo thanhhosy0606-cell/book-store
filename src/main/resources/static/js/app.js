@@ -5031,21 +5031,7 @@ async function validateSessionWithServer() {
     if (!uid) return;
     try {
         const res = await fetch(`/api/auth/me?userId=${encodeURIComponent(uid)}`);
-        if (res.status === 401 || res.status === 404) {
-            try {
-                const resData = await res.json();
-                if (resData && (resData.message?.toLowerCase().includes('không tìm thấy') || resData.message?.toLowerCase().includes('tài khoản đã bị xóa') || res.status === 401)) {
-                    console.log('Tài khoản không còn tồn tại trên máy chủ (đã bị xóa). Tự động đăng xuất...');
-                    localStorage.removeItem('bookmind_user');
-                    localStorage.removeItem('currentUser');
-                    currentUser = null;
-                    updateNavAuthUI();
-                    updateCartUI();
-                }
-            } catch (errJson) {
-                // Keep local credentials on transient JSON parse error
-            }
-        } else if (res.ok) {
+        if (res.ok) {
             const resData = await res.json();
             if (resData && resData.data) {
                 currentUser = resData.data;
