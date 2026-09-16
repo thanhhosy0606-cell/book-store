@@ -2099,8 +2099,9 @@ function setQuickDiscount(percent) {
 }
 
 function handleApplyBatchDiscount(e) {
-    if (e) e.preventDefault();
-    const categoryId = document.getElementById('batchDiscountCategorySelect')?.value || null;
+    if (e && e.preventDefault) e.preventDefault();
+    const select = document.getElementById('batchDiscountCategorySelect');
+    const categoryId = select && select.value ? select.value : null;
     const discountPercent = parseInt(document.getElementById('batchDiscountPercentInput')?.value) || 0;
 
     if (discountPercent <= 0 || discountPercent > 90) {
@@ -2131,7 +2132,7 @@ function handleApplyBatchDiscount(e) {
             }
         })
         .catch(err => {
-            showAdminToast('Lỗi: ' + err.message, 'error');
+            showAdminToast('Lỗi kết nối: ' + err.message, 'error');
         })
         .finally(() => {
             if (btn) {
@@ -2142,7 +2143,8 @@ function handleApplyBatchDiscount(e) {
 }
 
 function handleResetBatchDiscount() {
-    const categoryId = document.getElementById('batchDiscountCategorySelect')?.value || null;
+    const select = document.getElementById('batchDiscountCategorySelect');
+    const categoryId = select && select.value ? select.value : null;
 
     const btn = document.getElementById('btnResetBatchDiscount');
     if (btn) {
@@ -2167,12 +2169,12 @@ function handleResetBatchDiscount() {
             }
         })
         .catch(err => {
-            showAdminToast('Lỗi: ' + err.message, 'error');
+            showAdminToast('Lỗi kết nối: ' + err.message, 'error');
         })
         .finally(() => {
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-undo me-1"></i> Khôi Phục Giá Gốc';
+                btn.innerHTML = '<i class="fas fa-undo me-1"></i> Khôi Phục Giá Gốc Danh Mục';
             }
         });
 }
@@ -2248,7 +2250,6 @@ function formatDateTime(dateStr) {
     if (!dateStr) return 'N/A';
     try {
         let str = String(dateStr).trim();
-        // If string doesn't include timezone information, parse safely
         let d;
         if (!str.includes('Z') && !str.includes('+') && !str.includes('-0')) {
             d = new Date(str.replace(' ', 'T'));
@@ -2270,8 +2271,13 @@ function escapeHtml(text) {
 }
 
 function showAdminToast(message, type = 'info') {
-    const container = document.getElementById('adminToastContainer');
-    if (!container) return;
+    let container = document.getElementById('adminToastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'adminToastContainer';
+        container.className = 'admin-toast-container';
+        document.body.appendChild(container);
+    }
 
     const toast = document.createElement('div');
     toast.className = `admin-toast ${type}`;

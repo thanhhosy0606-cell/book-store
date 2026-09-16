@@ -167,11 +167,11 @@
                             <div class="col-lg-7">
                                 <form id="batchDiscountForm" onsubmit="handleApplyBatchDiscount(event)">
                                     <div class="mb-3">
-                                        <label class="form-label fw-bold text-dark fs-8">1. Chọn Danh Mục Sách Áp Dụng *</label>
-                                        <select id="batchDiscountCategorySelect" class="form-control-admin form-select" required>
+                                        <label class="form-label fw-bold text-dark fs-8">1. Chọn Danh Mục Sách Áp Dụng</label>
+                                        <select id="batchDiscountCategorySelect" class="form-control-admin form-select">
                                             <option value="">🔥 Tất cả sách trong kho</option>
                                         </select>
-                                        <small class="text-muted fs-9 mt-1 d-block">Chọn danh mục cụ thể hoặc chọn "Tất cả sách" để giảm giá toàn bộ kho sách.</small>
+                                        <small class="text-muted fs-9 mt-1 d-block">Chọn danh mục cụ thể hoặc chọn "Tất cả sách trong kho" để giảm giá toàn bộ kho sách.</small>
                                     </div>
 
                                     <div class="mb-3">
@@ -192,7 +192,7 @@
                                     </div>
 
                                     <div class="d-flex flex-wrap gap-3 mt-4 pt-2 border-top">
-                                        <button type="submit" id="btnApplyBatchDiscount" class="btn btn-admin-primary px-4">
+                                        <button type="button" id="btnApplyBatchDiscount" class="btn btn-admin-primary px-4" onclick="handleApplyBatchDiscount(event)">
                                             <i class="fas fa-bolt me-1"></i> Áp Dụng Giảm Giá Hàng Loạt
                                         </button>
                                         <button type="button" id="btnResetBatchDiscount" class="btn btn-outline-danger rounded-pill px-4 fw-bold fs-8" onclick="handleResetBatchDiscount()">
@@ -480,6 +480,9 @@
             if (typeof loadBooksForSingleDiscount === 'function') loadBooksForSingleDiscount();
         });
     </script>
+
+    <!-- Toast Container -->
+    <div id="adminToastContainer" class="admin-toast-container"></div>
 
     <!-- Scripts -->
     <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
