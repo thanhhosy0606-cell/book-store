@@ -67,8 +67,8 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Avatar</th>
-                                <th>Họ Và Tên</th>
+                                <th style="width: 50px;">STT</th>
+                                <th>Thành Viên</th>
                                 <th>Email</th>
                                 <th>Số Điện Thoại</th>
                                 <th>Vai Trò</th>
@@ -87,9 +87,40 @@
         </div>
     </main>
 
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div id="deleteUserModal" class="admin-modal-overlay">
+        <div class="admin-modal-box" style="max-width: 440px;">
+            <div class="admin-modal-header bg-danger text-white">
+                <h3 class="admin-modal-title text-white"><i class="fas fa-exclamation-triangle me-1"></i> Xác Nhận Xóa Tài Khoản</h3>
+                <button class="admin-modal-close text-white" onclick="closeAdminModal('deleteUserModal')">&times;</button>
+            </div>
+            <div class="admin-modal-body p-4 text-center">
+                <div class="text-danger mb-3" style="font-size: 3rem;">
+                    <i class="fas fa-user-slash"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Xóa hoàn toàn tài khoản này?</h5>
+                <p class="text-muted fs-8 mb-3">
+                    Bạn có chắc chắn muốn xóa tài khoản <strong id="deleteUserNameDisplay" class="text-danger">Khách hàng</strong> (<span id="deleteUserEmailDisplay">email</span> - <span id="deleteUserIdDisplay">#ID</span>) khỏi hệ thống không?
+                </p>
+                <div class="alert alert-warning py-2 fs-9 mb-0 text-start">
+                    <i class="fas fa-info-circle me-1"></i> Lưu ý: Mọi dữ liệu giỏ hàng và liên kết của tài khoản này sẽ được dọn dẹp sạch sẽ.
+                </div>
+            </div>
+            <div class="admin-modal-footer justify-content-center">
+                <button type="button" class="btn-admin-secondary" onclick="closeAdminModal('deleteUserModal')">Hủy bỏ</button>
+                <button type="button" id="btnConfirmDeleteUser" class="btn btn-danger rounded-pill px-4 fw-bold fs-8" onclick="executeDeleteUser()">
+                    <i class="fas fa-trash-alt me-1"></i> Xóa Vĩnh Viễn
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="adminToastContainer" class="admin-toast-container"></div>
+
     <!-- Scripts -->
     <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-    <script th:src="@{/js/admin.js?v=24.0}"></script>
+    <script th:src="@{/js/admin.js?v=26.0}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof loadUsers === 'function') {

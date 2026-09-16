@@ -50,31 +50,10 @@ public class AdminUserController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @jakarta.annotation.PostConstruct
-    @Transactional
-    public void activateAllUsers() {
-        try {
-            List<User> users = userRepository.findAll();
-            for (User u : users) {
-                if (u.getStatus() != UserStatus.ACTIVE) {
-                    u.setStatus(UserStatus.ACTIVE);
-                    userRepository.save(u);
-                }
-            }
-        } catch (Exception ignored) {
-        }
-    }
-
     @GetMapping
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<List<AdminUserDto>> getAllUsers() {
         List<User> users = userRepository.findAll();
-        for (User u : users) {
-            if (u.getStatus() != UserStatus.ACTIVE) {
-                u.setStatus(UserStatus.ACTIVE);
-                userRepository.save(u);
-            }
-        }
         List<AdminUserDto> dtos = users.stream().map(u -> {
             Set<String> roles = u.getRoles() != null
                     ? u.getRoles().stream().map(Role::getName).collect(Collectors.toSet())
@@ -100,6 +79,33 @@ public class AdminUserController {
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
+    }
+
+    @PatchMapping("/{id}/toggle-status")
+    @Transactional
+    public ResponseEntity<?> toggleUserStatus(@PathVariable Long id) {
+        try {
+            User user = userRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản #" + id));
+
+            boolean currentlyActive = (user.getStatus() == null || user.getStatus() == UserStatus.ACTIVE);
+            UserStatus newStatus = currentlyActive ? UserStatus.LOCKED : UserStatus.ACTIVE;
+            user.setStatus(newStatus);
+            userRepository.save(user);
+
+            String statusLabel = (newStatus == UserStatus.ACTIVE) ? "mở khóa (Hoạt động)" : "khóa tài khoản";
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Đã " + statusLabel + " cho tài khoản \"" + (user.getFullName() != null ? user.getFullName() : user.getEmail()) + "\" thành công!",
+                    "newStatus", newStatus.name(),
+                    "userId", id
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Lỗi cập nhật trạng thái: " + e.getMessage()
+            ));
+        }
     }
 
     @PostMapping

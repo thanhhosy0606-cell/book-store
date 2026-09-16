@@ -1289,6 +1289,30 @@ function renderUsersTable(users) {
 
         const isSelf = currentAdminUser && currentAdminUser.id === u.id;
         const isDeleteRequested = u.deleteRequested === true;
+        const isLocked = (u.status === 'LOCKED' || u.status === 'INACTIVE' || u.status === 'BLOCKED' || u.status === 'BANNED');
+
+        let statusBadge = '';
+        if (isDeleteRequested) {
+            statusBadge = `<span class="badge bg-danger text-white rounded-pill px-2.5 py-1 fs-9"><i class="fas fa-exclamation-triangle me-1"></i>Yêu cầu xóa</span>`;
+        } else if (isLocked) {
+            statusBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fs-9"><i class="fas fa-lock me-1"></i>Đã khóa</span>`;
+        } else {
+            statusBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fs-9"><i class="fas fa-check-circle me-1"></i>Hoạt động</span>`;
+        }
+
+        let statusHtml = '';
+        if (!isSelf) {
+            statusHtml = `
+                <div class="d-flex align-items-center gap-2">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" ${!isLocked ? 'checked' : ''} onchange="toggleUserStatus(${u.id})" title="${!isLocked ? 'Nhấn để khóa tài khoản' : 'Nhấn để mở khóa tài khoản'}">
+                    </div>
+                    ${statusBadge}
+                </div>
+            `;
+        } else {
+            statusHtml = statusBadge;
+        }
 
         let actionBtn = '';
         if (isSelf) {
@@ -1310,47 +1334,43 @@ function renderUsersTable(users) {
             `;
         } else {
             actionBtn = `
-                <button class="btn-action delete" onclick="confirmDeleteUser(${u.id})" title="Xóa hoàn toàn tài khoản này">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+                <div class="d-flex align-items-center gap-1.5">
+                    <button class="btn btn-sm ${isLocked ? 'btn-outline-success' : 'btn-outline-warning'} rounded-pill px-2 py-1 fs-9 fw-semibold" onclick="toggleUserStatus(${u.id})" title="${isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}">
+                        <i class="fas ${isLocked ? 'fa-unlock' : 'fa-lock'} me-1"></i>${isLocked ? 'Mở Khóa' : 'Khóa'}
+                    </button>
+                    <button class="btn-action delete" onclick="confirmDeleteUser(${u.id})" title="Xóa tài khoản này">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
             `;
         }
 
-        const rowBgStyle = isDeleteRequested ? 'background-color: #fff8f8;' : '';
+        const rowBgStyle = isDeleteRequested ? 'background-color: #fff8f8;' : (isLocked ? 'background-color: #f8fafc; opacity: 0.85;' : '');
 
         return `
             <tr style="${rowBgStyle}">
                 <td><strong class="text-muted">${index + 1}</strong></td>
-                <td><span class="badge bg-light text-primary border">#${u.id}</span></td>
                 <td>
                     <div class="d-flex align-items-center gap-2">
-                        <img src="${u.avatarUrl || 'images/book_ai.png'}" width="36" height="36" class="rounded-circle object-fit-cover border">
+                        <img src="${u.avatarUrl || '/images/book_ai.png'}" width="36" height="36" class="rounded-circle object-fit-cover border">
                         <div>
                             <div class="d-flex align-items-center gap-1.5 flex-wrap">
                                 <strong class="text-dark">${escapeHtml(u.fullName || 'Chưa cập nhật')}</strong>
-                                ${isDeleteRequested ? `
-                                    <span class="badge bg-danger text-white rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
-                                        <i class="fas fa-exclamation-circle me-0.5"></i> Yêu cầu xóa
-                                    </span>
-                                ` : ''}
+                                <span class="badge bg-light text-primary border fs-9">#${u.id}</span>
                             </div>
-                            <small class="text-muted">${escapeHtml(u.email)}</small>
                             ${isDeleteRequested ? `
                                 <div class="mt-1 p-1.5 rounded-2 bg-danger bg-opacity-10 border border-danger-subtle text-danger" style="font-size: 0.73rem; max-width: 280px;">
                                     <div><i class="fas fa-comment-dots me-1"></i><strong>Lý do:</strong> ${escapeHtml(u.deleteRequestReason || 'Khách hàng gửi yêu cầu xóa')}</div>
-                                    ${u.deleteRequestedAt ? `<div class="text-muted fs-8 mt-0.5"><i class="fas fa-clock me-1"></i>${formatAdminDateTime(u.deleteRequestedAt)}</div>` : ''}
+                                    ${u.deleteRequestedAt ? `<div class="text-muted fs-8 mt-0.5"><i class="fas fa-clock me-1"></i>${formatDateTime(u.deleteRequestedAt)}</div>` : ''}
                                 </div>
                             ` : ''}
                         </div>
                     </div>
                 </td>
+                <td><small class="text-muted">${escapeHtml(u.email)}</small></td>
                 <td>${escapeHtml(u.phone || 'Chưa có')}</td>
                 <td>${roleBadge}</td>
-                <td>
-                    <span class="badge bg-light text-dark border">
-                        <i class="fas fa-shopping-bag me-1 text-primary"></i>${u.totalOrders || 0} đơn
-                    </span>
-                </td>
+                <td>${statusHtml}</td>
                 <td>
                     <div class="table-actions">
                         ${actionBtn}
@@ -1359,6 +1379,27 @@ function renderUsersTable(users) {
             </tr>
         `;
     }).join('');
+}
+
+function toggleUserStatus(userId) {
+    fetch(`/api/admin/users/${userId}/toggle-status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' }
+    })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                showAdminToast(result.message || 'Cập nhật trạng thái người dùng thành công!', 'success');
+                loadUsers();
+            } else {
+                showAdminToast(result.message || 'Lỗi cập nhật trạng thái!', 'error');
+                loadUsers();
+            }
+        })
+        .catch(err => {
+            showAdminToast('Lỗi kết nối: ' + err.message, 'error');
+            loadUsers();
+        });
 }
 
 function rejectDeleteRequest(userId) {
