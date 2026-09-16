@@ -3846,7 +3846,7 @@ let currentCheckoutData = {
     subtotal: 0,
     discountAmount: 0,
     finalTotal: 0,
-    selectedMethod: 'COD',
+    selectedMethod: 'PAYOS',
     receiverName: '',
     receiverPhone: '',
     shippingAddress: '',
@@ -3934,7 +3934,7 @@ function openPaymentModal() {
         subtotal: subtotal,
         discountAmount: discountAmount,
         finalTotal: finalTotal,
-        selectedMethod: 'COD',
+        selectedMethod: 'PAYOS',
         receiverName: (currentUser && currentUser.fullName) ? currentUser.fullName : '',
         receiverPhone: (currentUser && currentUser.phone) ? currentUser.phone : '',
         shippingAddress: localStorage.getItem('bookmind_saved_address') || '',
@@ -3972,8 +3972,8 @@ function openPaymentModal() {
 
     updateCheckoutDataWithCoupon();
 
-    // Reset payment method to COD
-    selectPaymentMethod('COD');
+    // Default payment method to PayOS VietQR
+    selectPaymentMethod('PAYOS');
 
     // Show Step 1 view
     showPaymentStep(1);
@@ -4117,6 +4117,9 @@ function initCheckoutPage() {
     currentCheckoutData.discount = discount;
     currentCheckoutData.finalTotal = finalTotal;
     currentCheckoutData.orderCode = 'DH' + Math.floor(100000 + Math.random() * 900000);
+
+    // Default to PayOS VietQR on checkout page
+    selectPaymentMethod('PAYOS');
 }
 
 function processCheckoutSubmit() {
@@ -4166,7 +4169,12 @@ function processCheckoutSubmit() {
         currentCheckoutData.orderCode = 'DH' + Math.floor(100000 + Math.random() * 900000);
     }
 
-    if (currentCheckoutData.selectedMethod === 'PAYOS' || currentCheckoutData.selectedMethod === 'VIETQR') {
+    // Determine chosen payment method
+    const selectedRadio = document.querySelector('input[name="payMethod"]:checked');
+    const paymentMethod = selectedRadio ? selectedRadio.value : (currentCheckoutData.selectedMethod || 'PAYOS');
+    currentCheckoutData.selectedMethod = paymentMethod;
+
+    if (paymentMethod === 'PAYOS' || paymentMethod === 'VIETQR') {
         const submitBtn = document.getElementById('btnSubmitOrder');
         if (submitBtn) {
             submitBtn.disabled = true;
@@ -4184,6 +4192,8 @@ function processCheckoutSubmit() {
             subtotal: currentCheckoutData.subtotal,
             shippingFee: 0,
             totalAmount: currentCheckoutData.finalTotal,
+            returnUrl: window.location.origin + '/payment-result',
+            cancelUrl: window.location.origin + '/checkout',
             items: currentCheckoutData.items.map(item => ({
                 bookId: item.id,
                 title: item.title,

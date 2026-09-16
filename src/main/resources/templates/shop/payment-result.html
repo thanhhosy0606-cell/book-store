@@ -66,34 +66,74 @@
     <script th:src="@{/js/app.js?v=23.0}"></script>
     <script th:src="@{/js/ai-bot.js?v=23.0}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const status = urlParams.get('status');
             const code = urlParams.get('code');
             const cancel = urlParams.get('cancel');
             const orderCode = urlParams.get('orderCode');
+            const paymentLinkId = urlParams.get('id');
 
             const titleEl = document.getElementById('resultTitle');
             const msgEl = document.getElementById('resultMessage');
             const iconWrapper = document.getElementById('statusIconWrapper');
             const iconEl = document.getElementById('statusIcon');
             const orderCodeEl = document.getElementById('resOrderCode');
+            const amountEl = document.getElementById('resAmount');
             const timeEl = document.getElementById('resTime');
 
-            if (orderCodeEl) orderCodeEl.textContent = orderCode || 'BM-' + Date.now().toString().slice(-6);
+            if (orderCodeEl) orderCodeEl.textContent = orderCode ? ('BM-' + orderCode) : '--';
             if (timeEl) timeEl.textContent = new Date().toLocaleString('vi-VN');
 
-            if (status === 'PAID' || code === '00') {
-                if (titleEl) titleEl.textContent = 'Thanh Toán Thành Công! 🎉';
-                if (msgEl) msgEl.textContent = 'Giao dịch qua PayOS đã được ghi nhận. Đơn hàng của bạn sẽ được xử lý sớm nhất.';
-                if (iconWrapper) {
-                    iconWrapper.style.background = '#dcfce7';
-                    iconWrapper.style.color = '#16a34a';
+            const isSuccess = status === 'PAID' || code === '00';
+            const isCancel = cancel === 'true' || status === 'CANCELLED';
+
+            if (isSuccess && orderCode) {
+                if (titleEl) titleEl.textContent = 'Đang Xác Nhận Thanh Toán...';
+                if (msgEl) msgEl.textContent = 'Hệ thống đang đồng bộ dữ liệu giao dịch với PayOS Cloud...';
+
+                try {
+                    const res = await fetch(`/api/payment/payos/confirm-return?orderCode=${orderCode}&status=${status || 'PAID'}&code=${code || '00'}&id=${paymentLinkId || ''}`);
+                    const result = await res.json();
+
+                    if (result.success && result.data) {
+                        const order = result.data;
+                        if (orderCodeEl) orderCodeEl.textContent = order.trackingNumber || ('BM-' + orderCode);
+                        if (amountEl) amountEl.textContent = formatCurrency(order.totalAmount || 0);
+                        if (timeEl) timeEl.textContent = order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
+
+                        if (titleEl) titleEl.textContent = 'Thanh Toán Thành Công! 🎉';
+                        if (msgEl) msgEl.textContent = 'Giao dịch qua PayOS VietQR đã được xác nhận thành công. Đơn hàng của bạn đang được xử lý.';
+                        if (iconWrapper) {
+                            iconWrapper.style.background = '#dcfce7';
+                            iconWrapper.style.color = '#16a34a';
+                        }
+                        if (iconEl) iconEl.className = 'fas fa-check-circle';
+
+                        // Xóa giỏ hàng sau khi hoàn tất mua hàng
+                        try {
+                            localStorage.removeItem('bookmind_cart');
+                            cart = [];
+                            selectedCartIds.clear();
+                            updateCartUI();
+                        } catch (e) {}
+                    } else {
+                        if (titleEl) titleEl.textContent = 'Thanh Toán Thành Công! 🎉';
+                        if (msgEl) msgEl.textContent = 'Giao dịch qua PayOS đã được ghi nhận vào hệ thống.';
+                        if (iconWrapper) {
+                            iconWrapper.style.background = '#dcfce7';
+                            iconWrapper.style.color = '#16a34a';
+                        }
+                        if (iconEl) iconEl.className = 'fas fa-check-circle';
+                    }
+                } catch (e) {
+                    console.error('Error confirming PayOS payment:', e);
+                    if (titleEl) titleEl.textContent = 'Thanh Toán Thành Công! 🎉';
+                    if (msgEl) msgEl.textContent = 'Giao dịch qua PayOS đã ghi nhận. Cảm ơn bạn đã mua hàng!';
                 }
-                if (iconEl) iconEl.className = 'fas fa-check-circle';
-            } else if (cancel === 'true' || status === 'CANCELLED') {
+            } else if (isCancel) {
                 if (titleEl) titleEl.textContent = 'Giao Dịch Đã Bị Hủy';
-                if (msgEl) msgEl.textContent = 'Bạn đã hủy thanh toán. Đơn hàng vẫn được lưu lại để bạn thanh toán lại sau.';
+                if (msgEl) msgEl.textContent = 'Bạn đã hủy thanh toán. Đơn hàng chưa được thanh toán thành công.';
                 if (iconWrapper) {
                     iconWrapper.style.background = '#fee2e2';
                     iconWrapper.style.color = '#dc2626';

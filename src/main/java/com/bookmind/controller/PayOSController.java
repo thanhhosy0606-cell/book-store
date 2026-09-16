@@ -79,7 +79,7 @@ public class PayOSController {
                 order = orderRepository.findById(dto.getId()).orElseThrow();
             }
 
-            Map<String, Object> paymentResult = payOSService.createPaymentLink(order, null, null);
+            Map<String, Object> paymentResult = payOSService.createPaymentLink(order, request.getReturnUrl(), request.getCancelUrl());
             paymentResult.put("orderId", order.getId());
             paymentResult.put("trackingNumber", order.getTrackingNumber());
 

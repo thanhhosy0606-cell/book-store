@@ -24,9 +24,27 @@ public class CreateOrderRequest {
     private BigDecimal subtotal;
     private BigDecimal shippingFee;
     private BigDecimal totalAmount;
+    private String returnUrl;
+    private String cancelUrl;
 
     @Builder.Default
     private List<OrderItemDto> items = new ArrayList<>();
+
+    public String getReturnUrl() {
+        return returnUrl;
+    }
+
+    public void setReturnUrl(String returnUrl) {
+        this.returnUrl = returnUrl;
+    }
+
+    public String getCancelUrl() {
+        return cancelUrl;
+    }
+
+    public void setCancelUrl(String cancelUrl) {
+        this.cancelUrl = cancelUrl;
+    }
 
     public String getTrackingNumber() {
         return trackingNumber;
