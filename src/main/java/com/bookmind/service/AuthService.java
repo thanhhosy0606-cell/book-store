@@ -69,10 +69,8 @@ public class AuthService {
             throw new IllegalArgumentException("Email hoặc mật khẩu không chính xác!");
         }
 
-        // Nếu tài khoản trước đó từng bị đánh dấu khóa do thử nghiệm tính năng cũ, tự động kích hoạt lại
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            user.setStatus(UserStatus.ACTIVE);
-            userRepository.save(user);
+        if (user.getStatus() == UserStatus.LOCKED) {
+            throw new IllegalArgumentException("Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ ban quản trị để được hỗ trợ!");
         }
 
         return mapToUserResponseDto(user);
@@ -125,6 +123,9 @@ public class AuthService {
     public UserResponseDto getCurrentUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin người dùng!"));
+        if (user.getStatus() == UserStatus.LOCKED) {
+            throw new IllegalArgumentException("Tài khoản của bạn đã bị Quản trị viên khóa!");
+        }
         return mapToUserResponseDto(user);
     }
 

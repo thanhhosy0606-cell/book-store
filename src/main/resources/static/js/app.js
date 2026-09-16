@@ -4430,34 +4430,62 @@ async function loadMyOrders() {
     const listEl = document.getElementById('myOrdersList');
     if (!listEl) return;
 
+    currentUser = getCurrentUser();
+    if (!currentUser) {
+        listEl.innerHTML = `
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-3">
+                <div class="fs-1 text-primary mb-3"><i class="fas fa-user-lock"></i></div>
+                <h5 class="fw-bold text-dark mb-2">Vui lòng đăng nhập</h5>
+                <p class="text-muted fs-7 mb-4">Bạn cần đăng nhập để xem lịch sử và tra cứu trạng thái đơn hàng của mình</p>
+                <div>
+                    <button class="btn btn-primary rounded-pill px-4 fw-bold fs-7 shadow-sm" onclick="openAuthModal('login')">
+                        <i class="fas fa-sign-in-alt me-1"></i> Đăng Nhập Ngay
+                    </button>
+                </div>
+            </div>
+        `;
+        const subtitleEl = document.getElementById('myOrdersSubtitle');
+        if (subtitleEl) subtitleEl.textContent = 'Bạn chưa đăng nhập';
+        return;
+    }
+
     listEl.innerHTML = `
         <div class="text-center py-5 text-muted">
             <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
-            <p class="fs-8 mb-0">Đang tải danh sách đơn hàng...</p>
+            <p class="fs-8 mb-0">Đang tải danh sách đơn hàng từ hệ thống...</p>
         </div>
     `;
 
     let orders = [];
 
     try {
-        const userId = currentUser ? currentUser.id : '';
-        const res = await fetch(`/api/orders/my-orders?userId=${userId}`);
+        const userId = currentUser ? (currentUser.id || currentUser.userId) : '';
+        const res = await fetch(`/api/orders/my-orders?userId=${encodeURIComponent(userId)}`);
         const result = await res.json();
         if (res.ok && result.success && Array.isArray(result.data)) {
             orders = result.data;
         }
     } catch (e) {
-        console.warn('Could not fetch orders from API, loading from localStorage', e);
+        console.warn('Could not fetch orders from API, fallback to localStorage', e);
     }
 
-    // Merge with local orders
+    // Merge with local orders only if local order has a tracking number not yet in DB
     const localOrders = getLocalOrders();
     const existingTrackingSet = new Set(orders.map(o => o.trackingNumber));
+    const existingIdSet = new Set(orders.map(o => o.id));
     localOrders.forEach(lo => {
-        if (!existingTrackingSet.has(lo.trackingNumber)) {
+        if (!existingTrackingSet.has(lo.trackingNumber) && !existingIdSet.has(lo.id)) {
             orders.unshift(lo);
         }
     });
+
+    if (orders.length > 0) {
+        try {
+            const key = getLocalOrdersKey();
+            localStorage.setItem(key, JSON.stringify(orders));
+            localStorage.setItem('bookmind_user_orders', JSON.stringify(orders));
+        } catch (e) { }
+    }
 
     myOrdersListCache = orders;
     renderOrdersList(myOrdersListCache, currentOrderFilter);
@@ -5245,6 +5273,7 @@ function togglePasswordVisibility(inputId, btn) {
 }
 
 async function validateSessionWithServer() {
+    currentUser = getCurrentUser();
     if (!currentUser) return;
     const uid = currentUser.id || currentUser.userId;
     if (!uid) return;
@@ -5253,14 +5282,28 @@ async function validateSessionWithServer() {
         if (res.ok) {
             const resData = await res.json();
             if (resData && resData.data) {
+                if (resData.data.status === 'LOCKED') {
+                    handleLogout();
+                    showToast('Tài khoản của bạn đã bị Quản trị viên khóa!', 'danger');
+                    return;
+                }
                 currentUser = resData.data;
                 localStorage.setItem('bookmind_user', JSON.stringify(currentUser));
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 updateNavAuthUI();
             }
+        } else {
+            const errData = await res.json().catch(() => ({}));
+            if (errData.message && errData.message.includes('khóa')) {
+                handleLogout();
+                showToast('Tài khoản của bạn đã bị Quản trị viên khóa!', 'danger');
+            } else if (res.status === 404 || (errData.message && errData.message.includes('Không tìm thấy'))) {
+                handleLogout();
+                showToast('Tài khoản của bạn đã bị xóa hoặc không còn tồn tại trên hệ thống!', 'warning');
+            }
         }
     } catch (e) {
-        console.warn('Lỗi kiểm tra phiên đăng nhập (giữ nguyên phiên đăng nhập):', e);
+        console.warn('Lỗi kiểm tra phiên đăng nhập:', e);
     }
 }
 
