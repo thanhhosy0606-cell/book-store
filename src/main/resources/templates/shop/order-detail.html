@@ -97,15 +97,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="item, iter : ${order.orderDetails}">
+                        <tr th:each="item, iter : ${order.items != null ? order.items : order.orderDetails}">
                             <td class="text-center" th:text="${iter.count}">1</td>
                             <td>
-                                <div class="fw-bold text-dark" th:text="${item.book != null ? item.book.title : 'Sách Nhã Nam'}">Tên sách</div>
-                                <small class="text-muted" th:if="${item.book != null and item.book.author != null}" th:text="'Tác giả: ' + ${item.book.author}">Tác giả</small>
+                                <div class="fw-bold text-dark" th:text="${item.title != null ? item.title : (item.book != null ? item.book.title : 'Sách')}">Tên sách</div>
+                                <small class="text-muted" th:text="'Tác giả: ' + (${item.author != null ? item.author : (item.book != null and item.book.author != null ? item.book.author : 'Nhã Nam')})">Tác giả</small>
                             </td>
-                            <td class="text-center" th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</td>
+                            <td class="text-center" th:text="${#numbers.formatDecimal(item.price != null ? item.price : (item.unitPrice != null ? item.unitPrice : 0), 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</td>
                             <td class="text-center fw-bold" th:text="${item.quantity}">1</td>
-                            <td class="text-end fw-bold text-danger" th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</td>
+                            <td class="text-end fw-bold text-danger" th:text="${#numbers.formatDecimal((item.price != null ? item.price : (item.unitPrice != null ? item.unitPrice : 0)) * item.quantity, 0, 'POINT', 0, 'COMMA')} + ' đ'">100.000 đ</td>
                         </tr>
                     </tbody>
                 </table>

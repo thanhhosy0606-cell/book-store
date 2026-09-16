@@ -228,4 +228,32 @@ public class Order {
     public void setPayments(List<Payment> payments) {
         this.payments = payments;
     }
+
+    public String getPaymentMethod() {
+        if (payments != null && !payments.isEmpty() && payments.get(0).getPaymentMethod() != null) {
+            return payments.get(0).getPaymentMethod().name();
+        }
+        return "COD";
+    }
+
+    public String getPaymentStatus() {
+        if (payments != null && !payments.isEmpty() && payments.get(0).getPaymentStatus() != null) {
+            return payments.get(0).getPaymentStatus().name();
+        }
+        return "PENDING";
+    }
+
+    public List<com.bookmind.dto.CreateOrderRequest.OrderItemDto> getItems() {
+        if (orderDetails == null) return java.util.Collections.emptyList();
+        return orderDetails.stream().map(d -> {
+            Book b = d.getBook();
+            return new com.bookmind.dto.CreateOrderRequest.OrderItemDto(
+                    b != null ? b.getId() : null,
+                    b != null ? b.getTitle() : "Sách",
+                    b != null ? b.getAuthor() : "",
+                    d.getQuantity(),
+                    d.getUnitPrice()
+            );
+        }).collect(java.util.stream.Collectors.toList());
+    }
 }

@@ -16,21 +16,40 @@ import java.util.List;
 public class UserOrderViewController {
 
     private final OrderRepository orderRepository;
+    private final com.bookmind.service.OrderService orderService;
     private final CategoryRepository categoryRepository;
 
-    public UserOrderViewController(OrderRepository orderRepository, CategoryRepository categoryRepository) {
+    public UserOrderViewController(OrderRepository orderRepository,
+                                   com.bookmind.service.OrderService orderService,
+                                   CategoryRepository categoryRepository) {
         this.orderRepository = orderRepository;
+        this.orderService = orderService;
         this.categoryRepository = categoryRepository;
     }
 
     @GetMapping("/orders/{orderCode}")
     public String orderDetail(@PathVariable String orderCode, Model model) {
-        Order order = orderRepository.findByTrackingNumber(orderCode).orElse(null);
+        com.bookmind.dto.OrderDto orderDto = null;
+        if (orderCode != null && !orderCode.trim().isEmpty()) {
+            String trimmedCode = orderCode.trim();
+            try {
+                orderDto = orderService.getOrderByTrackingNumber(trimmedCode);
+            } catch (Exception e) {
+                try {
+                    Long numericId = Long.parseLong(trimmedCode);
+                    Order o = orderRepository.findById(numericId).orElse(null);
+                    if (o != null) {
+                        orderDto = orderService.getOrderByTrackingNumber(o.getTrackingNumber());
+                    }
+                } catch (Exception ignored) { }
+            }
+        }
+
         List<Category> categories = categoryRepository.findAll();
 
-        model.addAttribute("order", order);
+        model.addAttribute("order", orderDto);
         model.addAttribute("categories", categories);
-        model.addAttribute("pageTitle", "Đơn hàng #" + orderCode + " - Nhã Nam Book Store");
+        model.addAttribute("pageTitle", (orderDto != null ? "Đơn hàng #" + orderDto.getTrackingNumber() : "Chi tiết đơn hàng") + " - Nhã Nam Book Store");
 
         return "shop/order-detail";
     }

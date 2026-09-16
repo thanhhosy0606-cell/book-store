@@ -58,6 +58,13 @@ public class OrderDetail {
         this.book = book;
     }
 
+    public BigDecimal getTotalPrice() {
+        if (unitPrice != null && quantity != null) {
+            return unitPrice.multiply(BigDecimal.valueOf(quantity));
+        }
+        return unitPrice != null ? unitPrice : BigDecimal.ZERO;
+    }
+
     public Integer getQuantity() {
         return quantity;
     }
