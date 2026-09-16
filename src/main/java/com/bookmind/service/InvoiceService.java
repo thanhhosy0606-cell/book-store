@@ -41,11 +41,31 @@ public class InvoiceService {
         return order.getInvoiceNumber();
     }
 
+    public Order findOrder(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new IllegalArgumentException("Mã đơn hàng không hợp lệ");
+        }
+        String idStr = identifier.trim();
+        try {
+            Long id = Long.parseLong(idStr);
+            java.util.Optional<Order> orderOpt = orderRepository.findById(id);
+            if (orderOpt.isPresent()) {
+                return orderOpt.get();
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        return orderRepository.findByTrackingNumber(idStr)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + idStr));
+    }
+
     @Transactional(readOnly = true)
     public InvoiceDto getInvoice(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng #" + orderId));
+        return getInvoice(String.valueOf(orderId));
+    }
 
+    @Transactional
+    public InvoiceDto getInvoice(String identifier) {
+        Order order = findOrder(identifier);
         ensureInvoiceGenerated(order);
 
         List<Payment> payments = paymentRepository.findByOrderId(order.getId());
@@ -113,7 +133,11 @@ public class InvoiceService {
     }
 
     public String renderInvoiceHtml(Long orderId) {
-        InvoiceDto inv = getInvoice(orderId);
+        return renderInvoiceHtml(String.valueOf(orderId));
+    }
+
+    public String renderInvoiceHtml(String identifier) {
+        InvoiceDto inv = getInvoice(identifier);
         Locale localeVN = Locale.forLanguageTag("vi-VN");
         NumberFormat currencyVN = NumberFormat.getCurrencyInstance(localeVN);
 

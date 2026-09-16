@@ -4610,38 +4610,25 @@ function openInvoicePrintView(orderId) {
         return;
     }
 
-    const numId = Number(orderId);
-    // Nếu là ID số trong CSDL (id < 100.000.000)
-    if (!isNaN(numId) && numId > 0 && numId < 100000000) {
-        const invoiceUrl = `/api/orders/${numId}/invoice/print`;
-        const win = window.open(invoiceUrl, '_blank');
-        if (win) {
-            win.focus();
-            return;
-        } else {
-            window.location.href = invoiceUrl;
-            return;
-        }
-    }
-
-    // Fallback cho đơn hàng lưu trên localStorage / client-side
-    let order = null;
-    if (typeof myOrdersListCache !== 'undefined' && Array.isArray(myOrdersListCache)) {
-        order = myOrdersListCache.find(o => o.id == orderId);
-    }
-    if (!order) {
-        const localOrders = getLocalOrders();
-        order = localOrders.find(o => o.id == orderId);
-    }
-
-    if (!order) {
-        window.open(`/api/orders/${orderId}/invoice/print`, '_blank');
+    const invoiceUrl = `/api/orders/${encodeURIComponent(orderId)}/invoice/print`;
+    const win = window.open(invoiceUrl, '_blank');
+    if (win) {
+        win.focus();
         return;
     }
 
-    const printWin = window.open('', '_blank');
-    if (!printWin) {
-        window.location.href = `/api/orders/${orderId}/invoice/print`;
+    // Fallback nếu browser chặn popup
+    let order = null;
+    if (typeof myOrdersListCache !== 'undefined' && Array.isArray(myOrdersListCache)) {
+        order = myOrdersListCache.find(o => o.id == orderId || o.trackingNumber == orderId);
+    }
+    if (!order) {
+        const localOrders = getLocalOrders();
+        order = localOrders.find(o => o.id == orderId || o.trackingNumber == orderId);
+    }
+
+    if (!order) {
+        window.location.href = invoiceUrl;
         return;
     }
 

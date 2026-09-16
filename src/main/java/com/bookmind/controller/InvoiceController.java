@@ -18,20 +18,20 @@ public class InvoiceController {
         this.invoiceService = invoiceService;
     }
 
-    @GetMapping("/{id}/invoice")
-    public ResponseEntity<ApiResponse<InvoiceDto>> getInvoiceData(@PathVariable("id") Long id) {
+    @GetMapping("/{identifier}/invoice")
+    public ResponseEntity<ApiResponse<InvoiceDto>> getInvoiceData(@PathVariable("identifier") String identifier) {
         try {
-            InvoiceDto invoice = invoiceService.getInvoice(id);
+            InvoiceDto invoice = invoiceService.getInvoice(identifier);
             return ResponseEntity.ok(ApiResponse.success("Lấy thông tin hóa đơn thành công!", invoice));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
-    @GetMapping(value = "/{id}/invoice/print", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
-    public ResponseEntity<String> printInvoiceHtml(@PathVariable("id") Long id) {
+    @GetMapping(value = "/{identifier}/invoice/print", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
+    public ResponseEntity<String> printInvoiceHtml(@PathVariable("identifier") String identifier) {
         try {
-            String html = invoiceService.renderInvoiceHtml(id);
+            String html = invoiceService.renderInvoiceHtml(identifier);
             return ResponseEntity.ok(html);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("<h3>Không thể tạo hóa đơn: " + e.getMessage() + "</h3>");
