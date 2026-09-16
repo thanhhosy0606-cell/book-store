@@ -2225,11 +2225,22 @@ try {
 let selectedCartIds = new Set(cart.map(item => item.id)); // ID sách được tick để thanh toán
 let appliedCoupon = null;
 let currentUser = null;
-try {
-    currentUser = JSON.parse(localStorage.getItem('bookmind_user') || localStorage.getItem('currentUser') || 'null');
-} catch (e) {
+
+function getCurrentUser() {
+    try {
+        const u = localStorage.getItem('bookmind_user') || localStorage.getItem('currentUser');
+        if (u) {
+            currentUser = JSON.parse(u);
+            return currentUser;
+        }
+    } catch (e) {
+        console.error('Error parsing user from storage:', e);
+    }
     currentUser = null;
+    return null;
 }
+
+currentUser = getCurrentUser();
 
 function saveCartToStorage() {
     try {
@@ -2240,6 +2251,7 @@ function saveCartToStorage() {
 }
 
 function requireLogin(actionName = 'thực hiện thao tác này') {
+    currentUser = getCurrentUser();
     if (!currentUser) {
         showToast(`Vui lòng đăng nhập để ${actionName}!`, 'warning');
         openAuthModal('login');
@@ -2383,12 +2395,21 @@ async function syncCatalogFromApi() {
 }
 
 function initApp() {
+    updateNavAuthUI();
+    updateCartUI();
     renderCategoryFilters();
     renderBookGrid();
     setupEventListeners();
-    updateCartUI();
-    updateNavAuthUI();
     syncCatalogFromApi();
+
+    const detailContainer = document.getElementById('detailBookContainer');
+    if (detailContainer) {
+        const bId = Number(detailContainer.dataset.bookId);
+        if (bId) {
+            currentModalBookId = bId;
+            renderBookReviews(bId);
+        }
+    }
 
     if (document.getElementById('cartItemsList')) {
         renderCartPage();
@@ -2981,22 +3002,22 @@ function formatCurrency(amount) {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 }
 
-function handleDetailAddToCart() {
+async function handleDetailAddToCart() {
     const container = document.getElementById('detailBookContainer');
     const qtyInput = document.getElementById('bookDetailQty');
     const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
 
     if (container) {
         const bookId = Number(container.dataset.bookId);
-        const title = container.dataset.bookTitle;
-        const author = container.dataset.bookAuthor;
+        const title = container.dataset.bookTitle || 'Sách';
+        const author = container.dataset.bookAuthor || 'Đang cập nhật';
         const price = parseFloat(container.dataset.bookPrice) || 0;
         const originalPrice = parseFloat(container.dataset.bookOriginalPrice) || price;
         const image = container.dataset.bookImage || '/images/book_ai.png';
         const stockQuantity = parseInt(container.dataset.bookStock) || 99;
         const status = container.dataset.bookStatus || 'AVAILABLE';
 
-        let book = BOOK_CATALOG.find(b => b.id === bookId);
+        let book = BOOK_CATALOG.find(b => b.id == bookId);
         if (!book) {
             book = {
                 id: bookId,
@@ -3010,32 +3031,34 @@ function handleDetailAddToCart() {
             };
             BOOK_CATALOG.push(book);
         } else {
+            book.title = title;
+            book.author = author;
             book.price = price;
             book.oldPrice = originalPrice;
             book.image = image;
             book.stockQuantity = stockQuantity;
             book.status = status;
         }
-        addToCart(bookId, qty);
+        await addToCart(bookId, qty);
     }
 }
 
-function handleDetailBuyNow() {
+async function handleDetailBuyNow() {
     const container = document.getElementById('detailBookContainer');
     const qtyInput = document.getElementById('bookDetailQty');
     const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
 
     if (container) {
         const bookId = Number(container.dataset.bookId);
-        const title = container.dataset.bookTitle;
-        const author = container.dataset.bookAuthor;
+        const title = container.dataset.bookTitle || 'Sách';
+        const author = container.dataset.bookAuthor || 'Đang cập nhật';
         const price = parseFloat(container.dataset.bookPrice) || 0;
         const originalPrice = parseFloat(container.dataset.bookOriginalPrice) || price;
         const image = container.dataset.bookImage || '/images/book_ai.png';
         const stockQuantity = parseInt(container.dataset.bookStock) || 99;
         const status = container.dataset.bookStatus || 'AVAILABLE';
 
-        let book = BOOK_CATALOG.find(b => b.id === bookId);
+        let book = BOOK_CATALOG.find(b => b.id == bookId);
         if (!book) {
             book = {
                 id: bookId,
@@ -3049,13 +3072,15 @@ function handleDetailBuyNow() {
             };
             BOOK_CATALOG.push(book);
         } else {
+            book.title = title;
+            book.author = author;
             book.price = price;
             book.oldPrice = originalPrice;
             book.image = image;
             book.stockQuantity = stockQuantity;
             book.status = status;
         }
-        buyNow(bookId, qty);
+        await buyNow(bookId, qty);
     }
 }
 
@@ -4718,15 +4743,28 @@ function renderBookReviews(bookId) {
     const summaryEl = document.getElementById('reviewsSummaryText');
     if (!listEl) return;
 
-    const book = BOOK_CATALOG.find(b => b.id === bookId);
-    const defaults = DEFAULT_BOOK_REVIEWS[bookId] || [
-        { author: 'Độc giả BookMind', rating: 5, date: 'Vừa xong', comment: 'Sách rất hay, đóng gói cẩn thận, nội dung truyền cảm hứng và hữu ích.' }
-    ];
+    if (!bookId) {
+        const detailContainer = document.getElementById('detailBookContainer');
+        if (detailContainer) bookId = Number(detailContainer.dataset.bookId);
+    }
+    if (!bookId) return;
+
+    currentModalBookId = Number(bookId);
+
+    const book = BOOK_CATALOG.find(b => b.id == bookId);
+    let defaults = DEFAULT_BOOK_REVIEWS[bookId];
+    if (!defaults || defaults.length === 0) {
+        defaults = [
+            { author: 'Độc giả BookMind', rating: 5, date: '12/03/2026', comment: 'Sách in bìa đẹp, giấy ngà chống lóa mắt, nội dung cuốn hút và sâu sắc. Đóng gói rất kỹ.' },
+            { author: 'Trần Hoàng Long', rating: 5, date: '08/03/2026', comment: 'Nội dung rất giá trị và thực tế. Nhã Nam giao hàng nhanh, sách mới 100% nguyên màng co.' },
+            { author: 'Nguyễn Bích Ngọc', rating: 4, date: '02/03/2026', comment: 'Lời văn dịch mượt mà, nhiều thông điệp ý nghĩa. Rất đáng để có trong tủ sách cá nhân.' }
+        ];
+    }
     const userReviews = userBookReviews[bookId] || [];
     const allReviews = [...userReviews, ...defaults];
 
     if (summaryEl) {
-        summaryEl.textContent = `${allReviews.length} nhận xét thực tế từ độc giả đã mua và đọc sách`;
+        summaryEl.textContent = `${allReviews.length} nhận xét thực tế từ độc giả`;
     }
 
     listEl.innerHTML = allReviews.map(r => {
@@ -4737,27 +4775,28 @@ function renderBookReviews(bookId) {
         const firstLetter = (r.author || 'U').charAt(0).toUpperCase();
 
         return `
-            <div class="p-2.5 rounded-3 border bg-white shadow-xs">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+            <div class="p-3 rounded-4 border bg-white shadow-xs">
+                <div class="d-flex justify-content-between align-items-center mb-1.5">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-8" style="width: 28px; height: 28px;">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-8" style="width: 32px; height: 32px;">
                             ${firstLetter}
                         </div>
                         <div>
-                            <span class="fw-bold fs-7 text-dark">${r.author}</span>
-                            <span class="badge bg-success-subtle text-success ms-1 fs-9 py-0.5 px-1.5"><i class="fas fa-check me-0.5"></i>Đã mua</span>
+                            <div class="fw-bold fs-7 text-dark">${escapeHtml(r.author)}</div>
+                            <span class="badge bg-success-subtle text-success fs-9 py-0.5 px-1.5"><i class="fas fa-check-circle me-1"></i>Đã mua hàng</span>
                         </div>
                     </div>
                     <span class="text-muted fs-8">${r.date}</span>
                 </div>
-                <div class="mb-1">${starsHtml}</div>
-                <p class="fs-8 text-secondary mb-0" style="line-height: 1.5;">${r.comment}</p>
+                <div class="mb-1.5">${starsHtml}</div>
+                <p class="fs-8 text-secondary mb-0" style="line-height: 1.6;">${escapeHtml(r.comment)}</p>
             </div>
         `;
     }).join('');
 }
 
 function toggleReviewForm() {
+    currentUser = getCurrentUser();
     if (!requireLogin('viết nhận xét và đánh giá sách')) {
         return;
     }
@@ -4805,7 +4844,18 @@ function setNewRating(rating) {
 }
 
 function submitBookReview() {
-    if (!currentModalBookId) return;
+    const bookId = currentModalBookId || (document.getElementById('detailBookContainer') ? Number(document.getElementById('detailBookContainer').dataset.bookId) : null);
+    if (!bookId) {
+        showToast('Không xác định được cuốn sách để đánh giá!', 'warning');
+        return;
+    }
+
+    currentUser = getCurrentUser();
+    if (!currentUser) {
+        showToast('Vui lòng đăng nhập để gửi đánh giá!', 'warning');
+        openAuthModal('login');
+        return;
+    }
 
     const authorInput = document.getElementById('reviewAuthorName');
     const commentInput = document.getElementById('reviewComment');
@@ -4819,7 +4869,7 @@ function submitBookReview() {
 
     let author = authorInput ? authorInput.value.trim() : '';
     if (!author) {
-        author = (currentUser && currentUser.fullName) ? currentUser.fullName : 'Độc giả giấu tên';
+        author = (currentUser && currentUser.fullName) ? currentUser.fullName : 'Độc giả BookMind';
     }
 
     const today = new Date();
@@ -4832,10 +4882,10 @@ function submitBookReview() {
         comment: comment
     };
 
-    if (!userBookReviews[currentModalBookId]) {
-        userBookReviews[currentModalBookId] = [];
+    if (!userBookReviews[bookId]) {
+        userBookReviews[bookId] = [];
     }
-    userBookReviews[currentModalBookId].unshift(newReview);
+    userBookReviews[bookId].unshift(newReview);
 
     try {
         localStorage.setItem('bookmind_user_reviews', JSON.stringify(userBookReviews));
@@ -4843,7 +4893,7 @@ function submitBookReview() {
 
     if (commentInput) commentInput.value = '';
     toggleReviewForm();
-    renderBookReviews(currentModalBookId);
+    renderBookReviews(bookId);
     showToast('🎉 Cảm ơn bạn đã gửi đánh giá cho cuốn sách này!', 'success');
 }
 
@@ -4900,6 +4950,7 @@ if (!document.getElementById('toastStyle')) {
    ========================================================= */
 
 function updateNavAuthUI() {
+    currentUser = getCurrentUser();
     const container = document.getElementById('navAuthContainer');
     if (!container) return;
 
@@ -4914,13 +4965,13 @@ function updateNavAuthUI() {
                     type="button" id="userDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
                     <img src="${currentUser.avatarUrl || 'images/book_ai.png'}" 
                          alt="Avatar" class="rounded-circle border" style="width: 24px; height: 24px; object-fit: cover;">
-                    <span class="fw-bold text-dark fs-8">${escapeHtml(currentUser.fullName)}</span>
+                    <span class="fw-bold text-dark fs-8">${escapeHtml(currentUser.fullName || currentUser.email)}</span>
                     ${roleBadge}
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 mt-2 p-2" aria-labelledby="userDropdownBtn" style="min-width: 210px;">
                     <li class="px-3 py-2 border-bottom mb-1">
-                        <div class="fw-bold text-dark fs-7">${escapeHtml(currentUser.fullName)}</div>
-                        <div class="text-muted fs-8 text-truncate">${escapeHtml(currentUser.email)}</div>
+                        <div class="fw-bold text-dark fs-7">${escapeHtml(currentUser.fullName || 'Người dùng')}</div>
+                        <div class="text-muted fs-8 text-truncate">${escapeHtml(currentUser.email || '')}</div>
                     </li>
                     <li>
                         <a class="dropdown-item rounded-2 fs-7 py-2 text-dark" href="javascript:void(0)" onclick="openProfileModal()">
@@ -5433,3 +5484,7 @@ if (document.readyState === 'loading') {
 } else {
     initApp();
 }
+
+// Khởi chạy ngay lập tức nếu container đã sẵn sàng để tránh flicker
+updateNavAuthUI();
+updateCartUI();
