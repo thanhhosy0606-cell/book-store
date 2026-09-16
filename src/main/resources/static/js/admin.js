@@ -1719,9 +1719,34 @@ function updateCouponPreview() {
 }
 
 function handleSaveCoupon(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const id = document.getElementById('couponIdInput')?.value;
     const isEdit = !!id;
+
+    const code = document.getElementById('couponCodeInput')?.value.trim().toUpperCase();
+    const title = document.getElementById('couponTitleInput')?.value.trim();
+
+    if (!code) {
+        showAdminToast('Vui lòng nhập mã Code voucher (ví dụ: AI10)!', 'error');
+        return;
+    }
+    if (!title) {
+        showAdminToast('Vui lòng nhập tiêu đề voucher!', 'error');
+        return;
+    }
+
+    const discountType = document.getElementById('couponTypeSelect')?.value || 'PERCENT';
+    const discountValue = parseFloat(document.getElementById('couponValueInput')?.value) || 0;
+
+    if (discountValue <= 0) {
+        showAdminToast('Mức giảm giá phải lớn hơn 0!', 'error');
+        return;
+    }
+
+    if (discountType === 'PERCENT' && discountValue > 100) {
+        showAdminToast('Phần trăm giảm giá không được vượt quá 100%!', 'error');
+        return;
+    }
 
     const scope = document.getElementById('couponScopeSelect')?.value || 'ALL';
     const catSelect = document.getElementById('couponCategorySelect');
@@ -1729,34 +1754,49 @@ function handleSaveCoupon(e) {
 
     let applicableCategoryId = null;
     let applicableCategoryName = null;
-    if (scope === 'CATEGORY' && catSelect && catSelect.value) {
+    if (scope === 'CATEGORY') {
+        if (!catSelect || !catSelect.value) {
+            showAdminToast('Vui lòng chọn danh mục áp dụng voucher!', 'error');
+            return;
+        }
         applicableCategoryId = parseInt(catSelect.value);
         applicableCategoryName = catSelect.options[catSelect.selectedIndex]?.text || '';
     }
 
     let applicableBookId = null;
     let applicableBookTitle = null;
-    if (scope === 'BOOK' && bookSelect && bookSelect.value) {
+    if (scope === 'BOOK') {
+        if (!bookSelect || !bookSelect.value) {
+            showAdminToast('Vui lòng chọn cuốn sách áp dụng voucher!', 'error');
+            return;
+        }
         applicableBookId = parseInt(bookSelect.value);
         applicableBookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || '';
     }
 
+    const badgeText = document.getElementById('couponBadgeTextInput')?.value.trim() || 'HOT 🔥';
+    const badgeColor = document.getElementById('couponBadgeColorSelect')?.value || 'danger';
+    const description = document.getElementById('couponDescInput')?.value.trim() || '';
+    const minOrderAmount = parseFloat(document.getElementById('couponMinOrderInput')?.value) || 0;
+    const maxDiscountAmount = parseFloat(document.getElementById('couponMaxDiscountInput')?.value) || null;
+    const isActive = document.getElementById('couponActiveCheck') ? document.getElementById('couponActiveCheck').checked : true;
+
     const payload = {
-        code: document.getElementById('couponCodeInput').value.trim().toUpperCase(),
-        title: document.getElementById('couponTitleInput').value.trim(),
-        discountType: document.getElementById('couponTypeSelect').value,
-        discountValue: parseFloat(document.getElementById('couponValueInput').value) || 0,
-        minOrderAmount: parseFloat(document.getElementById('couponMinOrderInput').value) || 0,
-        maxDiscountAmount: parseFloat(document.getElementById('couponMaxDiscountInput').value) || null,
-        badgeText: document.getElementById('couponBadgeTextInput').value.trim(),
-        badgeColor: document.getElementById('couponBadgeColorSelect').value,
+        code: code,
+        title: title,
+        discountType: discountType,
+        discountValue: discountValue,
+        minOrderAmount: minOrderAmount,
+        maxDiscountAmount: maxDiscountAmount,
+        badgeText: badgeText,
+        badgeColor: badgeColor,
         applicableType: scope,
         applicableCategoryId: applicableCategoryId,
         applicableCategoryName: applicableCategoryName,
         applicableBookId: applicableBookId,
         applicableBookTitle: applicableBookTitle,
-        description: document.getElementById('couponDescInput').value.trim(),
-        isActive: document.getElementById('couponActiveCheck').checked
+        description: description,
+        isActive: isActive
     };
 
     const url = isEdit ? '/api/admin/coupons/' + id : '/api/admin/coupons';
@@ -1784,7 +1824,7 @@ function handleSaveCoupon(e) {
             }
         })
         .catch(err => {
-            showAdminToast('Lỗi: ' + err.message, 'error');
+            showAdminToast('Lỗi kết nối: ' + err.message, 'error');
         })
         .finally(() => {
             if (btn) {

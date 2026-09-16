@@ -580,7 +580,8 @@ body.admin-body {
     transition: opacity 0.25s ease;
 }
 
-.admin-modal-overlay.open {
+.admin-modal-overlay.open,
+.admin-modal-overlay.active {
     opacity: 1;
     pointer-events: auto;
 }
@@ -607,7 +608,8 @@ body.admin-body {
     overflow: hidden;
 }
 
-.admin-modal-overlay.open .admin-modal-box {
+.admin-modal-overlay.open .admin-modal-box,
+.admin-modal-overlay.active .admin-modal-box {
     transform: scale(1);
 }
 
