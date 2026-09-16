@@ -443,9 +443,12 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="adminToastContainer" class="admin-toast-container"></div>
+
     <!-- Scripts -->
     <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-    <script th:src="@{/js/admin.js?v=24.0}"></script>
+    <script th:src="@{/js/admin.js?v=27.0}"></script>
     <script>
         function switchPromotionTab(tabName) {
             document.querySelectorAll('.promo-tab-btn').forEach(b => b.classList.remove('active'));
@@ -480,13 +483,6 @@
             if (typeof loadBooksForSingleDiscount === 'function') loadBooksForSingleDiscount();
         });
     </script>
-
-    <!-- Toast Container -->
-    <div id="adminToastContainer" class="admin-toast-container"></div>
-
-    <!-- Scripts -->
-    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-    <script th:src="@{/js/admin.js?v=26.0}"></script>
 
 </body>
 </html>

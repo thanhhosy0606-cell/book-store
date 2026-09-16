@@ -5123,12 +5123,17 @@ function updateNavAuthUI() {
             ? '<span class="badge bg-danger ms-1" style="font-size: 0.65rem;">Admin</span>'
             : '<span class="badge bg-primary-subtle text-primary ms-1" style="font-size: 0.65rem;">Thành viên</span>';
 
+        const avatarSrc = (currentUser.avatarUrl && currentUser.avatarUrl.trim() !== '') 
+            ? currentUser.avatarUrl 
+            : '/images/book_ai.png';
+
         container.innerHTML = `
             <div class="dropdown">
                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-pill d-flex align-items-center gap-1.5 py-1 px-2.5 shadow-sm border bg-white fs-8"
                     type="button" id="userDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img src="${currentUser.avatarUrl || 'images/book_ai.png'}" 
-                         alt="Avatar" class="rounded-circle border" style="width: 24px; height: 24px; object-fit: cover;">
+                    <img src="${avatarSrc}" 
+                         alt="Avatar" class="rounded-circle border" style="width: 24px; height: 24px; object-fit: cover;"
+                         onerror="this.onerror=null;this.src='/images/book_ai.png'">
                     <span class="fw-bold text-dark fs-8">${escapeHtml(currentUser.fullName || currentUser.email)}</span>
                     ${roleBadge}
                 </button>
@@ -5403,8 +5408,11 @@ async function handleRegisterSubmit(event) {
 
 function handleLogout() {
     localStorage.removeItem('bookmind_user');
+    localStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentUser');
     currentUser = null;
     cart = [];
+    saveCartToStorage();
     updateCartUI();
     updateNavAuthUI();
     showToast('Bạn đã đăng xuất tài khoản thành công.', 'info');
@@ -5422,7 +5430,8 @@ function openProfileModal() {
 
     const avatarEl = document.getElementById('profileAvatar');
     if (avatarEl) {
-        avatarEl.src = currentUser.avatarUrl || 'images/book_ai.png';
+        avatarEl.src = currentUser.avatarUrl || '/images/book_ai.png';
+        avatarEl.onerror = () => { avatarEl.src = '/images/book_ai.png'; };
     }
 
     const nameDisplay = document.getElementById('profileFullNameDisplay');
