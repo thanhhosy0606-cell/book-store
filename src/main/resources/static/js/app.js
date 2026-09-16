@@ -3329,116 +3329,8 @@ function renderCartPage() {
                 <div class="flex-grow-1 min-w-0">
                     <h6 class="fw-bold text-dark mb-1 text-truncate">
                         <a href="/books/${item.id}" class="text-dark text-decoration-none">${escapeHtml(item.title)}</a>
-                    </h6>
-                    <small class="text-muted d-block mb-1">${escapeHtml(item.author || 'Nhã Nam')}</small>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <span class="fw-bold text-danger fs-7">${formatCurrency(price)}</span>
-                        ${item.oldPrice && item.oldPrice > price ? `<small class="text-muted text-decoration-line-through fs-9">${formatCurrency(item.oldPrice)}</small>` : ''}
-                    </div>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <div class="input-group input-group-sm" style="width: 105px;">
-                        <button class="btn btn-outline-secondary" type="button" onclick="updateCartQuantity(${item.id}, -1)">
-                            <i class="fas fa-minus fs-9"></i>
-                        </button>
-                        <input type="text" class="form-control text-center fw-bold fs-8" value="${item.quantity}" readonly>
-                        <button class="btn btn-outline-secondary" type="button" onclick="updateCartQuantity(${item.id}, 1)">
-                            <i class="fas fa-plus fs-9"></i>
-                        </button>
-                    </div>
-                    <button class="btn btn-link text-danger fs-7 p-2" onclick="removeFromCart(${item.id})" title="Xóa cuốn này">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    const selectedItems = getSelectedCartItems();
-    const subtotal = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const discount = calculateCouponDiscount(appliedCoupon, subtotal);
-    const finalTotal = Math.max(0, subtotal - discount);
-
-    if (selectedCountEl) selectedCountEl.textContent = selectedItems.length;
-    if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
-    if (discountEl) discountEl.textContent = discount > 0 ? `-${formatCurrency(discount)}` : '-0 đ';
-    if (finalTotalEl) finalTotalEl.textContent = formatCurrency(finalTotal);
-
-    renderCouponList('cart');
-}
-
-function handleProceedToCheckout(event) {
-    if (event) event.preventDefault();
-
-    if (cart.length === 0) {
-        showToast('Giỏ hàng của bạn đang trống! Vui lòng chọn sách.', 'warning');
-        return;
-    }
-
-    const selectedItems = getSelectedCartItems();
-    if (selectedItems.length === 0) {
-        showToast('Vui lòng chọn ít nhất 1 sản phẩm trong giỏ hàng để đặt hàng!', 'warning');
-        return;
-    }
-
-    const stoppedItem = selectedItems.find(item => item.status === 'STOPPED');
-    if (stoppedItem) {
-        showToast(`Sách "<b>${stoppedItem.title}</b>" đã ngừng kinh doanh. Vui lòng xóa khỏi giỏ trước khi thanh toán!`, 'danger');
-        return;
-    }
-
-    const overStockItem = selectedItems.find(item => {
-        const b = BOOK_CATALOG.find(x => x.id === item.id);
-        const s = (b && b.stockQuantity !== undefined && b.stockQuantity !== null) ? b.stockQuantity : (item.stockQuantity != null ? item.stockQuantity : 99);
-        return item.quantity > s;
-    });
-    if (overStockItem) {
-        const b = BOOK_CATALOG.find(x => x.id === overStockItem.id);
-        const s = (b && b.stockQuantity !== undefined && b.stockQuantity !== null) ? b.stockQuantity : overStockItem.stockQuantity;
-        showToast(`Kho không đủ sách cho cuốn "<b>${overStockItem.title}</b>"! Bạn chọn ${overStockItem.quantity} cuốn nhưng kho chỉ còn <b>${s}</b> cuốn. Vui lòng giảm số lượng.`, 'danger');
-        return;
-    }
-
-    if (!currentUser) {
-        sessionStorage.setItem('bookmind_redirect_after_login', '/checkout');
-        showToast('Vui lòng đăng nhập hoặc đăng ký tài khoản để tiến hành đặt hàng & thanh toán!', 'warning');
-        openAuthModal('login');
-        return;
-    }
-
-    window.location.href = '/checkout';
-}
-
-function updateCartSummary() {
-    const selectedItems = getSelectedCartItems();
-    const subtotal = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const discountAmount = calculateCouponDiscount(appliedCoupon, subtotal);
-    const finalTotal = Math.max(0, subtotal - discountAmount);
-
-    const subtotalEl = document.getElementById('cartSubtotal');
-    const totalEl = document.getElementById('cartTotal');
-    const discountEl = document.getElementById('cartDiscount');
-    const checkoutBtn = document.getElementById('cartCheckoutBtn');
-
-    if (subtotalEl) subtotalEl.innerText = formatCurrency(subtotal);
-    if (discountEl) {
-        discountEl.innerText = (appliedCoupon && discountAmount > 0)
-            ? `-${formatCurrency(discountAmount)} (${appliedCoupon})`
-            : '0đ';
-    }
-    if (totalEl) totalEl.innerText = formatCurrency(finalTotal);
-
-    if (checkoutBtn) {
-        if (selectedItems.length > 0) {
-            checkoutBtn.disabled = false;
-            checkoutBtn.innerHTML = `<i class="fas fa-credit-card me-1"></i> Thanh Toán Ngay (${selectedItems.length})`;
-        } else {
-            checkoutBtn.disabled = true;
-            checkoutBtn.innerHTML = `<i class="fas fa-credit-card me-1"></i> Thanh Toán Ngay`;
-        }
-    }
-
-    renderCartPage();
+updateCartUI();
+    updateCheckoutDataWithCoupon();
 }
 
 function updateCartUI() {
@@ -3501,6 +3393,83 @@ let AVAILABLE_COUPONS = [
     }
 ];
 
+const SAVED_VOUCHERS_KEY = 'bookmind_saved_vouchers';
+
+function getSavedVoucherCodes() {
+    try {
+        const raw = localStorage.getItem(SAVED_VOUCHERS_KEY);
+        if (raw) {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) return arr;
+        }
+    } catch (e) { }
+    return [];
+}
+
+function isVoucherSavedInWallet(code) {
+    if (!code) return false;
+    const list = getSavedVoucherCodes();
+    return list.some(c => c.toUpperCase() === code.trim().toUpperCase());
+}
+
+function saveVoucherToWallet(code, showNotification = true) {
+    if (!code) return;
+    const cleanCode = code.trim().toUpperCase();
+    const list = getSavedVoucherCodes();
+    const alreadySaved = list.some(c => c.toUpperCase() === cleanCode);
+
+    if (!alreadySaved) {
+        list.unshift(cleanCode);
+        try {
+            localStorage.setItem(SAVED_VOUCHERS_KEY, JSON.stringify(list));
+        } catch (e) { }
+    }
+
+    if (showNotification) {
+        if (!alreadySaved) {
+            if (typeof showToast === 'function') {
+                showToast(`Đã lưu mã <b>${cleanCode}</b> vào Ví Voucher! Bạn có thể sử dụng trong Giỏ Hàng.`, 'success');
+            }
+        } else {
+            if (typeof showToast === 'function') {
+                showToast(`Mã <b>${cleanCode}</b> đã có sẵn trong danh sách Voucher của bạn!`, 'info');
+            }
+        }
+    }
+
+    // Refresh UI
+    renderHomePageCoupons();
+    if (typeof renderCouponList === 'function') {
+        renderCouponList('cart');
+        renderCouponList('checkout');
+    }
+}
+
+function removeVoucherFromWallet(code, event = null) {
+    if (event) event.stopPropagation();
+    if (!code) return;
+    const cleanCode = code.trim().toUpperCase();
+    let list = getSavedVoucherCodes();
+    list = list.filter(c => c.toUpperCase() !== cleanCode);
+    try {
+        localStorage.setItem(SAVED_VOUCHERS_KEY, JSON.stringify(list));
+    } catch (e) { }
+
+    if (appliedCoupon === cleanCode) {
+        removeCoupon();
+    }
+
+    if (typeof showToast === 'function') {
+        showToast(`Đã xóa mã <b>${cleanCode}</b> khỏi danh sách đã lưu.`, 'info');
+    }
+
+    renderHomePageCoupons();
+    if (typeof renderCouponList === 'function') {
+        renderCouponList('cart');
+        renderCouponList('checkout');
+    }
+}
+
 async function loadCouponsFromApi() {
     try {
         const res = await fetch('/api/coupons');
@@ -3552,7 +3521,7 @@ function renderHomePageCoupons() {
         const discountText = c.type === 'PERCENT' ? `GIẢM ${c.value}%` : `GIẢM ${formatCurrency(c.value)}`;
         const minOrderText = c.minOrder > 0 ? `Đơn từ ${formatCurrency(c.minOrder)}` : 'Mọi đơn hàng';
         const maxDiscountText = c.type === 'PERCENT' && c.maxDiscount > 0 ? ` • Tối đa ${formatCurrency(c.maxDiscount)}` : '';
-        const isApplied = appliedCoupon === c.code;
+        const isSaved = isVoucherSavedInWallet(c.code);
 
         let scopeBadge = '';
         if (c.applicableType === 'CATEGORY') {
@@ -3564,7 +3533,7 @@ function renderHomePageCoupons() {
         return `
             <div class="col-lg-3 col-md-6 col-12">
                 <div class="card h-100 border-0 shadow-sm rounded-4 position-relative overflow-hidden" 
-                     style="background: #ffffff; border: 1.5px dashed #e2e8f0 !important; transition: transform 0.2s, box-shadow 0.2s;">
+                     style="background: #ffffff; border: 1.5px dashed ${isSaved ? '#10b981' : '#e2e8f0'} !important; transition: transform 0.2s, box-shadow 0.2s;">
                     <div class="p-3 d-flex flex-column h-100">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <span class="badge ${c.badgeClass || 'bg-danger text-white'} rounded-pill px-2.5 py-1 fs-9 fw-bold">
@@ -3580,10 +3549,10 @@ function renderHomePageCoupons() {
                         ${scopeBadge}
                         
                         <div class="d-flex gap-2 align-items-center mt-auto pt-2 border-top">
-                            <button type="button" class="btn btn-sm ${isApplied ? 'btn-success' : 'btn-outline-danger'} rounded-pill flex-fill fs-8 fw-bold py-1" 
-                                    onclick="saveAndApplyHomeCoupon('${escapeHtml(c.code)}')">
-                                <i class="fas ${isApplied ? 'fa-check-circle' : 'fa-ticket-alt'} me-1"></i>
-                                ${isApplied ? 'Đang Áp Dụng' : 'Lưu & Dùng Mã'}
+                            <button type="button" class="btn btn-sm ${isSaved ? 'btn-success text-white' : 'btn-outline-danger'} rounded-pill flex-fill fs-8 fw-bold py-1 shadow-xs" 
+                                    onclick="saveVoucherToWallet('${escapeHtml(c.code)}')">
+                                <i class="fas ${isSaved ? 'fa-check-circle' : 'fa-bookmark'} me-1"></i>
+                                ${isSaved ? 'Đã Lưu Vào Giỏ' : 'Lưu Mã'}
                             </button>
                             <button type="button" class="btn btn-sm btn-light rounded-circle p-1.5 fs-8 text-secondary" 
                                     onclick="copyVoucherCode('${escapeHtml(c.code)}')" title="Sao chép mã">
@@ -3608,21 +3577,7 @@ function copyVoucherCode(code) {
 }
 
 function saveAndApplyHomeCoupon(code) {
-    copyVoucherCode(code);
-    appliedCoupon = code;
-
-    // Update active UI badges
-    renderHomePageCoupons();
-    if (typeof renderCouponList === 'function') {
-        renderCouponList('cart');
-        renderCouponList('checkout');
-    }
-    if (typeof updateCartSummaryUI === 'function') {
-        updateCartSummaryUI();
-    }
-    if (typeof showToast === 'function') {
-        showToast(`Đã kích hoạt mã <b>${code}</b> cho giỏ hàng của bạn!`, 'success');
-    }
+    saveVoucherToWallet(code, true);
 }
 
 function calculateCouponDiscount(code, subtotal, cartItems = null) {
@@ -3648,20 +3603,19 @@ function calculateCouponDiscount(code, subtotal, cartItems = null) {
             .filter(item => {
                 const bId = item.bookId || item.id;
                 const book = typeof BOOK_CATALOG !== 'undefined' ? BOOK_CATALOG.find(b => Number(b.id) === Number(bId)) : null;
-                const cId = item.categoryId || (book ? book.categoryId : null);
-                return cId && Number(cId) === Number(coupon.applicableCategoryId);
+                return book && Number(book.categoryId) === Number(coupon.applicableCategoryId);
             })
-            .reduce((sum, item) => sum + (Number(item.price || item.unitPrice || 0) * Number(item.quantity || 1)), 0);
-        if (eligibleSubtotal <= 0) return 0;
+            .reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
     } else if (coupon.applicableType === 'BOOK' && coupon.applicableBookId && Array.isArray(items) && items.length > 0) {
         eligibleSubtotal = items
             .filter(item => {
                 const bId = item.bookId || item.id;
                 return Number(bId) === Number(coupon.applicableBookId);
             })
-            .reduce((sum, item) => sum + (Number(item.price || item.unitPrice || 0) * Number(item.quantity || 1)), 0);
-        if (eligibleSubtotal <= 0) return 0;
+            .reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
     }
+
+    if (eligibleSubtotal <= 0) return 0;
 
     if (coupon.type === 'PERCENT') {
         let discount = eligibleSubtotal * (coupon.value / 100);
@@ -3678,6 +3632,7 @@ function calculateCouponDiscount(code, subtotal, cartItems = null) {
 function renderCouponList(containerType) {
     const listContainer = document.getElementById(containerType === 'cart' ? 'cartCouponListContainer' : 'checkoutCouponListContainer');
     const badgeContainer = document.getElementById(containerType === 'cart' ? 'cartAppliedCouponBadge' : 'checkoutAppliedCouponBadge');
+    const toggleTextEl = document.getElementById(containerType === 'cart' ? 'cartCouponToggleText' : 'checkoutCouponToggleText');
 
     const subtotal = (containerType === 'checkout' && currentCheckoutData && currentCheckoutData.subtotal > 0)
         ? currentCheckoutData.subtotal
@@ -3708,7 +3663,36 @@ function renderCouponList(containerType) {
 
     if (!listContainer) return;
 
-    listContainer.innerHTML = AVAILABLE_COUPONS.map(coupon => {
+    const savedCodes = getSavedVoucherCodes();
+
+    // Only display coupons that the user has saved (or currently applied)
+    const userCoupons = AVAILABLE_COUPONS.filter(coupon => {
+        return savedCodes.some(sc => sc.toUpperCase() === coupon.code.toUpperCase()) || (appliedCoupon && appliedCoupon.toUpperCase() === coupon.code.toUpperCase());
+    });
+
+    if (toggleTextEl) {
+        if (userCoupons.length === 0) {
+            toggleTextEl.innerHTML = `<i class="fas fa-gift text-warning me-1"></i>Mã giảm giá đã lưu (0)`;
+        } else {
+            toggleTextEl.innerHTML = `<i class="fas fa-gift text-warning me-1"></i>Mã giảm giá đã lưu (${userCoupons.length})`;
+        }
+    }
+
+    if (userCoupons.length === 0) {
+        listContainer.innerHTML = `
+            <div class="p-3 text-center bg-white rounded-3 border">
+                <i class="fas fa-ticket-alt fs-3 text-warning mb-2 d-block"></i>
+                <div class="fw-bold text-dark fs-8 mb-1">Bạn chưa lưu mã giảm giá nào</div>
+                <p class="text-muted fs-9 mb-2">Hãy nhấn "Lưu Mã" tại Trang Chủ hoặc nhập trực tiếp mã ưu đãi bên trên.</p>
+                <a href="/#voucherSection" class="btn btn-sm btn-outline-primary rounded-pill px-3 fs-9 fw-semibold">
+                    <i class="fas fa-gift me-1"></i> Khám Phá & Lưu Voucher Ngay
+                </a>
+            </div>
+        `;
+        return;
+    }
+
+    listContainer.innerHTML = userCoupons.map(coupon => {
         const isEligible = subtotal >= (coupon.minOrder || 0);
         const isApplied = appliedCoupon === coupon.code && discount > 0;
 
@@ -3744,8 +3728,11 @@ function renderCouponList(containerType) {
                     <div class="text-muted fs-9">${coupon.desc}</div>
                     ${!isEligible ? `<div class="text-danger fs-9 mt-0.5"><i class="fas fa-exclamation-circle me-1"></i>Mua thêm <strong>${formatCurrency(coupon.minOrder - subtotal)}</strong> để dùng mã này</div>` : ''}
                 </div>
-                <div class="ms-2 flex-shrink-0 text-end">
+                <div class="ms-2 flex-shrink-0 text-end d-flex align-items-center gap-1">
                     ${statusHtml}
+                    <button type="button" class="btn btn-sm btn-link text-muted p-1 fs-9" onclick="removeVoucherFromWallet('${coupon.code}', event)" title="Bỏ lưu mã này">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -3769,6 +3756,9 @@ function applyCoupon(code) {
         showToast('Đơn hàng cần tối thiểu ' + formatCurrency(coupon.minOrder) + ' để sử dụng mã này (còn thiếu ' + formatCurrency(coupon.minOrder - subtotal) + ')!', 'warning');
         return;
     }
+
+    // Auto save to wallet when validly applied
+    saveVoucherToWallet(cleanCode, false);
 
     appliedCoupon = cleanCode;
     const discount = calculateCouponDiscount(appliedCoupon, subtotal);

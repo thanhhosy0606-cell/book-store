@@ -201,6 +201,44 @@ CREATE TABLE ai_chat_messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (session_id) REFERENCES ai_chat_sessions(id) ON DELETE CASCADE
 );
+
+/* =========================================================
+   6. PHÂN HỆ KHUYẾN MÃI & VOUCHER (PROMOTIONS & VOUCHERS)
+   ========================================================= */
+
+-- Bảng Voucher & Mã giảm giá
+CREATE TABLE vouchers (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    title VARCHAR(150) NOT NULL,
+    description TEXT,
+    discount_type ENUM('PERCENT', 'FIXED') DEFAULT 'PERCENT',
+    discount_value DECIMAL(10, 2) NOT NULL,
+    max_discount_amount DECIMAL(10, 2) NULL,
+    min_order_amount DECIMAL(10, 2) DEFAULT 0,
+    applicable_type ENUM('ALL', 'CATEGORY', 'BOOK') DEFAULT 'ALL',
+    applicable_id BIGINT NULL,
+    badge_text VARCHAR(50) DEFAULT 'ƯU ĐÃI ✨',
+    badge_color VARCHAR(30) DEFAULT 'danger',
+    usage_limit INT DEFAULT 1000,
+    used_count INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Bảng Ví Voucher của Người dùng (User Saved Vouchers)
+CREATE TABLE user_vouchers (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    voucher_id BIGINT NOT NULL,
+    is_used BOOLEAN DEFAULT FALSE,
+    saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    used_at TIMESTAMP NULL,
+    UNIQUE KEY uq_user_voucher (user_id, voucher_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (voucher_id) REFERENCES vouchers(id) ON DELETE CASCADE
+);
 -- 1. Thêm Dữ liệu Quyền (Roles)
 INSERT INTO roles (id, name) VALUES 
 (1, 'ROLE_USER'), 
@@ -479,3 +517,14 @@ INSERT INTO ai_chat_sessions (id, user_id, session_token) VALUES
 INSERT INTO ai_chat_messages (session_id, sender, message) VALUES
 (1, 'USER', 'Tôi đang muốn tìm một cuốn sách giúp quản lý chi tiêu cá nhân hiệu quả.'),
 (1, 'BOT', 'Chào bạn, BookMind AI gợi ý cho bạn cuốn "Tâm Lý Học Tài Chính" của Morgan Housel. Cuốn sách này sẽ giúp bạn hiểu rõ hành vi của mình đối với tiền bạc đấy ạ!');
+
+-- 13. Thêm Dữ liệu Voucher Khuyến mãi (Vouchers & User Vouchers)
+INSERT INTO vouchers (id, code, title, description, discount_type, discount_value, max_discount_amount, min_order_amount, badge_text, badge_color, is_active) VALUES
+(1, 'AI10', 'Giảm 10% Toàn Đơn', 'Áp dụng cho mọi giá trị đơn hàng, giảm tối đa 50.000đ', 'PERCENT', 10.00, 50000.00, 0.00, 'HOT 🔥', 'danger', TRUE),
+(2, 'BOOK20K', 'Giảm 20.000đ', 'Áp dụng cho đơn hàng từ 200.000đ trở lên', 'FIXED', 20000.00, 20000.00, 200000.00, 'PHỔ BIẾN ⭐', 'primary', TRUE),
+(3, 'NEWBIE', 'Giảm 15.000đ Bạn Mới', 'Áp dụng đơn hàng từ 100.000đ cho độc giả mới', 'FIXED', 15000.00, 15000.00, 100000.00, 'QUÀ TẶNG 🎁', 'success', TRUE),
+(4, 'VIP50K', 'Giảm 50.000đ Đơn Lớn', 'Áp dụng cho đơn hàng từ 400.000đ trở lên', 'FIXED', 50000.00, 50000.00, 400000.00, 'TIẾT KIỆM 💰', 'warning', TRUE);
+
+INSERT INTO user_vouchers (user_id, voucher_id, is_used) VALUES
+(2, 1, FALSE),
+(2, 3, FALSE);
