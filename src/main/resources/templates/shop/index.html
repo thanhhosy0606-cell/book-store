@@ -149,8 +149,7 @@
         <div class="container">
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
                 <div>
-                    <span class="badge bg-danger rounded-pill px-3 py-1 fs-9 fw-bold"><i class="fas fa-bolt me-1"></i>SIÊU ƯU ĐÃI</span>
-                    <h3 class="fw-bold mb-0 fs-4 text-dark mt-1">Mã Giảm Giá & Voucher Hôm Nay</h3>
+                    <h3 class="fw-bold mb-0 fs-4 text-dark">Mã Giảm Giá & Voucher Hôm Nay</h3>
                 </div>
                 <div class="text-muted fs-8">Nhấn <strong>"Lưu Mã"</strong> để lưu vào danh sách ưu đãi trong Giỏ Hàng khi thanh toán</div>
             </div>
@@ -225,7 +224,6 @@
         <div class="container">
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
                 <div>
-                    <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-1 rounded-pill mb-1">🔥 TINH TUYỂN ĐẶC BIỆT</span>
                     <h2 class="fw-bold mb-0 text-dark fs-3">Sách Bán Chạy & Đánh Giá Cao</h2>
                 </div>
                 <a th:href="@{/books(sort='rating')}" class="btn btn-outline-primary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1">
@@ -336,23 +334,9 @@
                             <i class="fas fa-sparkles me-1"></i> ĐỘC QUYỀN TRÊN BOOKMIND AI
                         </span>
                         <h3 class="fw-extrabold text-dark mb-2 fs-3">Bạn Vẫn Đang Phân Vân Chưa Biết Đọc Gì?</h3>
-                        <p class="text-secondary fs-7 mb-4">
+                        <p class="text-secondary fs-7 mb-0">
                             Đừng mất hàng giờ lướt tìm sách! Hãy chia sẻ thể loại yêu thích, tâm trạng hoặc mục tiêu công việc hiện tại, Trợ lý AI Nhã Nam sẽ phân tích hàng trăm tựa sách và đưa ra gợi ý phù hợp nhất.
                         </p>
-                        <div class="d-flex flex-wrap gap-2">
-                            <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fs-8 fw-semibold"
-                                    onclick="openAIChatWithPrompt('Tư vấn cho tôi sách tài chính đầu tư cho người mới bắt đầu')">
-                                💡 Sách Tài chính cho F0
-                            </button>
-                            <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fs-8 fw-semibold"
-                                    onclick="openAIChatWithPrompt('Gợi ý sách văn học kinh điển Nhã Nam sâu sắc')">
-                                📖 Văn học kinh điển hay
-                            </button>
-                            <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fs-8 fw-semibold"
-                                    onclick="openAIChatWithPrompt('Những cuốn sách về AI và công nghệ đáng đọc nhất 2026')">
-                                🤖 Sách Trí tuệ nhân tạo
-                            </button>
-                        </div>
                     </div>
                     <div class="col-lg-4 text-center">
                         <button class="btn btn-primary btn-lg rounded-pill px-4 py-3 fw-bold shadow-lg hover-scale d-inline-flex align-items-center gap-2"
