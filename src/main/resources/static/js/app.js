@@ -2981,6 +2981,84 @@ function formatCurrency(amount) {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 }
 
+function handleDetailAddToCart() {
+    const container = document.getElementById('detailBookContainer');
+    const qtyInput = document.getElementById('bookDetailQty');
+    const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
+
+    if (container) {
+        const bookId = Number(container.dataset.bookId);
+        const title = container.dataset.bookTitle;
+        const author = container.dataset.bookAuthor;
+        const price = parseFloat(container.dataset.bookPrice) || 0;
+        const originalPrice = parseFloat(container.dataset.bookOriginalPrice) || price;
+        const image = container.dataset.bookImage || '/images/book_ai.png';
+        const stockQuantity = parseInt(container.dataset.bookStock) || 99;
+        const status = container.dataset.bookStatus || 'AVAILABLE';
+
+        let book = BOOK_CATALOG.find(b => b.id === bookId);
+        if (!book) {
+            book = {
+                id: bookId,
+                title: title,
+                author: author,
+                price: price,
+                oldPrice: originalPrice,
+                image: image,
+                stockQuantity: stockQuantity,
+                status: status
+            };
+            BOOK_CATALOG.push(book);
+        } else {
+            book.price = price;
+            book.oldPrice = originalPrice;
+            book.image = image;
+            book.stockQuantity = stockQuantity;
+            book.status = status;
+        }
+        addToCart(bookId, qty);
+    }
+}
+
+function handleDetailBuyNow() {
+    const container = document.getElementById('detailBookContainer');
+    const qtyInput = document.getElementById('bookDetailQty');
+    const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
+
+    if (container) {
+        const bookId = Number(container.dataset.bookId);
+        const title = container.dataset.bookTitle;
+        const author = container.dataset.bookAuthor;
+        const price = parseFloat(container.dataset.bookPrice) || 0;
+        const originalPrice = parseFloat(container.dataset.bookOriginalPrice) || price;
+        const image = container.dataset.bookImage || '/images/book_ai.png';
+        const stockQuantity = parseInt(container.dataset.bookStock) || 99;
+        const status = container.dataset.bookStatus || 'AVAILABLE';
+
+        let book = BOOK_CATALOG.find(b => b.id === bookId);
+        if (!book) {
+            book = {
+                id: bookId,
+                title: title,
+                author: author,
+                price: price,
+                oldPrice: originalPrice,
+                image: image,
+                stockQuantity: stockQuantity,
+                status: status
+            };
+            BOOK_CATALOG.push(book);
+        } else {
+            book.price = price;
+            book.oldPrice = originalPrice;
+            book.image = image;
+            book.stockQuantity = stockQuantity;
+            book.status = status;
+        }
+        buyNow(bookId, qty);
+    }
+}
+
 function addToCartById(bookId, qty = 1, silent = false) {
     return addToCart(bookId, qty, silent);
 }
@@ -2991,27 +3069,43 @@ async function addToCart(bookId, qty = 1, silent = false) {
 
     let book = BOOK_CATALOG.find(b => b.id == bookId);
     if (!book) {
-        try {
-            const res = await fetch('/api/books/' + bookId);
-            if (res.ok) {
-                const json = await res.json();
-                const bData = json.data || json;
-                if (bData && bData.id) {
-                    book = {
-                        id: bData.id,
-                        title: bData.title,
-                        author: bData.author || 'Nhã Nam',
-                        price: bData.salePrice || bData.price || 100000,
-                        oldPrice: bData.originalPrice || bData.oldPrice || bData.price,
-                        image: (bData.images && bData.images.length > 0) ? bData.images[0].imageUrl : (bData.slug ? '/images/' + bData.slug + '.jpg' : '/images/book_ai.png'),
-                        stockQuantity: bData.stockQuantity !== undefined ? bData.stockQuantity : 99,
-                        status: bData.status || 'AVAILABLE'
-                    };
-                    BOOK_CATALOG.push(book);
+        // Fallback: check DOM container on detail page
+        const container = document.getElementById('detailBookContainer');
+        if (container && Number(container.dataset.bookId) === Number(bookId)) {
+            book = {
+                id: Number(bookId),
+                title: container.dataset.bookTitle || 'Sách',
+                author: container.dataset.bookAuthor || 'Nhã Nam',
+                price: parseFloat(container.dataset.bookPrice) || 100000,
+                oldPrice: parseFloat(container.dataset.bookOriginalPrice) || 100000,
+                image: container.dataset.bookImage || '/images/book_ai.png',
+                stockQuantity: parseInt(container.dataset.bookStock) || 99,
+                status: container.dataset.bookStatus || 'AVAILABLE'
+            };
+            BOOK_CATALOG.push(book);
+        } else {
+            try {
+                const res = await fetch('/api/books/' + bookId);
+                if (res.ok) {
+                    const json = await res.json();
+                    const bData = json.data || json;
+                    if (bData && bData.id) {
+                        book = {
+                            id: bData.id,
+                            title: bData.title,
+                            author: bData.author || 'Nhã Nam',
+                            price: bData.salePrice || bData.price || 100000,
+                            oldPrice: bData.originalPrice || bData.oldPrice || bData.price,
+                            image: bData.imageUrl || (bData.images && bData.images.length > 0 ? bData.images[0].imageUrl : (bData.slug ? '/images/' + bData.slug + '.jpg' : '/images/book_ai.png')),
+                            stockQuantity: bData.stockQuantity !== undefined ? bData.stockQuantity : 99,
+                            status: bData.status || 'AVAILABLE'
+                        };
+                        BOOK_CATALOG.push(book);
+                    }
                 }
+            } catch (e) {
+                console.error('Error fetching book details for cart:', e);
             }
-        } catch (e) {
-            console.error('Error fetching book details for cart:', e);
         }
     }
 
