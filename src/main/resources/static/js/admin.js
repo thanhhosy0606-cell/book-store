@@ -346,7 +346,7 @@ function formatShortCurrency(val) {
 }
 
 function renderRevenueChart(data) {
-    const canvas = document.getElementById('revenueChartCanvas');
+    const canvas = document.getElementById('revenueChartCanvas') || document.getElementById('revenueAnalyticsChart');
     if (!canvas || typeof Chart === 'undefined') return;
 
     if (revenueChartInstance) {
