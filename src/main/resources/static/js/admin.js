@@ -1882,6 +1882,10 @@ function loadBooksForSingleDiscount() {
                 }).join('');
 
             if (selectedSingleDiscountBook) {
+                const refreshed = allBooksData.find(b => b.id === selectedSingleDiscountBook.id);
+                if (refreshed) {
+                    selectedSingleDiscountBook = refreshed;
+                }
                 select.value = selectedSingleDiscountBook.id;
                 onSelectBookForSingleDiscount();
             }
@@ -1918,7 +1922,7 @@ function onSelectBookForSingleDiscount() {
     const saleEl = document.getElementById('singleBookSalePriceDisplay');
     const badgeEl = document.getElementById('singleBookCurrentBadge');
 
-    if (coverEl) coverEl.src = book.imageUrl || (book.images && book.images[0] ? book.images[0].imageUrl : 'images/book_placeholder.png');
+    if (coverEl) coverEl.src = book.imageUrl || (book.images && book.images[0] ? book.images[0].imageUrl : '/images/book_ai.png');
     if (titleEl) titleEl.textContent = book.title;
     if (catEl) catEl.textContent = 'Thể loại: ' + (book.categoryName || 'Sách');
 
@@ -2009,6 +2013,12 @@ function handleApplySingleBookDiscount() {
         .then(result => {
             if (result.success) {
                 showAdminToast(result.message || 'Đã áp dụng giảm giá sách thành công!', 'success');
+                if (result.salePrice !== undefined) {
+                    selectedSingleDiscountBook.salePrice = result.salePrice;
+                }
+                if (result.originalPrice !== undefined) {
+                    selectedSingleDiscountBook.originalPrice = result.originalPrice;
+                }
                 loadBooksForSingleDiscount();
                 if (typeof loadBooks === 'function') loadBooks();
                 if (typeof loadDashboardStats === 'function') loadDashboardStats();
@@ -2048,6 +2058,9 @@ function handleResetSingleBookDiscount() {
         .then(result => {
             if (result.success) {
                 showAdminToast(result.message || 'Đã khôi phục giá gốc cho cuốn sách!', 'success');
+                if (result.salePrice !== undefined) {
+                    selectedSingleDiscountBook.salePrice = result.salePrice;
+                }
                 loadBooksForSingleDiscount();
                 if (typeof loadBooks === 'function') loadBooks();
                 if (typeof loadDashboardStats === 'function') loadDashboardStats();
@@ -2061,7 +2074,7 @@ function handleResetSingleBookDiscount() {
         .finally(() => {
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-undo"></i> Giá Gốc';
+                btn.innerHTML = '<i class="fas fa-undo me-1"></i> Khôi Phục Giá Gốc Cuốn Này';
             }
         });
 }

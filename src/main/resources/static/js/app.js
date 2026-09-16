@@ -3630,21 +3630,34 @@ function calculateCouponDiscount(code, subtotal, cartItems = null) {
     if (coupon.minOrder && subtotal < coupon.minOrder) return 0;
 
     let eligibleSubtotal = subtotal;
-    const items = cartItems || (typeof cart !== 'undefined' ? cart : []);
+    let items = cartItems;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        if (typeof currentCheckoutData !== 'undefined' && currentCheckoutData && Array.isArray(currentCheckoutData.items) && currentCheckoutData.items.length > 0) {
+            items = currentCheckoutData.items;
+        } else if (typeof cart !== 'undefined' && Array.isArray(cart) && cart.length > 0) {
+            items = cart;
+        } else {
+            items = [];
+        }
+    }
 
     if (coupon.applicableType === 'CATEGORY' && coupon.applicableCategoryId && Array.isArray(items) && items.length > 0) {
         eligibleSubtotal = items
             .filter(item => {
-                const book = typeof BOOK_CATALOG !== 'undefined' ? BOOK_CATALOG.find(b => b.id === item.id) : null;
-                return (item.categoryId && Number(item.categoryId) === Number(coupon.applicableCategoryId)) ||
-                       (book && book.categoryId && Number(book.categoryId) === Number(coupon.applicableCategoryId));
+                const bId = item.bookId || item.id;
+                const book = typeof BOOK_CATALOG !== 'undefined' ? BOOK_CATALOG.find(b => Number(b.id) === Number(bId)) : null;
+                const cId = item.categoryId || (book ? book.categoryId : null);
+                return cId && Number(cId) === Number(coupon.applicableCategoryId);
             })
-            .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            .reduce((sum, item) => sum + (Number(item.price || item.unitPrice || 0) * Number(item.quantity || 1)), 0);
         if (eligibleSubtotal <= 0) return 0;
     } else if (coupon.applicableType === 'BOOK' && coupon.applicableBookId && Array.isArray(items) && items.length > 0) {
         eligibleSubtotal = items
-            .filter(item => Number(item.id) === Number(coupon.applicableBookId))
-            .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            .filter(item => {
+                const bId = item.bookId || item.id;
+                return Number(bId) === Number(coupon.applicableBookId);
+            })
+            .reduce((sum, item) => sum + (Number(item.price || item.unitPrice || 0) * Number(item.quantity || 1)), 0);
         if (eligibleSubtotal <= 0) return 0;
     }
 
